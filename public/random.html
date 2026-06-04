@@ -238,6 +238,11 @@
   }
   .modal-list li:last-child { border-bottom: none; }
   .modal-list .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
+  .modal-list .group-label {
+    padding: 10px 12px 6px; font-size: 0.7rem; font-weight: 700;
+    color: var(--violet); letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
   .modal-close {
     margin-top: 16px; width: 100%; padding: 10px;
     border: none; border-radius: 10px; background: var(--surface2);
@@ -823,9 +828,19 @@ function showListModal(type) {
   const overlay = document.getElementById('listModal');
   const title = document.getElementById('listModalTitle');
   const body = document.getElementById('listModalBody');
-  const list = (type==='role' ? allRoles() : allAUs()).slice().sort((a,b)=>a.localeCompare(b,'ko'));
   title.textContent = type==='role' ? '⚔️ 캐릭터 설정 목록' : '🌀 세계관 목록';
-  body.innerHTML = list.map((item,i)=>`<li><span class="idx">${i+1}</span>${esc(item)}</li>`).join('');
+
+  const groups = (type==='role' ? ROLES : AUS).groups;
+  let html = '';
+  for (const g of groups) {
+    if (!g.items.length) continue;
+    const sorted = [...g.items].sort((a, b) => a.localeCompare(b, 'ko'));
+    html += `<li class="group-label">${esc(g.label)}</li>`;
+    sorted.forEach((item, i) => {
+      html += `<li><span class="idx">${i+1}</span>${esc(item)}</li>`;
+    });
+  }
+  body.innerHTML = html;
   overlay.classList.add('open');
 }
 
