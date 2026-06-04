@@ -701,6 +701,25 @@ function randFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 function allRoles() { return ROLES.groups.flatMap(g => g.items); }
 function allAUs() { return AUS.groups.flatMap(g => g.items); }
 
+function randTagFrom(data) {
+  const gs = data.groups.filter(g => g.items.length > 0);
+  return gs.length ? randFrom(gs) : null;
+}
+
+function pickRolesFromTag() {
+  const g = randTagFrom(ROLES);
+  if (!g) return { roleL: '?', roleR: '?' };
+  const roleL = randFrom(g.items);
+  const others = g.items.filter(r => r !== roleL);
+  const roleR = others.length > 0 ? randFrom(others) : randFrom(g.items);
+  return { roleL, roleR };
+}
+
+function pickAUFromTag() {
+  const g = randTagFrom(AUS);
+  return g ? randFrom(g.items) : '?';
+}
+
 function doPick() {
   if(!selL.size||!selR.size||spinning) return;
   spinning = true;
@@ -730,9 +749,10 @@ function doPick() {
       clearInterval(iv);
       const fL = randFrom(poolL), fR = randFrom(poolR);
       currentLeft = fL; currentRight = fR;
-      currentRoleL = randFrom(allRoles());
-      currentRoleR = randFrom(allRoles());
-      currentAU = randFrom(allAUs());
+      const roles = pickRolesFromTag();
+      currentRoleL = roles.roleL;
+      currentRoleR = roles.roleR;
+      currentAU = pickAUFromTag();
       hasResult = true;
       document.getElementById('copyResultBtn').style.display = 'block';
 
@@ -769,8 +789,9 @@ function rerollRole() {
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentRoleL = randFrom(allRoles());
-      currentRoleR = randFrom(allRoles());
+      const roles = pickRolesFromTag();
+      currentRoleL = roles.roleL;
+      currentRoleR = roles.roleR;
       elL.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
       elR.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
     }
@@ -787,7 +808,7 @@ function rerollAU() {
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentAU = randFrom(allAUs());
+      currentAU = pickAUFromTag();
       el.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
     }
   }, 50);
