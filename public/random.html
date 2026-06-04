@@ -324,9 +324,14 @@
       </div>
       <div class="result-subs" id="resultSubs">
         <div class="result-sub-row">
-          <span class="result-sub-label">역할</span>
-          <span class="result-sub-value" id="resRole"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
+          <span class="result-sub-label">❤️ 역할</span>
+          <span class="result-sub-value" id="resRoleL"><span class="ph">—</span></span>
+          <button class="reroll-btn" id="rerollRoleL" onclick="rerollRoleL()" disabled="">🔄 리롤</button>
+        </div>
+        <div class="result-sub-row">
+          <span class="result-sub-label">💙 역할</span>
+          <span class="result-sub-value" id="resRoleR"><span class="ph">—</span></span>
+          <button class="reroll-btn" id="rerollRoleR" onclick="rerollRoleR()" disabled="">🔄 리롤</button>
         </div>
         <div class="result-sub-row">
           <span class="result-sub-label">세계관</span>
@@ -462,7 +467,7 @@ let activeSide = 'left';
 let spinning = false;
 const hist = [];
 const filtersL = new Set(), filtersR = new Set();
-let currentRole = null, currentAU = null, currentLeft = null, currentRight = null;
+let currentRoleL = null, currentRoleR = null, currentAU = null, currentLeft = null, currentRight = null;
 let hasResult = false;
 
 // ============ FIREBASE LOAD / SEED ============
@@ -689,10 +694,12 @@ function doPick() {
   spinning = true;
   const btn = document.getElementById('pickBtn');
   const couplingEl = document.getElementById('resultCoupling');
-  const roleEl = document.getElementById('resRole');
+  const roleLEl = document.getElementById('resRoleL');
+  const roleREl = document.getElementById('resRoleR');
   const auEl = document.getElementById('resAU');
   btn.disabled = true;
-  document.getElementById('rerollRole').disabled = true;
+  document.getElementById('rerollRoleL').disabled = true;
+  document.getElementById('rerollRoleR').disabled = true;
   document.getElementById('rerollAU').disabled = true;
 
   const poolL=[...selL], poolR=[...selR];
@@ -704,14 +711,16 @@ function doPick() {
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolL))}</span>
       <span class="result-x">✕</span>
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolR))}</span>`;
-    roleEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    roleLEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    roleREl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
     auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
     count++;
     if(count>=total) {
       clearInterval(iv);
       const fL = randFrom(poolL), fR = randFrom(poolR);
       currentLeft = fL; currentRight = fR;
-      currentRole = randFrom(ROLES);
+      currentRoleL = randFrom(ROLES);
+      currentRoleR = randFrom(ROLES);
       currentAU = randFrom(AUS);
       hasResult = true;
       document.getElementById('copyResultBtn').style.display = 'block';
@@ -720,25 +729,27 @@ function doPick() {
         <span class="result-side result-left result-pop">${esc(fL)}</span>
         <span class="result-x result-pop" style="animation-delay:0.05s">✕</span>
         <span class="result-side result-right result-pop" style="animation-delay:0.1s">${esc(fR)}</span>`;
-      roleEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
-      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.05s">${esc(currentAU)}</span>`;
+      roleLEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
+      roleREl.innerHTML = `<span class="result-role-text result-pop" style="animation-delay:0.05s">${esc(currentRoleR)}</span>`;
+      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.1s">${esc(currentAU)}</span>`;
 
-      const entry = `${fL} ✕ ${fR} / ${currentRole} / ${currentAU}`;
+      const entry = `${fL}(${currentRoleL}) ✕ ${fR}(${currentRoleR}) / ${currentAU}`;
       hist.unshift(entry);
       if(hist.length>20) hist.pop();
       renderHist();
       particles(btn);
       spinning = false;
       btn.disabled = false;
-      document.getElementById('rerollRole').disabled = false;
+      document.getElementById('rerollRoleL').disabled = false;
+      document.getElementById('rerollRoleR').disabled = false;
       document.getElementById('rerollAU').disabled = false;
     }
   }, 55+count*4);
 }
 
-function rerollRole() {
+function rerollRoleL() {
   if(!hasResult||spinning) return;
-  const el = document.getElementById('resRole');
+  const el = document.getElementById('resRoleL');
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
@@ -746,8 +757,24 @@ function rerollRole() {
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentRole = randFrom(ROLES);
-      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
+      currentRoleL = randFrom(ROLES);
+      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
+    }
+  }, 50);
+}
+
+function rerollRoleR() {
+  if(!hasResult||spinning) return;
+  const el = document.getElementById('resRoleR');
+  let c = 0;
+  const total = 8 + Math.floor(Math.random()*5);
+  const iv = setInterval(()=>{
+    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    c++;
+    if(c>=total) {
+      clearInterval(iv);
+      currentRoleR = randFrom(ROLES);
+      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
     }
   }, 50);
 }
@@ -790,7 +817,7 @@ function copyText(text) {
 
 function copyCurrentResult() {
   if(!hasResult) return;
-  const text = `${currentLeft} ✕ ${currentRight} / ${currentRole} / ${currentAU}`;
+  const text = `${currentLeft}(${currentRoleL}) ✕ ${currentRight}(${currentRoleR}) / ${currentAU}`;
   navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
     document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
