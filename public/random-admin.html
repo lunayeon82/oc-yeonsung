@@ -1065,6 +1065,10 @@
       <label class="modal-label">이름</label>
       <input class="modal-input" id="renameInput" onkeydown="if(event.key==='Enter')saveRename()">
     </div>
+    <div class="modal-field" id="renameTagField" style="display:none">
+      <label class="modal-label">태그</label>
+      <select class="modal-select" id="renameTagSelect"></select>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeRenameModal()">취소</button>
       <button class="modal-save" onclick="saveRename()">저장</button>
@@ -1542,6 +1546,19 @@ function openRenameModal(type, gi, ii) {
   const titles = { role: '캐릭터 설정 수정', au: '관계성 수정', roleTag: '태그 이름 수정', auTag: '태그 이름 수정' };
   document.getElementById('renameModalTitle').textContent = titles[type];
   document.getElementById('renameInput').value = current;
+
+  const tagField = document.getElementById('renameTagField');
+  const tagSelect = document.getElementById('renameTagSelect');
+  if (type === 'role' || type === 'au') {
+    const groups = type === 'role' ? ROLES.groups : AUS.groups;
+    tagSelect.innerHTML = groups.map((g, i) =>
+      `<option value="${i}" ${i === gi ? 'selected' : ''}>${esc(g.label)}</option>`
+    ).join('');
+    tagField.style.display = '';
+  } else {
+    tagField.style.display = 'none';
+  }
+
   document.getElementById('renameModal').classList.add('open');
   setTimeout(() => document.getElementById('renameInput').select(), 50);
 }
@@ -1556,11 +1573,16 @@ function saveRename() {
   const { type, gi, ii } = renameTarget;
   const val = document.getElementById('renameInput').value.trim();
   if (!val) return;
+
   if (type === 'role') {
-    ROLES.groups[gi].items[ii] = val;
+    const newGi = parseInt(document.getElementById('renameTagSelect').value);
+    ROLES.groups[gi].items.splice(ii, 1);
+    ROLES.groups[newGi].items.push(val);
     closeRenameModal(); saveRoles();
   } else if (type === 'au') {
-    AUS.groups[gi].items[ii] = val;
+    const newGi = parseInt(document.getElementById('renameTagSelect').value);
+    AUS.groups[gi].items.splice(ii, 1);
+    AUS.groups[newGi].items.push(val);
     closeRenameModal(); saveAUs();
   } else if (type === 'roleTag') {
     ROLES.groups[gi].label = val;
