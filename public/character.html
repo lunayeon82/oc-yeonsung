@@ -5,21 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>캐릭터 설정</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Nanum+Myeongjo:wght@400;700&display=swap');
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.woff2) format('woff2);
+  }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Noto Sans KR', sans-serif;
-    background: #f4efe6;
-    background-image:
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 28px,
-        rgba(180,160,130,0.06) 28px,
-        rgba(180,160,130,0.06) 29px
-      );
+    background: url('assets/bg-paper.png) repeat;
     min-height: 100vh;
     color: #3a3530;
     padding: 0;
