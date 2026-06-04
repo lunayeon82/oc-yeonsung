@@ -709,6 +709,10 @@ function randTagFrom(data) {
 function pickRolesFromTag() {
   const g = randTagFrom(ROLES);
   if (!g) return { roleL: '?', roleR: '?' };
+  if (g.label === '세계관') {
+    const role = randFrom(g.items);
+    return { roleL: role, roleR: role };
+  }
   const roleL = randFrom(g.items);
   const others = g.items.filter(r => r !== roleL);
   const roleR = others.length > 0 ? randFrom(others) : randFrom(g.items);
