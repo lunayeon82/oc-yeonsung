@@ -2,9 +2,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎲 랜덤 뽑기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&amp;family=Bricolage+Grotesque:wght@400;600;800&amp;display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.ttf') format('truetype');
+  }
   :root {
     --bg: #0b0b10;
     --surface: #14141e;
@@ -25,21 +27,14 @@
     --mint-dim: rgba(52,211,153,0.12);
     --rose: #fb7185;
     --radius: 12px;
-    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
-    --font-body: 'Noto Sans KR', sans-serif;
+    --font-title: 'ko-font', sans-serif;
+    --font-body: 'ko-font', sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: var(--font-body); background: var(--bg);
+    font-family: var(--font-body); background: url('assets/bg-paper.png') repeat;
     color: var(--text); min-height: 100dvh;
     -webkit-tap-highlight-color: transparent;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse 50% 40% at 15% 10%, rgba(244,114,182,0.04), transparent),
-      radial-gradient(ellipse 40% 50% at 85% 90%, rgba(96,165,250,0.04), transparent);
-    pointer-events: none;
   }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
