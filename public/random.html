@@ -1,0 +1,846 @@
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎲 랜덤 뽑기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&amp;family=Bricolage+Grotesque:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b10;
+    --surface: #14141e;
+    --surface2: #1c1c2a;
+    --border: #2a2a40;
+    --text: #e4e2f0;
+    --text-dim: #7b7994;
+    --text-muted: #55536a;
+    --pink: #f472b6;
+    --pink-dim: rgba(244,114,182,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --violet: #a78bfa;
+    --violet-dim: rgba(167,139,250,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --mint: #34d399;
+    --mint-dim: rgba(52,211,153,0.12);
+    --rose: #fb7185;
+    --radius: 12px;
+    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
+    --font-body: 'Noto Sans KR', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body); background: var(--bg);
+    color: var(--text); min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 15% 10%, rgba(244,114,182,0.04), transparent),
+      radial-gradient(ellipse 40% 50% at 85% 90%, rgba(96,165,250,0.04), transparent);
+    pointer-events: none;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 720px; margin: 0 auto;
+    padding: 20px 16px 120px;
+  }
+
+  header { text-align: center; padding: 24px 0 28px; }
+  header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.75rem; letter-spacing: -0.03em; }
+  header h1 span { background: linear-gradient(135deg, var(--pink), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .back-link { display: inline-block; margin-top: 8px; color: var(--text-dim); font-size: 0.75rem; text-decoration: none; }
+  .back-link:hover { color: var(--text); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 60px 0; color: var(--text-dim); font-size: 0.9rem; }
+  .loading .spinner { display: inline-block; width: 24px; height: 24px; border: 2.5px solid var(--border); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Pick Zone */
+  .pick-zone {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px 16px 24px;
+    text-align: center; margin-bottom: 24px;
+    position: relative; overflow: hidden;
+  }
+  .pick-zone::after {
+    content: ''; position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%); width: 60%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--pink), var(--violet), transparent);
+  }
+  .pick-counts {
+    display: flex; justify-content: center; gap: 16px;
+    font-size: 0.75rem; color: var(--text-dim); margin-bottom: 16px;
+  }
+  .pick-counts b.l { color: var(--pink); }
+  .pick-counts b.r { color: var(--blue); }
+
+  .result-coupling {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; min-height: 48px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .result-side { font-family: var(--font-title); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; min-width: 50px; }
+  .result-side .ph { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
+  .result-left { background: linear-gradient(135deg, var(--pink), #e879a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .result-right { background: linear-gradient(135deg, var(--blue), #7cb3f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .result-x { font-family: var(--font-title); font-weight: 800; font-size: 1.1rem; color: var(--violet); opacity: 0.7; }
+  .result-pop { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes pop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  .result-subs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .result-sub-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .result-sub-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 44px; text-align: right; }
+  .result-sub-value { font-family: var(--font-title); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; min-width: 60px; }
+  .result-sub-value .ph { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+  .result-role-text { color: var(--amber); }
+  .result-au-text { color: var(--mint); }
+
+  .reroll-btn {
+    padding: 3px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-dim); font-size: 0.65rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.18s;
+  }
+  .reroll-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .reroll-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .copy-result-btn {
+    display: block; margin: 0 auto 14px; padding: 5px 14px;
+    border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-dim);
+    font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); transition: all 0.18s;
+  }
+  .copy-result-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .pick-btn {
+    padding: 12px 44px; border: none; border-radius: 100px;
+    background: linear-gradient(135deg, var(--pink), #c084fc);
+    color: #fff; font-family: var(--font-title);
+    font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(244,114,182,0.25);
+  }
+  .pick-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(244,114,182,0.35); }
+  .pick-btn:active { transform: scale(0.97); }
+  .pick-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .history { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 14px; min-height: 24px; }
+  .history-chip { padding: 3px 10px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); font-size: 0.67rem; color: var(--text-dim); animation: chipIn 0.25s ease; cursor: pointer; transition: all 0.18s; }
+  .history-chip:hover { border-color: var(--text-dim); color: var(--text); }
+  .history-chip:active { transform: scale(0.95); }
+  .history-clear { background: none; border: 1px dashed var(--border); color: var(--text-muted); font-size: 0.65rem; padding: 3px 8px; border-radius: 100px; cursor: pointer; font-family: var(--font-body); }
+  .history-clear:hover { border-color: var(--rose); color: var(--rose); }
+  @keyframes chipIn { 0%{transform:scale(0)} 100%{transform:scale(1)} }
+
+  .list-btns { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; }
+  .list-btn {
+    padding: 6px 14px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.18s;
+  }
+  .list-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .side-tabs {
+    display: flex; gap: 0; background: var(--surface);
+    border-radius: var(--radius); border: 1px solid var(--border);
+    overflow: hidden; margin-bottom: 12px;
+  }
+  .side-tab {
+    flex: 1; padding: 12px 0; text-align: center;
+    font-family: var(--font-title); font-weight: 700;
+    font-size: 0.9rem; cursor: pointer;
+    border: none; background: none; color: var(--text-dim);
+    transition: all 0.2s; position: relative;
+  }
+  .side-tab::after {
+    content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+    height: 2px; border-radius: 2px; background: transparent; transition: background 0.2s;
+  }
+  .side-tab:first-child { border-right: 1px solid var(--border); }
+  .side-tab.active-l { color: var(--pink); }
+  .side-tab.active-l::after { background: var(--pink); }
+  .side-tab.active-r { color: var(--blue); }
+  .side-tab.active-r::after { background: var(--blue); }
+  .side-tab .tc { font-size: 0.65rem; font-weight: 400; margin-left: 4px; opacity: 0.6; }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; padding: 0 4px; }
+  .fbtn {
+    padding: 5px 12px; border-radius: 100px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-size: 0.73rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.18s;
+  }
+  .fbtn:hover { border-color: var(--text-dim); color: var(--text); }
+  .fbtn.active { border-color: var(--violet); background: var(--violet-dim); color: var(--violet); }
+
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  .category { margin-bottom: 24px; }
+  .cat-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .cat-title { font-family: var(--font-title); font-weight: 800; font-size: 1.15rem; }
+  .cat-toggle { margin-left: auto; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--text-dim); font-size: 0.65rem; cursor: pointer; font-family: var(--font-body); white-space: nowrap; }
+  .cat-toggle:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .owner-block { margin-bottom: 16px; }
+  .owner-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-left: 4px; }
+  .owner-name { font-family: var(--font-title); font-weight: 700; font-size: 0.95rem; }
+
+  .sub-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .sub-label { flex-shrink: 0; width: 60px; padding: 5px 0; font-size: 0.73rem; font-weight: 600; color: var(--text-dim); text-align: right; line-height: 1.9; }
+  .sub-items { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+
+  .ch {
+    padding: 6px 14px; border-radius: 100px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body);
+    transition: all 0.18s; user-select: none;
+  }
+  .ch:hover { border-color: var(--text-dim); color: var(--text); }
+  .ch.on { border-color: var(--sc); background: var(--sb); color: var(--sc); box-shadow: 0 0 12px var(--sg); }
+  .ch.on::before { content: '✓ '; font-size: 0.65rem; }
+  .ch.filtered-out { opacity: 0.25; pointer-events: none; }
+  .ch .tag { display: inline-block; font-size: 0.55rem; margin-left: 3px; vertical-align: middle; opacity: 0.6; }
+
+  .side-left .ch.on  { --sc:var(--pink); --sb:var(--pink-dim); --sg:rgba(244,114,182,0.15); }
+  .side-right .ch.on { --sc:var(--blue); --sb:var(--blue-dim); --sg:rgba(96,165,250,0.15); }
+
+  .empty { color: var(--text-muted); font-size: 0.8rem; padding: 8px 0 0 4px; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 400px;
+    max-height: 70vh; overflow-y: auto;
+    transform: translateY(20px); transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.1rem; }
+  .modal-list { list-style: none; }
+  .modal-list li {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+  }
+  .modal-list li:last-child { border-bottom: none; }
+  .modal-list .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
+  .modal-close {
+    margin-top: 16px; width: 100%; padding: 10px;
+    border: none; border-radius: 10px; background: var(--surface2);
+    color: var(--text); font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); font-size: 0.85rem;
+  }
+  .modal-close:hover { background: var(--border); }
+
+  /* Sync indicator */
+  .sync-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 100px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 0.6rem; color: var(--text-muted);
+    position: fixed; top: 12px; right: 12px; z-index: 50;
+    transition: all 0.3s;
+  }
+  .sync-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--mint); transition: background 0.3s;
+  }
+  .sync-badge.offline .dot { background: var(--rose); }
+
+  .ptcl { position: fixed; width: 5px; height: 5px; border-radius: 50%; pointer-events: none; z-index: 200; animation: fly 0.7s ease-out forwards; }
+  @keyframes fly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 18px; border-radius: 100px;
+    font-size: 0.8rem; z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 480px) {
+    .app { padding: 12px 12px 100px; }
+    header h1 { font-size: 1.45rem; }
+    .sub-label { width: 48px; font-size: 0.68rem; }
+    .ch { padding: 5px 11px; font-size: 0.75rem; }
+    .ch .tag { font-size: 0.5rem; }
+    .result-side { font-size: 1.15rem; }
+    .result-x { font-size: 0.95rem; }
+    .result-sub-value { font-size: 0.9rem; }
+    .pick-btn { padding: 11px 36px; font-size: 0.95rem; }
+    .side-tab { font-size: 0.82rem; }
+    .fbtn { padding: 4px 10px; font-size: 0.68rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sync indicator -->
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<div class="app">
+  <header>
+    <h1>🎲 <span>랜덤 뽑기</span></h1>
+    <a class="back-link" href="./">← 메인 화면으로 돌아가기</a>
+    <br>
+    <a class="back-link" href="random-admin.html">* 관리자 모드로 가기 *</a>
+  </header>
+
+  <!-- Loading state -->
+  <div class="loading" id="loadingState" style="display: none;">
+    <div class="spinner"></div>
+    <div>데이터 불러오는 중...</div>
+  </div>
+
+  <!-- Main content (hidden until loaded) -->
+  <div id="mainContent" style="display: block;">
+    <div class="pick-zone">
+      <div class="pick-counts" id="counts">❤️ <b class="l">0</b>개 · 💙 <b class="r">0</b>개</div>
+      <div class="result-coupling" id="resultCoupling">
+        <span class="result-side"><span class="ph">???</span></span>
+        <span class="result-x">✕</span>
+        <span class="result-side"><span class="ph">???</span></span>
+      </div>
+      <div class="result-subs" id="resultSubs">
+        <div class="result-sub-row">
+          <span class="result-sub-label">역할</span>
+          <span class="result-sub-value" id="resRole"><span class="ph">—</span></span>
+          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
+        </div>
+        <div class="result-sub-row">
+          <span class="result-sub-label">세계관</span>
+          <span class="result-sub-value" id="resAU"><span class="ph">—</span></span>
+          <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
+        </div>
+      </div>
+      <button class="copy-result-btn" id="copyResultBtn" onclick="copyCurrentResult()" style="display:none">📋 결과 복사</button>
+      <button class="pick-btn" id="pickBtn" onclick="doPick()" disabled="">뽑기!</button>
+      <div class="history" id="hist"></div>
+    </div>
+
+    <div class="list-btns">
+      <button class="list-btn" onclick="showListModal('role')">⚔️ 역할 전체 확인</button>
+      <button class="list-btn" onclick="showListModal('au')">🌀 세계관 전체 확인</button>
+    </div>
+
+    <div class="side-tabs">
+      <button class="side-tab active-l" id="tabL" onclick="switchSide('left')">❤️ 첫 번째 캐릭터<span class="tc" id="tabLCnt">(0)</span></button>
+      <button class="side-tab" id="tabR" onclick="switchSide('right')">💙 두 번째 캐릭터<span class="tc" id="tabRCnt">(0)</span></button>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="fbtn" data-filter="male" onclick="toggleFilter(this)">♂ 남성만</button>
+      <button class="fbtn" data-filter="female" onclick="toggleFilter(this)">♀ 여성만</button>
+      <button class="fbtn" data-filter="solo" onclick="toggleFilter(this)">솔로만</button>
+      <button class="fbtn" data-filter="couple" onclick="toggleFilter(this)">커플만</button>
+    </div>
+
+    <div id="sectionLeft" class="section side-left visible"><div class="category">
+    <div class="cat-header">
+      <div class="cat-icon" style="background:var(--pink-dim)">❤️</div>
+      <div class="cat-title">첫 번째 캐릭터</div>
+      <button class="cat-toggle" onclick="togAll('left')">전체 선택</button>
+    </div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">김굥</span>
+        <button class="cat-toggle" onclick="togOwner('left','김굥')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">02즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="도아랑" onclick="tog(this,'left','도아랑')">도아랑<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="백설호" onclick="tog(this,'left','백설호')">백설호<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="진서화" onclick="tog(this,'left','진서화')">진서화<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="진서희" onclick="tog(this,'left','진서희')">진서희<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">가명즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="윤신우" onclick="tog(this,'left','윤신우')">윤신우<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="윤민우" onclick="tog(this,'left','윤민우')">윤민우<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="연이안" onclick="tog(this,'left','연이안')">연이안<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="도하랑" onclick="tog(this,'left','도하랑')">도하랑<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="신지호" onclick="tog(this,'left','신지호')">신지호<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">게임즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="선유예" onclick="tog(this,'left','선유예')">선유예<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="한류은" onclick="tog(this,'left','한류은')">한류은<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="유설" onclick="tog(this,'left','유설')">유설<span class="tag">♀</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">하지</span>
+        <button class="cat-toggle" onclick="togOwner('left','하지')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">응애</div><div class="sub-items"><button class="ch" data-side="left" data-name="채재이" onclick="tog(this,'left','채재이')">채재이<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="서무연" onclick="tog(this,'left','서무연')">서무연<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="함시연" onclick="tog(this,'left','함시연')">함시연<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="혜이린" onclick="tog(this,'left','혜이린')">혜이린<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">으른</div><div class="sub-items"><button class="ch" data-side="left" data-name="공준" onclick="tog(this,'left','공준')">공준<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="백단" onclick="tog(this,'left','백단')">백단<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="유세림" onclick="tog(this,'left','유세림')">유세림<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="함시한" onclick="tog(this,'left','함시한')">함시한<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="함시현" onclick="tog(this,'left','함시현')">함시현<span class="tag">♂</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">예밍</span>
+        <button class="cat-toggle" onclick="togOwner('left','예밍')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">후배즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이예민" onclick="tog(this,'left','이예민')">이예민<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="이지성" onclick="tog(this,'left','이지성')">이지성<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="신우진" onclick="tog(this,'left','신우진')">신우진<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="박찬형" onclick="tog(this,'left','박찬형')">박찬형<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="서하진" onclick="tog(this,'left','서하진')">서하진<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="이예명" onclick="tog(this,'left','이예명')">이예명<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="계세휘" onclick="tog(this,'left','계세휘')">계세휘<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="백세온" onclick="tog(this,'left','백세온')">백세온<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="권진혁" onclick="tog(this,'left','권진혁')">권진혁<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="박하린" onclick="tog(this,'left','박하린')">박하린<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">선배즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이예경" onclick="tog(this,'left','이예경')">이예경<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="이예준" onclick="tog(this,'left','이예준')">이예준<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="서이다" onclick="tog(this,'left','서이다')">서이다<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="이지한" onclick="tog(this,'left','이지한')">이지한<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="박찬하" onclick="tog(this,'left','박찬하')">박찬하<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="박하빈" onclick="tog(this,'left','박하빈')">박하빈<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">신왕즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이루다" onclick="tog(this,'left','이루다')">이루다<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="이루리" onclick="tog(this,'left','이루리')">이루리<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="이이준" onclick="tog(this,'left','이이준')">이이준<span class="tag">♂</span></button></div></div></div></div></div>
+    <div id="sectionRight" class="section side-right"><div class="category">
+    <div class="cat-header">
+      <div class="cat-icon" style="background:var(--blue-dim)">💙</div>
+      <div class="cat-title">두 번째 캐릭터</div>
+      <button class="cat-toggle" onclick="togAll('right')">전체 선택</button>
+    </div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">김굥</span>
+        <button class="cat-toggle" onclick="togOwner('right','김굥')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">02즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="도아랑" onclick="tog(this,'right','도아랑')">도아랑<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="백설호" onclick="tog(this,'right','백설호')">백설호<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="진서화" onclick="tog(this,'right','진서화')">진서화<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="진서희" onclick="tog(this,'right','진서희')">진서희<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">가명즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="윤신우" onclick="tog(this,'right','윤신우')">윤신우<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="윤민우" onclick="tog(this,'right','윤민우')">윤민우<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="연이안" onclick="tog(this,'right','연이안')">연이안<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="도하랑" onclick="tog(this,'right','도하랑')">도하랑<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="신지호" onclick="tog(this,'right','신지호')">신지호<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">게임즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="선유예" onclick="tog(this,'right','선유예')">선유예<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="한류은" onclick="tog(this,'right','한류은')">한류은<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="유설" onclick="tog(this,'right','유설')">유설<span class="tag">♀</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">하지</span>
+        <button class="cat-toggle" onclick="togOwner('right','하지')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">응애</div><div class="sub-items"><button class="ch" data-side="right" data-name="채재이" onclick="tog(this,'right','채재이')">채재이<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="서무연" onclick="tog(this,'right','서무연')">서무연<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="함시연" onclick="tog(this,'right','함시연')">함시연<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="혜이린" onclick="tog(this,'right','혜이린')">혜이린<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">으른</div><div class="sub-items"><button class="ch" data-side="right" data-name="공준" onclick="tog(this,'right','공준')">공준<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="백단" onclick="tog(this,'right','백단')">백단<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="유세림" onclick="tog(this,'right','유세림')">유세림<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="함시한" onclick="tog(this,'right','함시한')">함시한<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="함시현" onclick="tog(this,'right','함시현')">함시현<span class="tag">♂</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">예밍</span>
+        <button class="cat-toggle" onclick="togOwner('right','예밍')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">후배즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이예민" onclick="tog(this,'right','이예민')">이예민<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="이지성" onclick="tog(this,'right','이지성')">이지성<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="신우진" onclick="tog(this,'right','신우진')">신우진<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="박찬형" onclick="tog(this,'right','박찬형')">박찬형<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="서하진" onclick="tog(this,'right','서하진')">서하진<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="이예명" onclick="tog(this,'right','이예명')">이예명<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="계세휘" onclick="tog(this,'right','계세휘')">계세휘<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="백세온" onclick="tog(this,'right','백세온')">백세온<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="권진혁" onclick="tog(this,'right','권진혁')">권진혁<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="박하린" onclick="tog(this,'right','박하린')">박하린<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">선배즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이예경" onclick="tog(this,'right','이예경')">이예경<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="이예준" onclick="tog(this,'right','이예준')">이예준<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="서이다" onclick="tog(this,'right','서이다')">서이다<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="이지한" onclick="tog(this,'right','이지한')">이지한<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="박찬하" onclick="tog(this,'right','박찬하')">박찬하<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="박하빈" onclick="tog(this,'right','박하빈')">박하빈<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">신왕즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이루다" onclick="tog(this,'right','이루다')">이루다<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="이루리" onclick="tog(this,'right','이루리')">이루리<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="이이준" onclick="tog(this,'right','이이준')">이이준<span class="tag">♂</span></button></div></div></div></div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="listModal" onclick="if(event.target===this)closeListModal()">
+  <div class="modal">
+    <h3 id="listModalTitle">목록</h3>
+    <ul class="modal-list" id="listModalBody"></ul>
+    <button class="modal-close" onclick="closeListModal()">닫기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK (compat for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+// ============ FIREBASE INIT ============
+const firebaseConfig = {
+  apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+  authDomain: "oc-yeonsung.firebaseapp.com",
+  projectId: "oc-yeonsung",
+  storageBucket: "oc-yeonsung.firebasestorage.app",
+  messagingSenderId: "145543545184",
+  appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ============ DEFAULT DATA (seed) ============
+const DEFAULT_CHARS = {
+  groups: [
+    { owner: '김굥', subs: [
+      { label: '02즈', items: [{n:'도아랑',g:1,c:0},{n:'백설호',g:0,c:0},{n:'진서화',g:1,c:0},{n:'진서희',g:0,c:0}] },
+      { label: '가명즈', items: [{n:'윤신우',g:0,c:0},{n:'윤민우',g:1,c:0},{n:'연이안',g:0,c:0},{n:'도하랑',g:1,c:0},{n:'신지호',g:0,c:0}] },
+      { label: '게임즈', items: [] }
+    ]},
+    { owner: '하지', subs: [
+      { label: '응애', items: [{n:'채재이',g:0,c:1},{n:'서무연',g:1,c:1},{n:'함시연',g:1,c:0},{n:'혜이린',g:0,c:0}] },
+      { label: '으른', items: [{n:'공준',g:0,c:0},{n:'백단',g:0,c:1},{n:'유세림',g:1,c:1},{n:'함시한',g:0,c:0},{n:'함시현',g:0,c:0}] },
+    ]},
+    { owner: '예밍', subs: [
+      { label: '후배즈', items: [] },
+      { label: '선배즈', items: [] },
+      { label: '신왕즈', items: [] }
+    ]}
+  ]
+};
+
+const DEFAULT_ROLES = [
+  '기사','마법사','도적','궁수','성직자'
+];
+
+const DEFAULT_AUS = [
+  '판타지 왕국','현대 카페','학원물','우주 SF'
+];
+
+// ============ APP STATE ============
+let CHARS = { groups: [] };
+let ROLES = [];
+let AUS = [];
+let charMap = {};
+
+const selL = new Set(), selR = new Set();
+let activeSide = 'left';
+let spinning = false;
+const hist = [];
+const filtersL = new Set(), filtersR = new Set();
+let currentRole = null, currentAU = null, currentLeft = null, currentRight = null;
+let hasResult = false;
+
+// ============ FIREBASE LOAD / SEED ============
+async function initData() {
+  try {
+    // Try to load from Firestore
+    const charDoc = await db.collection('data').doc('characters').get();
+    const roleDoc = await db.collection('data').doc('roles').get();
+    const auDoc = await db.collection('data').doc('aus').get();
+
+    if (!charDoc.exists) {
+      // First time: seed Firestore with defaults
+      await db.collection('data').doc('characters').set(DEFAULT_CHARS);
+      await db.collection('data').doc('roles').set({ list: DEFAULT_ROLES });
+      await db.collection('data').doc('aus').set({ list: DEFAULT_AUS });
+      CHARS = DEFAULT_CHARS;
+      ROLES = DEFAULT_ROLES;
+      AUS = DEFAULT_AUS;
+    } else {
+      CHARS = charDoc.data();
+      ROLES = roleDoc.exists ? roleDoc.data().list : DEFAULT_ROLES;
+      AUS = auDoc.exists ? auDoc.data().list : DEFAULT_AUS;
+    }
+
+    buildCharMap();
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    setSyncStatus(true);
+    renderBoth();
+
+    // Listen for real-time updates
+    startListeners();
+  } catch (err) {
+    console.error('Firebase load error:', err);
+    // Fallback to defaults
+    CHARS = DEFAULT_CHARS;
+    ROLES = DEFAULT_ROLES;
+    AUS = DEFAULT_AUS;
+    buildCharMap();
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    setSyncStatus(false);
+    renderBoth();
+    toast('오프라인 모드 (로컬 데이터)');
+  }
+}
+
+function buildCharMap() {
+  charMap = {};
+  CHARS.groups.forEach(g => g.subs.forEach(s => s.items.forEach(it => {
+    charMap[it.n] = { gender: it.g, couple: it.c };
+  })));
+}
+
+function startListeners() {
+  db.collection('data').doc('characters').onSnapshot(doc => {
+    if (doc.exists) {
+      CHARS = doc.data();
+      buildCharMap();
+      renderBoth();
+      setSyncStatus(true);
+    }
+  }, err => { console.warn('Char listener error:', err); setSyncStatus(false); });
+
+  db.collection('data').doc('roles').onSnapshot(doc => {
+    if (doc.exists) ROLES = doc.data().list;
+    setSyncStatus(true);
+  }, err => setSyncStatus(false));
+
+  db.collection('data').doc('aus').onSnapshot(doc => {
+    if (doc.exists) AUS = doc.data().list;
+    setSyncStatus(true);
+  }, err => setSyncStatus(false));
+}
+
+function setSyncStatus(online) {
+  const badge = document.getElementById('syncBadge');
+  if (online) {
+    badge.classList.remove('offline');
+    badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+  } else {
+    badge.classList.add('offline');
+    badge.innerHTML = '<span class="dot"></span>오프라인';
+  }
+}
+
+// ============ RENDER ============
+function switchSide(side) {
+  activeSide = side;
+  document.getElementById('tabL').className = 'side-tab' + (side==='left'?' active-l':'');
+  document.getElementById('tabR').className = 'side-tab' + (side==='right'?' active-r':'');
+  document.getElementById('sectionLeft').className = 'section side-left' + (side==='left'?' visible':'');
+  document.getElementById('sectionRight').className = 'section side-right' + (side==='right'?' visible':'');
+  syncFilterBtns();
+}
+
+function syncFilterBtns() {
+  const f = activeSide==='left' ? filtersL : filtersR;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', f.has(b.dataset.filter)));
+}
+
+function toggleFilter(btn) {
+  const f = activeSide==='left' ? filtersL : filtersR;
+  const k = btn.dataset.filter;
+  if(k==='male'&&f.has('female')) f.delete('female');
+  if(k==='female'&&f.has('male')) f.delete('male');
+  if(k==='solo'&&f.has('couple')) f.delete('couple');
+  if(k==='couple'&&f.has('solo')) f.delete('solo');
+  if(f.has(k)) f.delete(k); else f.add(k);
+  syncFilterBtns(); applyFilters();
+}
+
+function passesFilter(name, fs) {
+  const c = charMap[name]; if(!c) return true;
+  if(fs.has('male')&&c.gender!==0) return false;
+  if(fs.has('female')&&c.gender!==1) return false;
+  if(fs.has('solo')&&c.couple!==0) return false;
+  if(fs.has('couple')&&c.couple!==1) return false;
+  return true;
+}
+
+function applyFilters() {
+  const side = activeSide;
+  const f = side==='left'?filtersL:filtersR;
+  const cid = side==='left'?'sectionLeft':'sectionRight';
+  document.getElementById(cid).querySelectorAll('.ch').forEach(b => {
+    b.classList.toggle('filtered-out', !passesFilter(b.dataset.name, f));
+  });
+}
+
+function renderBoth() {
+  renderSection('sectionLeft', selL, 'left');
+  renderSection('sectionRight', selR, 'right');
+  updCounts();
+}
+
+function renderSection(cid, selSet, side) {
+  const c = document.getElementById(cid);
+  const gHtml = CHARS.groups.map(g => {
+    const sHtml = g.subs.filter(s=>s.items.length).map(s => {
+      const btns = s.items.map(it => {
+        const name = it.n, gender = it.g, couple = it.c;
+        const on = selSet.has(name)?' on':'';
+        const gT = gender===0?'♂':'♀';
+        const cT = couple===1?'💕':'';
+        return `<button class="ch${on}" data-side="${side}" data-name="${esc(name)}" onclick="tog(this,'${side}','${esc(name)}')">${esc(name)}<span class="tag">${gT}${cT}</span></button>`;
+      }).join('');
+      return `<div class="sub-row"><div class="sub-label">${esc(s.label)}</div><div class="sub-items">${btns}</div></div>`;
+    }).join('');
+
+    if(!sHtml) return `<div class="owner-block"><div class="owner-header"><span class="owner-name">${esc(g.owner)}</span></div><div class="empty">항목 없음</div></div>`;
+
+    return `<div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">${esc(g.owner)}</span>
+        <button class="cat-toggle" onclick="togOwner('${side}','${esc(g.owner)}')">전체 선택</button>
+      </div>${sHtml}</div>`;
+  }).join('');
+
+  c.innerHTML = `<div class="category">
+    <div class="cat-header">
+      <div class="cat-icon" style="background:${side==='left'?'var(--pink-dim)':'var(--blue-dim)'}">${side==='left'?'❤️':'💙'}</div>
+      <div class="cat-title">${side==='left'?'첫 번째':'두 번째'} 캐릭터</div>
+      <button class="cat-toggle" onclick="togAll('${side}')">전체 선택</button>
+    </div>${gHtml}</div>`;
+
+  const f = side==='left'?filtersL:filtersR;
+  if(f.size) c.querySelectorAll('.ch').forEach(b => b.classList.toggle('filtered-out', !passesFilter(b.dataset.name, f)));
+}
+
+function tog(btn, side, name) {
+  const s = side==='left'?selL:selR;
+  if(s.has(name)){s.delete(name);btn.classList.remove('on');}
+  else{s.add(name);btn.classList.add('on');}
+  updCounts();
+}
+
+function getVisibleNames(side, owner) {
+  const f = side==='left'?filtersL:filtersR;
+  let groups = CHARS.groups;
+  if(owner) groups = groups.filter(g=>g.owner===owner);
+  return groups.flatMap(g=>g.subs.flatMap(s=>s.items)).map(it=>it.n).filter(n=>passesFilter(n,f));
+}
+
+function togOwner(side, owner) {
+  const s = side==='left'?selL:selR;
+  const names = getVisibleNames(side, owner);
+  if(!names.length) return;
+  const allOn = names.every(n=>s.has(n));
+  names.forEach(n=>{if(allOn)s.delete(n);else s.add(n);});
+  updBtns(side); updCounts();
+  toast(allOn?`${owner} 전체 해제`:`${owner} 전체 선택`);
+}
+
+function togAll(side) {
+  const s = side==='left'?selL:selR;
+  const names = getVisibleNames(side);
+  if(!names.length) return;
+  const allOn = names.every(n=>s.has(n));
+  names.forEach(n=>{if(allOn)s.delete(n);else s.add(n);});
+  updBtns(side); updCounts();
+  toast(allOn?'전체 해제':'전체 선택');
+}
+
+function updBtns(side) {
+  const s = side==='left'?selL:selR;
+  const cid = side==='left'?'sectionLeft':'sectionRight';
+  document.getElementById(cid).querySelectorAll('.ch').forEach(b => b.classList.toggle('on', s.has(b.dataset.name)));
+}
+
+function updCounts() {
+  const nl=selL.size, nr=selR.size;
+  document.getElementById('counts').innerHTML = `❤️ <b class="l">${nl}</b>개 · 💙 <b class="r">${nr}</b>개`;
+  document.getElementById('tabLCnt').textContent = `(${nl})`;
+  document.getElementById('tabRCnt').textContent = `(${nr})`;
+  document.getElementById('pickBtn').disabled = nl===0||nr===0;
+}
+
+// ============ PICK ============
+function randFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+function doPick() {
+  if(!selL.size||!selR.size||spinning) return;
+  spinning = true;
+  const btn = document.getElementById('pickBtn');
+  const couplingEl = document.getElementById('resultCoupling');
+  const roleEl = document.getElementById('resRole');
+  const auEl = document.getElementById('resAU');
+  btn.disabled = true;
+  document.getElementById('rerollRole').disabled = true;
+  document.getElementById('rerollAU').disabled = true;
+
+  const poolL=[...selL], poolR=[...selR];
+  let count = 0;
+  const total = 16 + Math.floor(Math.random()*10);
+
+  const iv = setInterval(()=>{
+    couplingEl.innerHTML = `
+      <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolL))}</span>
+      <span class="result-x">✕</span>
+      <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolR))}</span>`;
+    roleEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    count++;
+    if(count>=total) {
+      clearInterval(iv);
+      const fL = randFrom(poolL), fR = randFrom(poolR);
+      currentLeft = fL; currentRight = fR;
+      currentRole = randFrom(ROLES);
+      currentAU = randFrom(AUS);
+      hasResult = true;
+      document.getElementById('copyResultBtn').style.display = 'block';
+
+      couplingEl.innerHTML = `
+        <span class="result-side result-left result-pop">${esc(fL)}</span>
+        <span class="result-x result-pop" style="animation-delay:0.05s">✕</span>
+        <span class="result-side result-right result-pop" style="animation-delay:0.1s">${esc(fR)}</span>`;
+      roleEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
+      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.05s">${esc(currentAU)}</span>`;
+
+      const entry = `${fL} ✕ ${fR} / ${currentRole} / ${currentAU}`;
+      hist.unshift(entry);
+      if(hist.length>20) hist.pop();
+      renderHist();
+      particles(btn);
+      spinning = false;
+      btn.disabled = false;
+      document.getElementById('rerollRole').disabled = false;
+      document.getElementById('rerollAU').disabled = false;
+    }
+  }, 55+count*4);
+}
+
+function rerollRole() {
+  if(!hasResult||spinning) return;
+  const el = document.getElementById('resRole');
+  let c = 0;
+  const total = 8 + Math.floor(Math.random()*5);
+  const iv = setInterval(()=>{
+    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    c++;
+    if(c>=total) {
+      clearInterval(iv);
+      currentRole = randFrom(ROLES);
+      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
+    }
+  }, 50);
+}
+
+function rerollAU() {
+  if(!hasResult||spinning) return;
+  const el = document.getElementById('resAU');
+  let c = 0;
+  const total = 8 + Math.floor(Math.random()*5);
+  const iv = setInterval(()=>{
+    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    c++;
+    if(c>=total) {
+      clearInterval(iv);
+      currentAU = randFrom(AUS);
+      el.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
+    }
+  }, 50);
+}
+
+function renderHist() {
+  const el = document.getElementById('hist');
+  el.innerHTML = hist.map(x=>`<span class="history-chip" onclick="copyText('${esc(x).replace(/'/g,"\\&#39;")}')">${esc(x)}</span>`).join('');
+  if(hist.length) el.innerHTML += `<button class="history-clear" onclick="hist.length=0;renderHist()">초기화</button>`;
+}
+
+function copyText(text) {
+  const clean = text.replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  navigator.clipboard.writeText(clean).then(()=>{
+    toast('복사되었습니다');
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = clean; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('복사되었습니다');
+  });
+}
+
+function copyCurrentResult() {
+  if(!hasResult) return;
+  const text = `${currentLeft} ✕ ${currentRight} / ${currentRole} / ${currentAU}`;
+  navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    toast('복사되었습니다');
+  });
+}
+
+// ============ LIST MODAL ============
+function showListModal(type) {
+  const overlay = document.getElementById('listModal');
+  const title = document.getElementById('listModalTitle');
+  const body = document.getElementById('listModalBody');
+  const list = (type==='role' ? ROLES : AUS).slice().sort((a,b)=>a.localeCompare(b,'ko'));
+  title.textContent = type==='role' ? '⚔️ 역할 목록' : '🌀 세계관 목록';
+  body.innerHTML = list.map((item,i)=>`<li><span class="idx">${i+1}</span>${esc(item)}</li>`).join('');
+  overlay.classList.add('open');
+}
+
+function closeListModal() {
+  document.getElementById('listModal').classList.remove('open');
+}
+
+// ============ EFFECTS ============
+function particles(target) {
+  const r = target.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const cols = ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb7185'];
+  for(let i=0;i<12;i++){
+    const el=document.createElement('div');el.className='ptcl';
+    const a=(Math.PI*2*i)/12, d=35+Math.random()*55;
+    el.style.left=cx+'px';el.style.top=cy+'px';
+    el.style.setProperty('--dx',Math.cos(a)*d+'px');
+    el.style.setProperty('--dy',Math.sin(a)*d+'px');
+    el.style.background=cols[i%cols.length];
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),700);
+  }
+}
+
+function toast(m) {
+  const t=document.getElementById('toast');
+  t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+function esc(s) { const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+// ============ START ============
+initData();
+</script>
+
+
+</body></html>
