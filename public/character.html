@@ -333,6 +333,7 @@ const firebaseConfig = {
       const coupleText = COUPLE_MAP[data.c] || '?';
       const initial = (data.n || '?')[0];
       const info = data.info || {};
+      const note = data.note || '';
 
       const hasInfo = INFO_LABELS.some(item => info[item.key]);
 
@@ -388,9 +389,18 @@ const firebaseConfig = {
         `;
       }
 
+      if (note) {
+        html += `
+          <div class="info-row">
+            <div class="info-label">메모</div>
+            <div class="info-value" style="color:#6b6055;font-style:italic">${note}</div>
+          </div>
+        `;
+      }
+
       html += `</div></div>`;
 
-      if (hasInfo) {
+      if (hasInfo || note) {
         html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
       }
 
@@ -434,6 +444,8 @@ const firebaseConfig = {
         text += `${item.label}: ${val}\n`;
       }
     }
+
+    if (d.note) text += `메모: ${d.note}\n`;
 
     navigator.clipboard.writeText(text.trim()).then(() => {
       showToast('복사되었습니다');

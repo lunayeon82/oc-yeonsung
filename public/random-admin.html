@@ -217,6 +217,18 @@
   }
   .modal-save:hover { filter: brightness(1.15); }
 
+  /* Owner code badge */
+  .owner-code {
+    display: inline-block; padding: 1px 8px; border-radius: 6px;
+    background: var(--violet-dim); color: var(--violet);
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
+    font-family: monospace;
+  }
+  .char-id-badge {
+    font-family: monospace; font-size: 0.6rem; color: var(--text-muted);
+    letter-spacing: 0.5px; flex-shrink: 0;
+  }
+
   /* Owner / Group headers */
   .owner-section { margin-bottom: 20px; }
   .owner-header {
@@ -306,6 +318,7 @@
         </div>
         <div class="add-row">
           <input class="add-input" id="newOwnerName" placeholder="오너 이름 (예: 예밍)">
+          <input class="add-input" id="newOwnerCode" placeholder="코드 (예: y)" style="max-width:80px">
           <button class="add-btn" onclick="addOwner()">오너 추가</button>
         </div>
       </div>
@@ -341,6 +354,17 @@
           </select>
           <button class="add-btn" onclick="addChar()">추가</button>
         </div>
+      </div>
+
+      <!-- Migration Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">ID 일괄 부여</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;line-height:1.6">
+          오너 코드가 설정된 캐릭터에 자동으로 ID를 부여합니다.<br>기존 ID가 없는 캐릭터에만 적용되며, <code style="font-size:0.75rem;color:var(--violet)">characters/{id}</code> 컬렉션에도 생성됩니다.
+        </div>
+        <button class="add-btn" onclick="migrateIds()" style="background:var(--amber);color:#1a1a00;font-weight:700">⚡ ID 일괄 부여 실행</button>
       </div>
 
       <!-- Character List -->
@@ -1027,6 +1051,10 @@
         <option value="1">커플</option>
       </select>
     </div>
+    <div class="modal-field">
+      <label class="modal-label">메모</label>
+      <textarea class="modal-input" id="editNote" rows="3" style="resize:vertical" placeholder="짧은 메모 (선택 사항)"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeEditModal()">취소</button>
       <button class="modal-save" onclick="saveEdit()">저장</button>
@@ -1181,6 +1209,7 @@ function renderChars() {
             <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},1)" ${ii===s.items.length-1?'disabled':''} title="아래로">▼</button>
           </div>
           <span class="item-name">${esc(it.n)}</span>
+          ${it.id ? `<span class="char-id-badge">${esc(it.id)}</span>` : ''}
           <div class="item-tags">
             <span class="item-tag ${it.g===0?'tag-male':'tag-female'}">${it.g===0?'♂':'♀'}</span>
             <span class="item-tag ${it.c===1?'tag-couple':'tag-solo'}">${it.c===1?'💕 커플':'솔로'}</span>
@@ -1193,6 +1222,7 @@ function renderChars() {
         <div class="group-section">
           <div class="group-header">
             <span class="group-label">${esc(s.label)}</span>
+            ${s.code ? `<span style="font-size:0.6rem;color:var(--text-muted);font-family:monospace">${esc(s.code)}</span>` : ''}
             <span class="group-count">${s.items.length}명</span>
             <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(${gi},${si})">그룹 삭제</button>
           </div>
@@ -1204,6 +1234,7 @@ function renderChars() {
       <div class="card owner-section">
         <div class="owner-header">
           <span class="owner-title">${esc(g.owner)}</span>
+          ${g.code ? `<span class="owner-code">${esc(g.code)}</span>` : ''}
           <button class="danger-btn" style="margin-left:auto" onclick="delOwner(${gi})">오너 삭제</button>
         </div>
         ${groupsHtml}
@@ -1232,12 +1263,17 @@ function updateCharGroupSelect() {
 }
 
 function addOwner() {
-  const input = document.getElementById('newOwnerName');
-  const name = input.value.trim();
-  if (!name) return;
+  const nameInput = document.getElementById('newOwnerName');
+  const codeInput = document.getElementById('newOwnerCode');
+  const name = nameInput.value.trim();
+  const code = codeInput.value.trim().toLowerCase();
+  if (!name || !code) { toast('이름과 코드를 모두 입력해주세요'); return; }
+  if (!/^[a-z0-9]+$/.test(code)) { toast('코드는 영소문자/숫자만 사용 가능해요'); return; }
   if (CHARS.groups.some(g => g.owner === name)) { toast('이미 존재하는 오너'); return; }
-  CHARS.groups.push({ owner: name, subs: [] });
-  input.value = '';
+  if (CHARS.groups.some(g => g.code === code)) { toast('이미 사용 중인 코드'); return; }
+  CHARS.groups.push({ owner: name, code, subs: [] });
+  nameInput.value = '';
+  codeInput.value = '';
   saveChars();
 }
 
@@ -1249,7 +1285,14 @@ function addGroup() {
   const group = CHARS.groups.find(g => g.owner === ownerName);
   if (!group) return;
   if (group.subs.some(s => s.label === label)) { toast('이미 존재하는 그룹'); return; }
-  group.subs.push({ label, items: [] });
+
+  const maxCode = group.subs.reduce((max, s) => {
+    const n = parseInt(s.code || '0');
+    return n > max ? n : max;
+  }, 0);
+  const code = String(maxCode + 1).padStart(2, '0');
+
+  group.subs.push({ label, code, items: [] });
   input.value = '';
   saveChars();
 }
@@ -1262,14 +1305,36 @@ function addChar() {
   const couple = parseInt(document.getElementById('newCharCouple').value);
   if (!name) return;
 
-  const group = CHARS.groups.find(g => g.owner === ownerName);
-  if (!group) return;
-  const sub = group.subs.find(s => s.label === groupLabel);
+  const ownerGroup = CHARS.groups.find(g => g.owner === ownerName);
+  if (!ownerGroup) return;
+  const sub = ownerGroup.subs.find(s => s.label === groupLabel);
   if (!sub) return;
   if (sub.items.some(it => it.n === name)) { toast('이미 존재하는 캐릭터'); return; }
 
-  sub.items.push({ n: name, g: gender, c: couple });
+  const maxCode = sub.items.reduce((max, it) => {
+    const n = parseInt(it.charCode || '0');
+    return n > max ? n : max;
+  }, 0);
+  const charCode = String(maxCode + 1).padStart(2, '0');
+
+  const ownerCode = ownerGroup.code || '';
+  const groupCode = sub.code || '';
+  const id = ownerCode && groupCode ? `${ownerCode}${groupCode}${charCode}` : '';
+
+  const charObj = { n: name, g: gender, c: couple, charCode };
+  if (id) charObj.id = id;
+
+  sub.items.push(charObj);
   document.getElementById('newCharName').value = '';
+
+  if (id) {
+    db.collection('characters').doc(id).set({
+      n: name, g: gender, c: couple,
+      owner: ownerName, group: groupLabel,
+      info: {}
+    }).catch(e => console.error('characters doc 생성 실패:', e));
+  }
+
   saveChars();
 }
 
@@ -1289,6 +1354,7 @@ function openEditModal(gi, si, ii) {
   document.getElementById('editName').value = it.n;
   document.getElementById('editGender').value = it.g;
   document.getElementById('editCouple').value = it.c;
+  document.getElementById('editNote').value = it.nt || '';
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -1303,6 +1369,16 @@ function saveEdit() {
   const it = CHARS.groups[gi].subs[si].items[ii];
   it.g = parseInt(document.getElementById('editGender').value);
   it.c = parseInt(document.getElementById('editCouple').value);
+  const note = document.getElementById('editNote').value.trim();
+  if (note) { it.nt = note; } else { delete it.nt; }
+
+  if (it.id) {
+    db.collection('characters').doc(it.id).set(
+      { g: it.g, c: it.c, note: note || '' },
+      { merge: true }
+    ).catch(e => console.error('characters doc 업데이트 실패:', e));
+  }
+
   closeEditModal();
   saveChars();
 }
@@ -1326,6 +1402,57 @@ function delOwner(gi) {
   if (!confirm(`"${name}" 오너와 하위 모든 데이터를 삭제할까요?`)) return;
   CHARS.groups.splice(gi, 1);
   saveChars();
+}
+
+async function migrateIds() {
+  const missingCode = CHARS.groups.filter(g => !g.code);
+  if (missingCode.length > 0) {
+    toast(`오너 코드가 없는 오너: ${missingCode.map(g => g.owner).join(', ')} — 먼저 오너 코드를 설정해주세요`);
+    return;
+  }
+
+  const targets = [];
+  for (const ownerGroup of CHARS.groups) {
+    for (let si = 0; si < ownerGroup.subs.length; si++) {
+      const sub = ownerGroup.subs[si];
+      if (!sub.code) {
+        sub.code = String(si + 1).padStart(2, '0');
+      }
+      for (let ii = 0; ii < sub.items.length; ii++) {
+        const it = sub.items[ii];
+        if (!it.charCode) {
+          it.charCode = String(ii + 1).padStart(2, '0');
+        }
+        if (!it.id) {
+          it.id = `${ownerGroup.code}${sub.code}${it.charCode}`;
+          targets.push({ id: it.id, n: it.n, g: it.g, c: it.c, owner: ownerGroup.owner, group: sub.label });
+        }
+      }
+    }
+  }
+
+  if (targets.length === 0) {
+    toast('모든 캐릭터에 이미 ID가 있어요');
+    return;
+  }
+
+  if (!confirm(`${targets.length}명의 캐릭터에 ID를 부여하고 Firestore에 문서를 생성합니다. 계속할까요?`)) return;
+
+  showSaving();
+  try {
+    await Promise.all(targets.map(t =>
+      db.collection('characters').doc(t.id).set(
+        { n: t.n, g: t.g, c: t.c, owner: t.owner, group: t.group, info: {} },
+        { merge: true }
+      )
+    ));
+    await db.collection('data').doc('characters').set(CHARS);
+    toast(`ID 부여 완료 (${targets.length}명)`);
+  } catch (e) {
+    console.error(e);
+    toast('오류 발생! 콘솔을 확인해주세요');
+  }
+  hideSaving();
 }
 
 // ============ ROLES ============
