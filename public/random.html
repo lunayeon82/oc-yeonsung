@@ -97,6 +97,7 @@
   .result-sub-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 44px; text-align: right; }
   .result-sub-value { font-family: var(--font-title); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; min-width: 60px; }
   .result-sub-value .ph { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+  .result-role-sep { color: var(--violet); opacity: 0.7; font-weight: 800; font-size: 0.9rem; margin: 0 4px; }
   .result-role-text { color: var(--amber); }
   .result-au-text { color: var(--mint); }
 
@@ -324,14 +325,11 @@
       </div>
       <div class="result-subs" id="resultSubs">
         <div class="result-sub-row">
-          <span class="result-sub-label">❤️ 역할</span>
+          <span class="result-sub-label">역할</span>
           <span class="result-sub-value" id="resRoleL"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollRoleL" onclick="rerollRoleL()" disabled="">🔄 리롤</button>
-        </div>
-        <div class="result-sub-row">
-          <span class="result-sub-label">💙 역할</span>
+          <span class="result-role-sep">✕</span>
           <span class="result-sub-value" id="resRoleR"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollRoleR" onclick="rerollRoleR()" disabled="">🔄 리롤</button>
+          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
         </div>
         <div class="result-sub-row">
           <span class="result-sub-label">세계관</span>
@@ -698,8 +696,7 @@ function doPick() {
   const roleREl = document.getElementById('resRoleR');
   const auEl = document.getElementById('resAU');
   btn.disabled = true;
-  document.getElementById('rerollRoleL').disabled = true;
-  document.getElementById('rerollRoleR').disabled = true;
+  document.getElementById('rerollRole').disabled = true;
   document.getElementById('rerollAU').disabled = true;
 
   const poolL=[...selL], poolR=[...selR];
@@ -740,41 +737,28 @@ function doPick() {
       particles(btn);
       spinning = false;
       btn.disabled = false;
-      document.getElementById('rerollRoleL').disabled = false;
-      document.getElementById('rerollRoleR').disabled = false;
+      document.getElementById('rerollRole').disabled = false;
       document.getElementById('rerollAU').disabled = false;
     }
   }, 55+count*4);
 }
 
-function rerollRoleL() {
+function rerollRole() {
   if(!hasResult||spinning) return;
-  const el = document.getElementById('resRoleL');
+  const elL = document.getElementById('resRoleL');
+  const elR = document.getElementById('resRoleR');
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    elL.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    elR.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
     c++;
     if(c>=total) {
       clearInterval(iv);
       currentRoleL = randFrom(ROLES);
-      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
-    }
-  }, 50);
-}
-
-function rerollRoleR() {
-  if(!hasResult||spinning) return;
-  const el = document.getElementById('resRoleR');
-  let c = 0;
-  const total = 8 + Math.floor(Math.random()*5);
-  const iv = setInterval(()=>{
-    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
-    c++;
-    if(c>=total) {
-      clearInterval(iv);
       currentRoleR = randFrom(ROLES);
-      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
+      elL.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
+      elR.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
     }
   }, 50);
 }
