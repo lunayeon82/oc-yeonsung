@@ -1486,7 +1486,8 @@ function renderRoles() {
       <div class="owner-header">
         <span class="owner-title">${esc(g.label)}</span>
         <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
-        <button class="danger-btn" style="margin-left:auto;font-size:0.65rem;padding:3px 10px" onclick="delRoleTag(${gi})">태그 삭제</button>
+        <button class="item-edit" style="margin-left:auto" onclick="openRenameModal('roleTag',${gi})">태그 변경</button>
+        <button class="danger-btn" style="font-size:0.65rem;padding:3px 10px" onclick="delRoleTag(${gi})">태그 삭제</button>
       </div>
       <div class="item-list">${itemsHtml}</div>
     </div>`;
@@ -1531,10 +1532,16 @@ function addRole() {
 let renameTarget = null;
 
 function openRenameModal(type, gi, ii) {
-  const item = type === 'role' ? ROLES.groups[gi].items[ii] : AUS.groups[gi].items[ii];
+  let current = '';
+  if (type === 'role') current = ROLES.groups[gi].items[ii];
+  else if (type === 'au') current = AUS.groups[gi].items[ii];
+  else if (type === 'roleTag') current = ROLES.groups[gi].label;
+  else if (type === 'auTag') current = AUS.groups[gi].label;
+
   renameTarget = { type, gi, ii };
-  document.getElementById('renameModalTitle').textContent = type === 'role' ? '캐릭터 설정 수정' : '관계성 수정';
-  document.getElementById('renameInput').value = item;
+  const titles = { role: '캐릭터 설정 수정', au: '관계성 수정', roleTag: '태그 이름 수정', auTag: '태그 이름 수정' };
+  document.getElementById('renameModalTitle').textContent = titles[type];
+  document.getElementById('renameInput').value = current;
   document.getElementById('renameModal').classList.add('open');
   setTimeout(() => document.getElementById('renameInput').select(), 50);
 }
@@ -1551,12 +1558,16 @@ function saveRename() {
   if (!val) return;
   if (type === 'role') {
     ROLES.groups[gi].items[ii] = val;
-    closeRenameModal();
-    saveRoles();
-  } else {
+    closeRenameModal(); saveRoles();
+  } else if (type === 'au') {
     AUS.groups[gi].items[ii] = val;
-    closeRenameModal();
-    saveAUs();
+    closeRenameModal(); saveAUs();
+  } else if (type === 'roleTag') {
+    ROLES.groups[gi].label = val;
+    closeRenameModal(); saveRoles();
+  } else if (type === 'auTag') {
+    AUS.groups[gi].label = val;
+    closeRenameModal(); saveAUs();
   }
 }
 
@@ -1587,7 +1598,8 @@ function renderAUs() {
       <div class="owner-header">
         <span class="owner-title">${esc(g.label)}</span>
         <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
-        <button class="danger-btn" style="margin-left:auto;font-size:0.65rem;padding:3px 10px" onclick="delAUTag(${gi})">태그 삭제</button>
+        <button class="item-edit" style="margin-left:auto" onclick="openRenameModal('auTag',${gi})">태그 변경</button>
+        <button class="danger-btn" style="font-size:0.65rem;padding:3px 10px" onclick="delAUTag(${gi})">태그 삭제</button>
       </div>
       <div class="item-list">${itemsHtml}</div>
     </div>`;
