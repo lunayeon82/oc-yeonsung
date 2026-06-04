@@ -293,7 +293,7 @@
   <div id="mainContent" style="display: block;">
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('chars')">🎭 캐릭터</button>
-      <button class="admin-tab" onclick="switchTab('roles')">⚔️ 역할</button>
+      <button class="admin-tab" onclick="switchTab('roles')">⚔️ 캐릭터 설정</button>
       <button class="admin-tab" onclick="switchTab('aus')">🌀 세계관</button>
     </div>
 
@@ -952,239 +952,55 @@
       </div></div>
     </div>
 
-    <!-- ===== Roles Panel ===== -->
+    <!-- ===== 캐릭터 설정 Panel ===== -->
     <div class="tab-panel" id="panel-roles">
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">역할 추가</span>
-        </div>
+        <div class="card-header"><span class="card-title">태그 추가</span></div>
         <div class="add-row">
-          <input class="add-input" id="newRoleName" placeholder="역할 이름 (예: 기사)" onkeydown="if(event.key==='Enter')addRole()">
+          <input class="add-input" id="newRoleTagName" placeholder="태그 이름 (예: 판타지)">
+          <button class="add-btn" onclick="addRoleTag()">태그 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">캐릭터 설정 추가</span></div>
+        <div class="add-row">
+          <select class="select-input" id="roleTagSelect"></select>
+          <input class="add-input" id="newRoleName" placeholder="이름 (예: 기사)" onkeydown="if(event.key==='Enter')addRole()">
           <button class="add-btn" onclick="addRole()">추가</button>
         </div>
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">역할 목록</span>
-          <span class="card-count" id="roleCount">18개</span>
+          <span class="card-title">캐릭터 설정 목록</span>
+          <span class="card-count" id="roleCount">0개</span>
         </div>
-        <div class="item-list" id="roleList"><div class="simple-item">
-      <span class="idx">1</span>
-      <span class="name">경찰</span>
-      <button class="item-del" onclick="delRole(8)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">2</span>
-      <span class="name">교사</span>
-      <button class="item-del" onclick="delRole(5)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">3</span>
-      <span class="name">도깨비</span>
-      <button class="item-del" onclick="delRole(17)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">4</span>
-      <span class="name">마법사</span>
-      <button class="item-del" onclick="delRole(0)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">5</span>
-      <span class="name">마피아</span>
-      <button class="item-del" onclick="delRole(4)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">6</span>
-      <span class="name">모범생</span>
-      <button class="item-del" onclick="delRole(15)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">7</span>
-      <span class="name">뱀파이어</span>
-      <button class="item-del" onclick="delRole(10)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">8</span>
-      <span class="name">변호사</span>
-      <button class="item-del" onclick="delRole(16)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">9</span>
-      <span class="name">성직자</span>
-      <button class="item-del" onclick="delRole(1)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">10</span>
-      <span class="name">수의사</span>
-      <button class="item-del" onclick="delRole(7)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">11</span>
-      <span class="name">신</span>
-      <button class="item-del" onclick="delRole(12)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">12</span>
-      <span class="name">신수</span>
-      <button class="item-del" onclick="delRole(13)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">13</span>
-      <span class="name">악마</span>
-      <button class="item-del" onclick="delRole(11)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">14</span>
-      <span class="name">양아치</span>
-      <button class="item-del" onclick="delRole(14)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">15</span>
-      <span class="name">연금술사</span>
-      <button class="item-del" onclick="delRole(2)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">16</span>
-      <span class="name">의사</span>
-      <button class="item-del" onclick="delRole(9)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">17</span>
-      <span class="name">플로리스트</span>
-      <button class="item-del" onclick="delRole(3)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">18</span>
-      <span class="name">학생</span>
-      <button class="item-del" onclick="delRole(6)" title="삭제">✕</button>
-    </div></div>
+        <div id="roleList"></div>
       </div>
     </div>
 
     <!-- ===== AUs Panel ===== -->
     <div class="tab-panel" id="panel-aus">
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">세계관 추가</span>
-        </div>
+        <div class="card-header"><span class="card-title">태그 추가</span></div>
         <div class="add-row">
-          <input class="add-input" id="newAUName" placeholder="세계관 이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
+          <input class="add-input" id="newAUTagName" placeholder="태그 이름 (예: 로맨스)">
+          <button class="add-btn" onclick="addAUTag()">태그 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">세계관 추가</span></div>
+        <div class="add-row">
+          <select class="select-input" id="auTagSelect"></select>
+          <input class="add-input" id="newAUName" placeholder="이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
           <button class="add-btn" onclick="addAU()">추가</button>
         </div>
       </div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">세계관 목록</span>
-          <span class="card-count" id="auCount">31개</span>
+          <span class="card-count" id="auCount">0개</span>
         </div>
-        <div class="item-list" id="auList"><div class="simple-item">
-      <span class="idx">1</span>
-      <span class="name">계약관계</span>
-      <button class="item-del" onclick="delAU(27)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">2</span>
-      <span class="name">기억상실</span>
-      <button class="item-del" onclick="delAU(15)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">3</span>
-      <span class="name">네임버스</span>
-      <button class="item-del" onclick="delAU(10)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">4</span>
-      <span class="name">동거</span>
-      <button class="item-del" onclick="delAU(21)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">5</span>
-      <span class="name">로맨스 판타지</span>
-      <button class="item-del" onclick="delAU(13)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">6</span>
-      <span class="name">로맨스코미디</span>
-      <button class="item-del" onclick="delAU(22)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">7</span>
-      <span class="name">리맨물</span>
-      <button class="item-del" onclick="delAU(20)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">8</span>
-      <span class="name">사이버펑크</span>
-      <button class="item-del" onclick="delAU(3)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">9</span>
-      <span class="name">섹파</span>
-      <button class="item-del" onclick="delAU(30)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">10</span>
-      <span class="name">센티넬버스</span>
-      <button class="item-del" onclick="delAU(8)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">11</span>
-      <span class="name">소꿉친구</span>
-      <button class="item-del" onclick="delAU(5)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">12</span>
-      <span class="name">애증</span>
-      <button class="item-del" onclick="delAU(18)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">13</span>
-      <span class="name">역키잡</span>
-      <button class="item-del" onclick="delAU(29)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">14</span>
-      <span class="name">오메가버스</span>
-      <button class="item-del" onclick="delAU(7)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">15</span>
-      <span class="name">이세계 전이</span>
-      <button class="item-del" onclick="delAU(4)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">16</span>
-      <span class="name">일상물</span>
-      <button class="item-del" onclick="delAU(24)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">17</span>
-      <span class="name">조선시대</span>
-      <button class="item-del" onclick="delAU(2)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">18</span>
-      <span class="name">좀비 아포칼립스</span>
-      <button class="item-del" onclick="delAU(1)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">19</span>
-      <span class="name">짝사랑</span>
-      <button class="item-del" onclick="delAU(16)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">20</span>
-      <span class="name">첫사랑</span>
-      <button class="item-del" onclick="delAU(17)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">21</span>
-      <span class="name">초능력</span>
-      <button class="item-del" onclick="delAU(14)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">22</span>
-      <span class="name">친구이상 연인미만</span>
-      <button class="item-del" onclick="delAU(6)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">23</span>
-      <span class="name">캠퍼스물</span>
-      <button class="item-del" onclick="delAU(19)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">24</span>
-      <span class="name">케이크버스</span>
-      <button class="item-del" onclick="delAU(9)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">25</span>
-      <span class="name">키잡</span>
-      <button class="item-del" onclick="delAU(28)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">26</span>
-      <span class="name">트라우마</span>
-      <button class="item-del" onclick="delAU(26)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">27</span>
-      <span class="name">판타지</span>
-      <button class="item-del" onclick="delAU(23)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">28</span>
-      <span class="name">하나하키</span>
-      <button class="item-del" onclick="delAU(11)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">29</span>
-      <span class="name">학원물</span>
-      <button class="item-del" onclick="delAU(0)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">30</span>
-      <span class="name">혐관</span>
-      <button class="item-del" onclick="delAU(12)" title="삭제">✕</button>
-    </div><div class="simple-item">
-      <span class="idx">31</span>
-      <span class="name">힐링물</span>
-      <button class="item-del" onclick="delAU(25)" title="삭제">✕</button>
-    </div></div>
+        <div id="auList"></div>
       </div>
     </div>
   </div>
@@ -1240,8 +1056,8 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 let CHARS = { groups: [] };
-let ROLES = [];
-let AUS = [];
+let ROLES = { groups: [] };
+let AUS = { groups: [] };
 
 // ============ INIT ============
 async function init() {
@@ -1252,8 +1068,14 @@ async function init() {
       db.collection('data').doc('aus').get()
     ]);
     if (charDoc.exists) CHARS = charDoc.data();
-    if (roleDoc.exists) ROLES = roleDoc.data().list || [];
-    if (auDoc.exists) AUS = auDoc.data().list || [];
+    if (roleDoc.exists) {
+      const rd = roleDoc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+    }
+    if (auDoc.exists) {
+      const ad = auDoc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+    }
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
@@ -1272,10 +1094,18 @@ function startListeners() {
     if (doc.exists) { CHARS = doc.data(); renderAll(); setSyncStatus(true); }
   });
   db.collection('data').doc('roles').onSnapshot(doc => {
-    if (doc.exists) { ROLES = doc.data().list || []; renderRoles(); setSyncStatus(true); }
+    if (doc.exists) {
+      const rd = doc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+      renderRoles(); setSyncStatus(true);
+    }
   });
   db.collection('data').doc('aus').onSnapshot(doc => {
-    if (doc.exists) { AUS = doc.data().list || []; renderAUs(); setSyncStatus(true); }
+    if (doc.exists) {
+      const ad = doc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+      renderAUs(); setSyncStatus(true);
+    }
   });
 }
 
@@ -1298,8 +1128,8 @@ async function saveChars() {
 async function saveRoles() {
   showSaving();
   try {
-    await db.collection('data').doc('roles').set({ list: ROLES });
-    toast('역할 저장 완료');
+    await db.collection('data').doc('roles').set(ROLES);
+    toast('캐릭터 설정 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
 }
@@ -1307,7 +1137,7 @@ async function saveRoles() {
 async function saveAUs() {
   showSaving();
   try {
-    await db.collection('data').doc('aus').set({ list: AUS });
+    await db.collection('data').doc('aus').set(AUS);
     toast('세계관 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
@@ -1500,61 +1330,137 @@ function delOwner(gi) {
 
 // ============ ROLES ============
 function renderRoles() {
-  document.getElementById('roleCount').textContent = ROLES.length + '개';
-  const sorted = ROLES.slice().sort((a,b) => a.localeCompare(b,'ko'));
-  document.getElementById('roleList').innerHTML = sorted.map((r, i) => {
-    const origIdx = ROLES.indexOf(r);
-    return `<div class="simple-item">
-      <span class="idx">${i+1}</span>
-      <span class="name">${esc(r)}</span>
-      <button class="item-del" onclick="delRole(${origIdx})" title="삭제">✕</button>
+  const total = ROLES.groups.reduce((s, g) => s + g.items.length, 0);
+  document.getElementById('roleCount').textContent = total + '개';
+  const container = document.getElementById('roleList');
+  if (!ROLES.groups.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px 0">태그가 없습니다. 태그를 먼저 추가해주세요.</div>';
+    updateRoleTagSelect(); return;
+  }
+  container.innerHTML = ROLES.groups.map((g, gi) => {
+    const itemsHtml = g.items.map((item, ii) => `
+      <div class="simple-item">
+        <span class="idx">${ii+1}</span>
+        <span class="name">${esc(item)}</span>
+        <button class="item-del" onclick="delRole(${gi},${ii})" title="삭제">✕</button>
+      </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
+    return `<div class="owner-section">
+      <div class="owner-header">
+        <span class="owner-title">${esc(g.label)}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
+        <button class="danger-btn" style="margin-left:auto;font-size:0.65rem;padding:3px 10px" onclick="delRoleTag(${gi})">태그 삭제</button>
+      </div>
+      <div class="item-list">${itemsHtml}</div>
     </div>`;
   }).join('');
+  updateRoleTagSelect();
 }
 
-function addRole() {
-  const input = document.getElementById('newRoleName');
-  const name = input.value.trim();
-  if (!name) return;
-  if (ROLES.includes(name)) { toast('이미 존재하는 역할'); return; }
-  ROLES.push(name);
+function updateRoleTagSelect() {
+  document.getElementById('roleTagSelect').innerHTML = ROLES.groups.map(g => `<option value="${esc(g.label)}">${esc(g.label)}</option>`).join('');
+}
+
+function addRoleTag() {
+  const input = document.getElementById('newRoleTagName');
+  const label = input.value.trim();
+  if (!label) return;
+  if (ROLES.groups.some(g => g.label === label)) { toast('이미 존재하는 태그'); return; }
+  ROLES.groups.push({ label, items: [] });
   input.value = '';
   saveRoles();
 }
 
-function delRole(idx) {
-  if (!confirm(`"${ROLES[idx]}" 삭제할까요?`)) return;
-  ROLES.splice(idx, 1);
+function delRoleTag(gi) {
+  if (!confirm(`"${ROLES.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+  ROLES.groups.splice(gi, 1);
+  saveRoles();
+}
+
+function addRole() {
+  const tagLabel = document.getElementById('roleTagSelect').value;
+  const input = document.getElementById('newRoleName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (!tagLabel) { toast('태그를 먼저 추가해주세요'); return; }
+  const g = ROLES.groups.find(g => g.label === tagLabel);
+  if (!g) return;
+  if (g.items.includes(name)) { toast('이미 존재하는 항목'); return; }
+  g.items.push(name);
+  input.value = '';
+  saveRoles();
+}
+
+function delRole(gi, ii) {
+  if (!confirm(`"${ROLES.groups[gi].items[ii]}" 삭제할까요?`)) return;
+  ROLES.groups[gi].items.splice(ii, 1);
   saveRoles();
 }
 
 // ============ AUs ============
 function renderAUs() {
-  document.getElementById('auCount').textContent = AUS.length + '개';
-  const sorted = AUS.slice().sort((a,b) => a.localeCompare(b,'ko'));
-  document.getElementById('auList').innerHTML = sorted.map((a, i) => {
-    const origIdx = AUS.indexOf(a);
-    return `<div class="simple-item">
-      <span class="idx">${i+1}</span>
-      <span class="name">${esc(a)}</span>
-      <button class="item-del" onclick="delAU(${origIdx})" title="삭제">✕</button>
+  const total = AUS.groups.reduce((s, g) => s + g.items.length, 0);
+  document.getElementById('auCount').textContent = total + '개';
+  const container = document.getElementById('auList');
+  if (!AUS.groups.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px 0">태그가 없습니다. 태그를 먼저 추가해주세요.</div>';
+    updateAUTagSelect(); return;
+  }
+  container.innerHTML = AUS.groups.map((g, gi) => {
+    const itemsHtml = g.items.map((item, ii) => `
+      <div class="simple-item">
+        <span class="idx">${ii+1}</span>
+        <span class="name">${esc(item)}</span>
+        <button class="item-del" onclick="delAU(${gi},${ii})" title="삭제">✕</button>
+      </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
+    return `<div class="owner-section">
+      <div class="owner-header">
+        <span class="owner-title">${esc(g.label)}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
+        <button class="danger-btn" style="margin-left:auto;font-size:0.65rem;padding:3px 10px" onclick="delAUTag(${gi})">태그 삭제</button>
+      </div>
+      <div class="item-list">${itemsHtml}</div>
     </div>`;
   }).join('');
+  updateAUTagSelect();
 }
 
-function addAU() {
-  const input = document.getElementById('newAUName');
-  const name = input.value.trim();
-  if (!name) return;
-  if (AUS.includes(name)) { toast('이미 존재하는 세계관'); return; }
-  AUS.push(name);
+function updateAUTagSelect() {
+  document.getElementById('auTagSelect').innerHTML = AUS.groups.map(g => `<option value="${esc(g.label)}">${esc(g.label)}</option>`).join('');
+}
+
+function addAUTag() {
+  const input = document.getElementById('newAUTagName');
+  const label = input.value.trim();
+  if (!label) return;
+  if (AUS.groups.some(g => g.label === label)) { toast('이미 존재하는 태그'); return; }
+  AUS.groups.push({ label, items: [] });
   input.value = '';
   saveAUs();
 }
 
-function delAU(idx) {
-  if (!confirm(`"${AUS[idx]}" 삭제할까요?`)) return;
-  AUS.splice(idx, 1);
+function delAUTag(gi) {
+  if (!confirm(`"${AUS.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+  AUS.groups.splice(gi, 1);
+  saveAUs();
+}
+
+function addAU() {
+  const tagLabel = document.getElementById('auTagSelect').value;
+  const input = document.getElementById('newAUName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (!tagLabel) { toast('태그를 먼저 추가해주세요'); return; }
+  const g = AUS.groups.find(g => g.label === tagLabel);
+  if (!g) return;
+  if (g.items.includes(name)) { toast('이미 존재하는 항목'); return; }
+  g.items.push(name);
+  input.value = '';
+  saveAUs();
+}
+
+function delAU(gi, ii) {
+  if (!confirm(`"${AUS.groups[gi].items[ii]}" 삭제할까요?`)) return;
+  AUS.groups[gi].items.splice(ii, 1);
   saveAUs();
 }
 

@@ -325,7 +325,7 @@
       </div>
       <div class="result-subs" id="resultSubs">
         <div class="result-sub-row">
-          <span class="result-sub-label">역할</span>
+          <span class="result-sub-label">캐릭터 설정</span>
           <span class="result-sub-value" id="resRoleL"><span class="ph">—</span></span>
           <span class="result-role-sep">✕</span>
           <span class="result-sub-value" id="resRoleR"><span class="ph">—</span></span>
@@ -343,7 +343,7 @@
     </div>
 
     <div class="list-btns">
-      <button class="list-btn" onclick="showListModal('role')">⚔️ 역할 전체 확인</button>
+      <button class="list-btn" onclick="showListModal('role')">⚔️ 캐릭터 설정 전체 확인</button>
       <button class="list-btn" onclick="showListModal('au')">🌀 세계관 전체 확인</button>
     </div>
 
@@ -446,18 +446,18 @@ const DEFAULT_CHARS = {
   ]
 };
 
-const DEFAULT_ROLES = [
-  '기사','마법사','도적','궁수','성직자'
-];
+const DEFAULT_ROLES = {
+  groups: [{ label: '기본', items: ['기사','마법사','도적','궁수','성직자'] }]
+};
 
-const DEFAULT_AUS = [
-  '판타지 왕국','현대 카페','학원물','우주 SF'
-];
+const DEFAULT_AUS = {
+  groups: [{ label: '기본', items: ['판타지 왕국','현대 카페','학원물','우주 SF'] }]
+};
 
 // ============ APP STATE ============
 let CHARS = { groups: [] };
-let ROLES = [];
-let AUS = [];
+let ROLES = { groups: [] };
+let AUS = { groups: [] };
 let charMap = {};
 
 const selL = new Set(), selR = new Set();
@@ -479,15 +479,21 @@ async function initData() {
     if (!charDoc.exists) {
       // First time: seed Firestore with defaults
       await db.collection('data').doc('characters').set(DEFAULT_CHARS);
-      await db.collection('data').doc('roles').set({ list: DEFAULT_ROLES });
-      await db.collection('data').doc('aus').set({ list: DEFAULT_AUS });
+      await db.collection('data').doc('roles').set(DEFAULT_ROLES);
+      await db.collection('data').doc('aus').set(DEFAULT_AUS);
       CHARS = DEFAULT_CHARS;
       ROLES = DEFAULT_ROLES;
       AUS = DEFAULT_AUS;
     } else {
       CHARS = charDoc.data();
-      ROLES = roleDoc.exists ? roleDoc.data().list : DEFAULT_ROLES;
-      AUS = auDoc.exists ? auDoc.data().list : DEFAULT_AUS;
+      if (roleDoc.exists) {
+        const rd = roleDoc.data();
+        ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+      } else { ROLES = DEFAULT_ROLES; }
+      if (auDoc.exists) {
+        const ad = auDoc.data();
+        AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+      } else { AUS = DEFAULT_AUS; }
     }
 
     buildCharMap();
@@ -531,12 +537,18 @@ function startListeners() {
   }, err => { console.warn('Char listener error:', err); setSyncStatus(false); });
 
   db.collection('data').doc('roles').onSnapshot(doc => {
-    if (doc.exists) ROLES = doc.data().list;
+    if (doc.exists) {
+      const rd = doc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+    }
     setSyncStatus(true);
   }, err => setSyncStatus(false));
 
   db.collection('data').doc('aus').onSnapshot(doc => {
-    if (doc.exists) AUS = doc.data().list;
+    if (doc.exists) {
+      const ad = doc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+    }
     setSyncStatus(true);
   }, err => setSyncStatus(false));
 }
@@ -686,6 +698,8 @@ function updCounts() {
 
 // ============ PICK ============
 function randFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function allRoles() { return ROLES.groups.flatMap(g => g.items); }
+function allAUs() { return AUS.groups.flatMap(g => g.items); }
 
 function doPick() {
   if(!selL.size||!selR.size||spinning) return;
@@ -708,17 +722,17 @@ function doPick() {
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolL))}</span>
       <span class="result-x">✕</span>
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolR))}</span>`;
-    roleLEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
-    roleREl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
-    auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    roleLEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    roleREl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     count++;
     if(count>=total) {
       clearInterval(iv);
       const fL = randFrom(poolL), fR = randFrom(poolR);
       currentLeft = fL; currentRight = fR;
-      currentRoleL = randFrom(ROLES);
-      currentRoleR = randFrom(ROLES);
-      currentAU = randFrom(AUS);
+      currentRoleL = randFrom(allRoles());
+      currentRoleR = randFrom(allRoles());
+      currentAU = randFrom(allAUs());
       hasResult = true;
       document.getElementById('copyResultBtn').style.display = 'block';
 
@@ -750,13 +764,13 @@ function rerollRole() {
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    elL.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
-    elR.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    elL.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    elR.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentRoleL = randFrom(ROLES);
-      currentRoleR = randFrom(ROLES);
+      currentRoleL = randFrom(allRoles());
+      currentRoleR = randFrom(allRoles());
       elL.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
       elR.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
     }
@@ -769,11 +783,11 @@ function rerollAU() {
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentAU = randFrom(AUS);
+      currentAU = randFrom(allAUs());
       el.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
     }
   }, 50);
@@ -814,8 +828,8 @@ function showListModal(type) {
   const overlay = document.getElementById('listModal');
   const title = document.getElementById('listModalTitle');
   const body = document.getElementById('listModalBody');
-  const list = (type==='role' ? ROLES : AUS).slice().sort((a,b)=>a.localeCompare(b,'ko'));
-  title.textContent = type==='role' ? '⚔️ 역할 목록' : '🌀 세계관 목록';
+  const list = (type==='role' ? allRoles() : allAUs()).slice().sort((a,b)=>a.localeCompare(b,'ko'));
+  title.textContent = type==='role' ? '⚔️ 캐릭터 설정 목록' : '🌀 세계관 목록';
   body.innerHTML = list.map((item,i)=>`<li><span class="idx">${i+1}</span>${esc(item)}</li>`).join('');
   overlay.classList.add('open');
 }
