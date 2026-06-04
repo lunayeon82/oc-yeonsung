@@ -259,6 +259,74 @@
     40% { opacity: 1; }
   }
 
+  /* Edit mode */
+  .edit-btn {
+    background: none;
+    border: 1.5px solid rgba(180,160,130,0.35);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a7e6b;
+    padding: 4px 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+    white-space: nowrap;
+  }
+  .edit-btn:hover { background: rgba(180,160,130,0.12); border-color: rgba(107,96,85,0.4); color: #6b6055; }
+  .info-textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1.5px solid rgba(180,160,130,0.28);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.65);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13.5px;
+    color: #3a3530;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    min-height: 56px;
+  }
+  .info-textarea:focus { border-color: rgba(107,96,85,0.55); background: rgba(255,255,255,0.9); }
+  .info-textarea.speech-input { font-family: 'Nanum Myeongjo', serif; }
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    padding: 0 16px;
+  }
+  .save-btn {
+    flex: 1;
+    padding: 14px;
+    background: #6b6055;
+    color: #f4efe6;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .save-btn:hover { background: #564d43; }
+  .save-btn:disabled { opacity: 0.6; cursor: default; }
+  .cancel-btn {
+    padding: 14px 20px;
+    background: transparent;
+    color: #8a7e6b;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cancel-btn:hover { background: rgba(180,160,130,0.1); }
+
   /* List view */
   .filter-bar {
     display: flex;
@@ -391,7 +459,7 @@
 <div class="top-bar">
   <button class="back-btn" id="backBtn" onclick="history.back()">←</button>
   <span class="top-title" id="topTitle">캐릭터</span>
-  <div class="top-spacer"></div>
+  <button class="edit-btn" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
 </div>
 
 <div id="app">
@@ -427,6 +495,14 @@ const INFO_LABELS = [
   { key: 'personality', label: '성격' },
   { key: 'habits', label: '습관/취향' }
 ];
+const PLACEHOLDERS = {
+  look: '키, 체형, 머리색, 눈색 등',
+  vibe: '첫인상, 분위기',
+  speech: '말투 특징, 어조',
+  speechEx: '대표적인 말투 예시 문장',
+  personality: '성격, 성향',
+  habits: '자주 하는 행동, 좋아하는 것'
+};
 const GENDER_MAP = { 0: '남성', 1: '여성' };
 const COUPLE_MAP = { 0: '솔로', 1: '커플' };
 
@@ -459,34 +535,66 @@ async function loadCharacter(id) {
       app.innerHTML = renderEmpty('캐릭터를 찾을 수 없어요', `ID: ${id}에 해당하는 캐릭터가 없습니다.`);
       return;
     }
-    const data = doc.data();
-    const genderClass = data.g === 1 ? 'female' : 'male';
-    const genderText = GENDER_MAP[data.g] || '?';
-    const coupleClass = data.c === 1 ? 'couple' : 'solo';
-    const coupleText = COUPLE_MAP[data.c] || '?';
-    const initial = (data.n || '?')[0];
-    const info = data.info || {};
-    const note = data.note || '';
-    const hasInfo = INFO_LABELS.some(item => info[item.key]);
+    window._charData = { id, ...doc.data() };
+    document.getElementById('editToggle').style.display = 'inline-block';
+    renderCharDetail(false);
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
 
-    let html = `
-      <div class="char-card">
-        <div class="char-header">
-          <div class="char-avatar ${genderClass}">${esc(initial)}</div>
-          <div class="char-name">${esc(data.n || '이름 없음')}</div>
-          <div class="char-badges">
-            <span class="badge ${genderClass}">${data.g === 1 ? '♀' : '♂'} ${genderText}</span>
-            <span class="badge ${coupleClass}">${coupleText}</span>
-          </div>
-          <div class="char-id">${esc(id)}</div>
-          ${data.owner || data.group ? `
-            <div class="char-meta">
-              ${data.owner ? `<span>👤 ${esc(data.owner)}</span>` : ''}
-              ${data.group ? `<span>📁 ${esc(data.group)}</span>` : ''}
-            </div>` : ''}
+function renderCharDetail(editMode) {
+  const d = window._charData;
+  const info = d.info || {};
+  const note = d.note || '';
+  const genderClass = d.g === 1 ? 'female' : 'male';
+  const genderText = GENDER_MAP[d.g] || '?';
+  const coupleClass = d.c === 1 ? 'couple' : 'solo';
+  const coupleText = COUPLE_MAP[d.c] || '?';
+  const hasInfo = INFO_LABELS.some(item => info[item.key]);
+
+  document.getElementById('editToggle').style.display = editMode ? 'none' : 'inline-block';
+
+  let html = `
+    <div class="char-card">
+      <div class="char-header">
+        <div class="char-avatar ${genderClass}">${esc((d.n || '?')[0])}</div>
+        <div class="char-name">${esc(d.n || '이름 없음')}</div>
+        <div class="char-badges">
+          <span class="badge ${genderClass}">${d.g === 1 ? '♀' : '♂'} ${genderText}</span>
+          <span class="badge ${coupleClass}">${coupleText}</span>
         </div>
-        <div class="info-section">`;
+        <div class="char-id">${esc(d.id)}</div>
+        ${d.owner || d.group ? `
+          <div class="char-meta">
+            ${d.owner ? `<span>👤 ${esc(d.owner)}</span>` : ''}
+            ${d.group ? `<span>📁 ${esc(d.group)}</span>` : ''}
+          </div>` : ''}
+      </div>
+      <div class="info-section">`;
 
+  if (editMode) {
+    for (const item of INFO_LABELS) {
+      html += `
+        <div class="info-row">
+          <div class="info-label">${item.label}</div>
+          <div class="info-value">
+            <textarea class="info-textarea${item.key === 'speechEx' ? ' speech-input' : ''}"
+              id="edit_${item.key}"
+              placeholder="${PLACEHOLDERS[item.key] || ''}"
+            >${esc(info[item.key] || '')}</textarea>
+          </div>
+        </div>`;
+    }
+    html += `
+      <div class="info-row">
+        <div class="info-label">메모</div>
+        <div class="info-value">
+          <textarea class="info-textarea" id="edit_note" placeholder="짧은 메모 (선택)">${esc(note)}</textarea>
+        </div>
+      </div>`;
+  } else {
     if (hasInfo) {
       for (const item of INFO_LABELS) {
         const val = info[item.key];
@@ -506,9 +614,8 @@ async function loadCharacter(id) {
         }
       }
     } else {
-      html += `<div style="text-align:center;padding:40px 0;color:#a89d8e;font-size:13px;">아직 등록된 설정이 없어요</div>`;
+      html += `<div style="text-align:center;padding:40px 0;color:#a89d8e;font-size:13px;">아직 등록된 설정이 없어요<br><span style="font-size:11px;margin-top:6px;display:block">편집 버튼을 눌러 정보를 추가해보세요</span></div>`;
     }
-
     if (note) {
       html += `
         <div class="info-row">
@@ -516,15 +623,50 @@ async function loadCharacter(id) {
           <div class="info-value" style="color:#6b6055;font-style:italic">${esc(note)}</div>
         </div>`;
     }
+  }
 
-    html += `</div></div>`;
-    if (hasInfo || note) html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
+  html += `</div></div>`;
 
-    app.innerHTML = html;
-    window._charData = { id, ...data };
+  if (editMode) {
+    html += `
+      <div class="edit-actions">
+        <button class="cancel-btn" onclick="exitEditMode()">취소</button>
+        <button class="save-btn" id="saveBtn" onclick="saveCharInfo()">저장</button>
+      </div>`;
+  } else if (hasInfo || note) {
+    html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
+  }
+
+  document.getElementById('app').innerHTML = html;
+}
+
+function enterEditMode() { renderCharDetail(true); }
+function exitEditMode()  { renderCharDetail(false); }
+
+async function saveCharInfo() {
+  const d = window._charData;
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  const newInfo = {};
+  for (const item of INFO_LABELS) {
+    const val = (document.getElementById('edit_' + item.key)?.value || '').trim();
+    if (val) newInfo[item.key] = val;
+  }
+  const note = (document.getElementById('edit_note')?.value || '').trim();
+
+  try {
+    await db.collection('characters').doc(d.id).update({ info: newInfo, note });
+    window._charData.info = newInfo;
+    window._charData.note = note;
+    renderCharDetail(false);
+    showToast('저장되었습니다');
   } catch (err) {
     console.error(err);
-    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+    saveBtn.disabled = false;
+    saveBtn.textContent = '저장';
+    showToast('저장 실패. 다시 시도해주세요.');
   }
 }
 
