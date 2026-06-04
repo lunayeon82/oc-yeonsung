@@ -302,7 +302,7 @@
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('chars')">🎭 캐릭터</button>
       <button class="admin-tab" onclick="switchTab('roles')">⚔️ 캐릭터 설정</button>
-      <button class="admin-tab" onclick="switchTab('aus')">🌀 세계관</button>
+      <button class="admin-tab" onclick="switchTab('aus')">🌀 관계성</button>
     </div>
 
     <!-- ===== Characters Panel ===== -->
@@ -1008,7 +1008,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">세계관 추가</span></div>
+        <div class="card-header"><span class="card-title">관계성 추가</span></div>
         <div class="add-row">
           <select class="select-input" id="auTagSelect"></select>
           <input class="add-input" id="newAUName" placeholder="이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
@@ -1017,7 +1017,7 @@
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">세계관 목록</span>
+          <span class="card-title">관계성 목록</span>
           <span class="card-count" id="auCount">0개</span>
         </div>
         <div id="auList"></div>
@@ -1162,7 +1162,7 @@ async function saveAUs() {
   showSaving();
   try {
     await db.collection('data').doc('aus').set(AUS);
-    toast('세계관 저장 완료');
+    toast('관계성 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
 }

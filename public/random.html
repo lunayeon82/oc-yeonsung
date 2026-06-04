@@ -332,7 +332,7 @@
           <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
         </div>
         <div class="result-sub-row">
-          <span class="result-sub-label">세계관</span>
+          <span class="result-sub-label">관계성</span>
           <span class="result-sub-value" id="resAU"><span class="ph">—</span></span>
           <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
         </div>
@@ -344,7 +344,7 @@
 
     <div class="list-btns">
       <button class="list-btn" onclick="showListModal('role')">⚔️ 캐릭터 설정 전체 확인</button>
-      <button class="list-btn" onclick="showListModal('au')">🌀 세계관 전체 확인</button>
+      <button class="list-btn" onclick="showListModal('au')">🌀 관계성 전체 확인</button>
     </div>
 
     <div class="side-tabs">
@@ -853,7 +853,7 @@ function showListModal(type) {
   const overlay = document.getElementById('listModal');
   const title = document.getElementById('listModalTitle');
   const body = document.getElementById('listModalBody');
-  title.textContent = type==='role' ? '⚔️ 캐릭터 설정 목록' : '🌀 세계관 목록';
+  title.textContent = type==='role' ? '⚔️ 캐릭터 설정 목록' : '🌀 관계성 목록';
 
   const groups = (type==='role' ? ROLES : AUS).groups;
   let html = '';
