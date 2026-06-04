@@ -1058,6 +1058,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="renameModal" onclick="if(event.target===this)closeRenameModal()">
+  <div class="modal">
+    <h3 id="renameModalTitle">수정</h3>
+    <div class="modal-field">
+      <label class="modal-label">이름</label>
+      <input class="modal-input" id="renameInput" onkeydown="if(event.key==='Enter')saveRename()">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeRenameModal()">취소</button>
+      <button class="modal-save" onclick="saveRename()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="saving-overlay" id="savingOverlay">
   <div class="saving-box"><div class="spinner"></div><div>저장 중...</div></div>
 </div>
@@ -1465,6 +1479,7 @@ function renderRoles() {
       <div class="simple-item">
         <span class="idx">${ii+1}</span>
         <span class="name">${esc(item)}</span>
+        <button class="item-edit" onclick="openRenameModal('role',${gi},${ii})">변경</button>
         <button class="item-del" onclick="delRole(${gi},${ii})" title="삭제">✕</button>
       </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
     return `<div class="owner-section">
@@ -1513,6 +1528,38 @@ function addRole() {
   saveRoles();
 }
 
+let renameTarget = null;
+
+function openRenameModal(type, gi, ii) {
+  const item = type === 'role' ? ROLES.groups[gi].items[ii] : AUS.groups[gi].items[ii];
+  renameTarget = { type, gi, ii };
+  document.getElementById('renameModalTitle').textContent = type === 'role' ? '캐릭터 설정 수정' : '관계성 수정';
+  document.getElementById('renameInput').value = item;
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(() => document.getElementById('renameInput').select(), 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameModal').classList.remove('open');
+  renameTarget = null;
+}
+
+function saveRename() {
+  if (!renameTarget) return;
+  const { type, gi, ii } = renameTarget;
+  const val = document.getElementById('renameInput').value.trim();
+  if (!val) return;
+  if (type === 'role') {
+    ROLES.groups[gi].items[ii] = val;
+    closeRenameModal();
+    saveRoles();
+  } else {
+    AUS.groups[gi].items[ii] = val;
+    closeRenameModal();
+    saveAUs();
+  }
+}
+
 function delRole(gi, ii) {
   if (!confirm(`"${ROLES.groups[gi].items[ii]}" 삭제할까요?`)) return;
   ROLES.groups[gi].items.splice(ii, 1);
@@ -1533,6 +1580,7 @@ function renderAUs() {
       <div class="simple-item">
         <span class="idx">${ii+1}</span>
         <span class="name">${esc(item)}</span>
+        <button class="item-edit" onclick="openRenameModal('au',${gi},${ii})">변경</button>
         <button class="item-del" onclick="delAU(${gi},${ii})" title="삭제">✕</button>
       </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
     return `<div class="owner-section">
