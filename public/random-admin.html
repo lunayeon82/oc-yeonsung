@@ -183,7 +183,19 @@
     background: #f7f2ec; border: 1px solid #e5ddd3;
     border-radius: 14px; padding: 24px; width: 100%; max-width: 380px;
     transform: translateY(20px); transition: transform 0.25s;
+    position: relative;
   }
+  .modal-ribbon {
+    display: block; margin: 0 auto 12px;
+    max-height: 36px; width: auto;
+  }
+  .modal-exit {
+    position: absolute; top: 12px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    padding: 0; line-height: 0;
+  }
+  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
+  .modal-exit:hover img { opacity: 1; }
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.05rem; }
   .modal-field { margin-bottom: 14px; }
@@ -1028,6 +1040,8 @@
 
 <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
   <div class="modal">
+    <button class="modal-exit" onclick="closeEditModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
     <h3>캐릭터 수정</h3>
     <div class="modal-field">
       <label class="modal-label">이름</label>
@@ -1060,6 +1074,8 @@
 
 <div class="modal-overlay" id="renameModal" onclick="if(event.target===this)closeRenameModal()">
   <div class="modal">
+    <button class="modal-exit" onclick="closeRenameModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
     <h3 id="renameModalTitle">수정</h3>
     <div class="modal-field">
       <label class="modal-label">이름</label>

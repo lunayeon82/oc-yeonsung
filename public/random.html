@@ -228,7 +228,19 @@
     border-radius: 14px; padding: 24px; width: 100%; max-width: 400px;
     max-height: 70vh; overflow-y: auto;
     transform: translateY(20px); transition: transform 0.25s;
+    position: relative;
   }
+  .modal-ribbon {
+    display: block; margin: 0 auto 12px;
+    max-height: 36px; width: auto;
+  }
+  .modal-exit {
+    position: absolute; top: 12px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    padding: 0; line-height: 0;
+  }
+  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
+  .modal-exit:hover img { opacity: 1; }
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.1rem; }
   .modal-list { list-style: none; }
@@ -400,6 +412,8 @@
 
 <div class="modal-overlay" id="listModal" onclick="if(event.target===this)closeListModal()">
   <div class="modal">
+    <button class="modal-exit" onclick="closeListModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
     <h3 id="listModalTitle">목록</h3>
     <ul class="modal-list" id="listModalBody"></ul>
     <button class="modal-close" onclick="closeListModal()">닫기</button>
