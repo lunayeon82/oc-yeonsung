@@ -258,13 +258,139 @@
     0%, 80%, 100% { opacity: 0.3; }
     40% { opacity: 1; }
   }
+
+  /* List view */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(244,239,230,0.85);
+    border-bottom: 1px solid rgba(180,160,130,0.15);
+    position: sticky;
+    top: 53px;
+    z-index: 9;
+    flex-wrap: wrap;
+  }
+  .filter-select {
+    flex: 1;
+    min-width: 100px;
+    padding: 7px 11px;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 10px;
+    background: #faf7f2;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    color: #3a3530;
+    outline: none;
+    cursor: pointer;
+  }
+  .sort-btns { display: flex; gap: 4px; }
+  .sort-btn {
+    padding: 7px 13px;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 10px;
+    background: transparent;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    color: #8a7e6b;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .sort-btn.active {
+    background: #6b6055;
+    border-color: #6b6055;
+    color: #f4efe6;
+  }
+  .list-owner-section {
+    max-width: 480px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+  }
+  .list-owner-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1.5px solid rgba(180,160,130,0.22);
+  }
+  .list-owner-title {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4a4540;
+  }
+  .list-owner-code {
+    font-family: monospace;
+    font-size: 10px;
+    color: #a89d8e;
+    background: rgba(180,160,130,0.12);
+    padding: 1px 7px;
+    border-radius: 5px;
+    letter-spacing: 1px;
+  }
+  .list-group-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #b0a898;
+    letter-spacing: 0.8px;
+    padding: 14px 2px 6px;
+  }
+  .char-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(180,160,130,0.1);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+  }
+  .char-row:hover {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(180,160,130,0.28);
+    transform: translateX(2px);
+  }
+  .char-row.no-id { opacity: 0.55; cursor: default; }
+  .char-row.no-id:hover { transform: none; background: rgba(255,255,255,0.5); }
+  .char-row-name {
+    flex: 1;
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #3a3530;
+  }
+  .char-row-id {
+    font-family: monospace;
+    font-size: 10px;
+    color: #c0b5a5;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .char-row-badges { display: flex; gap: 4px; }
+  .char-row-badge {
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .row-badge-f { background: #f3dde3; color: #8e3a56; }
+  .row-badge-m { background: #dce8f3; color: #3a6591; }
+  .row-badge-couple { background: #f0e4ce; color: #7a5c2e; }
+  .row-badge-solo { background: #e8e3da; color: #7a7060; }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <button class="back-btn" onclick="history.back()">←</button>
-  <span class="top-title">캐릭터 설정</span>
+  <button class="back-btn" id="backBtn" onclick="history.back()">←</button>
+  <span class="top-title" id="topTitle">캐릭터</span>
   <div class="top-spacer"></div>
 </div>
 
@@ -283,185 +409,250 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// ============ FIREBASE INIT ============
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
   authDomain: "oc-yeonsung.firebaseapp.com",
   projectId: "oc-yeonsung",
   storageBucket: "oc-yeonsung.firebasestorage.app",
   messagingSenderId: "145543545184",
   appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-};
+});
+const db = firebase.firestore();
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+const INFO_LABELS = [
+  { key: 'look', label: '외형' },
+  { key: 'vibe', label: '인상' },
+  { key: 'speech', label: '말투' },
+  { key: 'speechEx', label: '말투 예시' },
+  { key: 'personality', label: '성격' },
+  { key: 'habits', label: '습관/취향' }
+];
+const GENDER_MAP = { 0: '남성', 1: '여성' };
+const COUPLE_MAP = { 0: '솔로', 1: '커플' };
 
-  const INFO_LABELS = [
-    { key: 'look', label: '외형' },
-    { key: 'vibe', label: '인상' },
-    { key: 'speech', label: '말투' },
-    { key: 'speechEx', label: '말투 예시' },
-    { key: 'personality', label: '성격' },
-    { key: 'habits', label: '습관/취향' }
-  ];
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
 
-  const GENDER_MAP = { 0: '남성', 1: '여성' };
-  const COUPLE_MAP = { 0: '솔로', 1: '커플' };
+// ============ ROUTING ============
+document.addEventListener('DOMContentLoaded', () => {
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (id) {
+    document.getElementById('topTitle').textContent = '캐릭터 설정';
+    document.getElementById('backBtn').onclick = () => history.back();
+    loadCharacter(id);
+  } else {
+    document.getElementById('topTitle').textContent = '캐릭터 목록';
+    document.getElementById('backBtn').onclick = () => { location.href = './'; };
+    loadCharacterList();
+  }
+});
 
-  async function loadCharacter() {
-    const app = document.getElementById('app');
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-
-    if (!id) {
-      app.innerHTML = renderEmpty('ID가 지정되지 않았어요', 'URL에 ?id=캐릭터ID를 추가해주세요.');
+// ============ DETAIL VIEW ============
+async function loadCharacter(id) {
+  const app = document.getElementById('app');
+  try {
+    const doc = await db.collection('characters').doc(id).get();
+    if (!doc.exists) {
+      app.innerHTML = renderEmpty('캐릭터를 찾을 수 없어요', `ID: ${id}에 해당하는 캐릭터가 없습니다.`);
       return;
     }
+    const data = doc.data();
+    const genderClass = data.g === 1 ? 'female' : 'male';
+    const genderText = GENDER_MAP[data.g] || '?';
+    const coupleClass = data.c === 1 ? 'couple' : 'solo';
+    const coupleText = COUPLE_MAP[data.c] || '?';
+    const initial = (data.n || '?')[0];
+    const info = data.info || {};
+    const note = data.note || '';
+    const hasInfo = INFO_LABELS.some(item => info[item.key]);
 
-    try {
-      const doc = await db.collection('characters').doc(id).get();
-
-      if (!doc.exists) {
-        app.innerHTML = renderEmpty('캐릭터를 찾을 수 없어요', `ID: ${id}에 해당하는 캐릭터가 없습니다.`);
-        return;
-      }
-
-      const data = doc.data();
-      const genderClass = data.g === 1 ? 'female' : 'male';
-      const genderText = GENDER_MAP[data.g] || '?';
-      const coupleClass = data.c === 1 ? 'couple' : 'solo';
-      const coupleText = COUPLE_MAP[data.c] || '?';
-      const initial = (data.n || '?')[0];
-      const info = data.info || {};
-      const note = data.note || '';
-
-      const hasInfo = INFO_LABELS.some(item => info[item.key]);
-
-      let html = `
-        <div class="char-card">
-          <div class="char-header">
-            <div class="char-avatar ${genderClass}">${initial}</div>
-            <div class="char-name">${data.n || '이름 없음'}</div>
-            <div class="char-badges">
-              <span class="badge ${genderClass}">${data.g === 1 ? '♀' : '♂'} ${genderText}</span>
-              <span class="badge ${coupleClass}">${coupleText}</span>
-            </div>
-            <div class="char-id">${id}</div>
-            ${data.owner || data.group ? `
-              <div class="char-meta">
-                ${data.owner ? `<span>👤 ${data.owner}</span>` : ''}
-                ${data.group ? `<span>📁 ${data.group}</span>` : ''}
-              </div>
-            ` : ''}
+    let html = `
+      <div class="char-card">
+        <div class="char-header">
+          <div class="char-avatar ${genderClass}">${esc(initial)}</div>
+          <div class="char-name">${esc(data.n || '이름 없음')}</div>
+          <div class="char-badges">
+            <span class="badge ${genderClass}">${data.g === 1 ? '♀' : '♂'} ${genderText}</span>
+            <span class="badge ${coupleClass}">${coupleText}</span>
           </div>
+          <div class="char-id">${esc(id)}</div>
+          ${data.owner || data.group ? `
+            <div class="char-meta">
+              ${data.owner ? `<span>👤 ${esc(data.owner)}</span>` : ''}
+              ${data.group ? `<span>📁 ${esc(data.group)}</span>` : ''}
+            </div>` : ''}
+        </div>
+        <div class="info-section">`;
 
-          <div class="info-section">
-      `;
-
-      if (hasInfo) {
-        for (const item of INFO_LABELS) {
-          const val = info[item.key];
-          if (!val) continue;
-
-          if (item.key === 'speechEx') {
-            html += `
-              <div class="info-row">
-                <div class="info-label">${item.label}</div>
-                <div class="info-value">
-                  <div class="speech-quote">"${val}"</div>
-                </div>
-              </div>
-            `;
-          } else {
-            html += `
-              <div class="info-row">
-                <div class="info-label">${item.label}</div>
-                <div class="info-value">${val}</div>
-              </div>
-            `;
-          }
+    if (hasInfo) {
+      for (const item of INFO_LABELS) {
+        const val = info[item.key];
+        if (!val) continue;
+        if (item.key === 'speechEx') {
+          html += `
+            <div class="info-row">
+              <div class="info-label">${item.label}</div>
+              <div class="info-value"><div class="speech-quote">"${esc(val)}"</div></div>
+            </div>`;
+        } else {
+          html += `
+            <div class="info-row">
+              <div class="info-label">${item.label}</div>
+              <div class="info-value">${esc(val)}</div>
+            </div>`;
         }
-      } else {
-        html += `
-          <div style="text-align:center; padding:40px 0; color:#a89d8e; font-size:13px;">
-            아직 등록된 설정이 없어요
-          </div>
-        `;
       }
-
-      if (note) {
-        html += `
-          <div class="info-row">
-            <div class="info-label">메모</div>
-            <div class="info-value" style="color:#6b6055;font-style:italic">${note}</div>
-          </div>
-        `;
-      }
-
-      html += `</div></div>`;
-
-      if (hasInfo || note) {
-        html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
-      }
-
-      app.innerHTML = html;
-
-      // Store data for copy
-      window._charData = { id, ...data };
-
-    } catch (err) {
-      console.error(err);
-      app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+    } else {
+      html += `<div style="text-align:center;padding:40px 0;color:#a89d8e;font-size:13px;">아직 등록된 설정이 없어요</div>`;
     }
-  }
 
-  function renderEmpty(title, desc) {
-    return `
-      <div class="empty-state">
-        <div class="empty-icon">📄</div>
-        <div class="empty-title">${title}</div>
-        <div class="empty-desc">${desc}</div>
+    if (note) {
+      html += `
+        <div class="info-row">
+          <div class="info-label">메모</div>
+          <div class="info-value" style="color:#6b6055;font-style:italic">${esc(note)}</div>
+        </div>`;
+    }
+
+    html += `</div></div>`;
+    if (hasInfo || note) html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
+
+    app.innerHTML = html;
+    window._charData = { id, ...data };
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
+
+// ============ LIST VIEW ============
+let _listData = null;
+let _listSort = 'id';
+let _listOwner = '';
+
+async function loadCharacterList() {
+  const app = document.getElementById('app');
+  try {
+    const doc = await db.collection('data').doc('characters').get();
+    if (!doc.exists) {
+      app.innerHTML = renderEmpty('데이터가 없어요', '아직 등록된 캐릭터가 없습니다.');
+      return;
+    }
+    _listData = doc.data();
+    renderList();
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다.');
+  }
+}
+
+function renderList() {
+  const groups = _listData.groups || [];
+  const owners = groups.map(g => g.owner);
+
+  const filterBar = `
+    <div class="filter-bar">
+      <select class="filter-select" onchange="setOwnerFilter(this.value)">
+        <option value="">전체 오너</option>
+        ${owners.map(o => `<option value="${esc(o)}" ${_listOwner === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+      </select>
+      <div class="sort-btns">
+        <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">ID순</button>
+        <button class="sort-btn ${_listSort === 'alpha' ? 'active' : ''}" onclick="setSort('alpha')">가나다순</button>
       </div>
-    `;
-  }
+    </div>`;
 
-  function copyCharacter() {
-    const d = window._charData;
-    if (!d) return;
+  const filtered = _listOwner ? groups.filter(g => g.owner === _listOwner) : groups;
+  let listHtml = '';
 
-    const gender = GENDER_MAP[d.g] || '?';
-    const couple = COUPLE_MAP[d.c] || '?';
-    const info = d.info || {};
-
-    let text = `이름: ${d.n} (${gender} / ${couple})\n`;
-
-    for (const item of INFO_LABELS) {
-      const val = info[item.key];
-      if (!val) continue;
-      if (item.key === 'speechEx') {
-        text += `${item.label}: "${val}"\n`;
+  for (const ownerGroup of filtered) {
+    let ownerContent = '';
+    for (const sub of (ownerGroup.subs || [])) {
+      let items = [...(sub.items || [])];
+      if (_listSort === 'alpha') {
+        items.sort((a, b) => a.n.localeCompare(b.n, 'ko'));
       } else {
-        text += `${item.label}: ${val}\n`;
+        items.sort((a, b) => (a.id || a.charCode || '').localeCompare(b.id || b.charCode || ''));
       }
+
+      const rowsHtml = items.map(it => {
+        const gBadge = it.g === 1 ? 'row-badge-f' : 'row-badge-m';
+        const gText = it.g === 1 ? '♀' : '♂';
+        const cBadge = it.c === 1 ? 'row-badge-couple' : 'row-badge-solo';
+        const cText = it.c === 1 ? '커플' : '솔로';
+        const badges = `<div class="char-row-badges">
+          <span class="char-row-badge ${gBadge}">${gText}</span>
+          <span class="char-row-badge ${cBadge}">${cText}</span>
+        </div>`;
+        if (it.id) {
+          return `<a class="char-row" href="character.html?id=${esc(it.id)}">
+            <span class="char-row-name">${esc(it.n)}</span>
+            <span class="char-row-id">${esc(it.id)}</span>
+            ${badges}
+          </a>`;
+        }
+        return `<div class="char-row no-id">
+          <span class="char-row-name">${esc(it.n)}</span>
+          ${badges}
+        </div>`;
+      }).join('');
+
+      ownerContent += `
+        <div class="list-group-header">${esc(sub.label)}</div>
+        ${rowsHtml}`;
     }
 
-    if (d.note) text += `메모: ${d.note}\n`;
-
-    navigator.clipboard.writeText(text.trim()).then(() => {
-      showToast('복사되었습니다');
-    }).catch(() => {
-      showToast('복사에 실패했습니다');
-    });
+    listHtml += `
+      <div class="list-owner-section">
+        <div class="list-owner-header">
+          <span class="list-owner-title">${esc(ownerGroup.owner)}</span>
+          ${ownerGroup.code ? `<span class="list-owner-code">${esc(ownerGroup.code)}</span>` : ''}
+        </div>
+        ${ownerContent}
+      </div>`;
   }
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  }
+  document.getElementById('app').innerHTML = filterBar + listHtml + '<div style="height:40px"></div>';
+}
 
-  document.addEventListener('DOMContentLoaded', loadCharacter);
+function setOwnerFilter(v) { _listOwner = v; renderList(); }
+function setSort(v) { _listSort = v; renderList(); }
+
+// ============ COPY (DETAIL) ============
+function copyCharacter() {
+  const d = window._charData;
+  if (!d) return;
+  const info = d.info || {};
+  let text = `이름: ${d.n} (${GENDER_MAP[d.g] || '?'} / ${COUPLE_MAP[d.c] || '?'})\n`;
+  for (const item of INFO_LABELS) {
+    const val = info[item.key];
+    if (!val) continue;
+    text += item.key === 'speechEx' ? `${item.label}: "${val}"\n` : `${item.label}: ${val}\n`;
+  }
+  if (d.note) text += `메모: ${d.note}\n`;
+  navigator.clipboard.writeText(text.trim())
+    .then(() => showToast('복사되었습니다'))
+    .catch(() => showToast('복사에 실패했습니다'));
+}
+
+// ============ UTIL ============
+function renderEmpty(title, desc) {
+  return `<div class="empty-state">
+    <div class="empty-icon">📄</div>
+    <div class="empty-title">${title}</div>
+    <div class="empty-desc">${desc}</div>
+  </div>`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
 </script>
 </body>
 </html>
