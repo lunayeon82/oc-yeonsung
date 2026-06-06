@@ -188,6 +188,31 @@
     opacity: 0;
   }
 
+  /* ── 캐릭터 AND/OR 모드 토글 ── */
+  .char-mode-toggle {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mode-btn {
+    padding: 0.2rem 0.65rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.68rem;
+    color: #8a7a9a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover { border-color: #b8a9c9; }
+  .mode-btn.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
   /* ── 캐릭터 필터 (오너별) ── */
   .char-filter-wrap {
     display: flex;
@@ -479,7 +504,13 @@
           <button class="filter-toggle-btn" id="charToggle">선택 ▾</button>
         </div>
       </div>
-      <div class="filter-section-body collapsed" id="charFilter"></div>
+      <div class="filter-section-body collapsed" id="charFilterBody">
+        <div class="char-mode-toggle">
+          <button class="mode-btn active" id="charModeOr">하나라도 포함</button>
+          <button class="mode-btn" id="charModeAnd">전부 포함</button>
+        </div>
+        <div id="charFilter"></div>
+      </div>
     </div>
 
     <!-- 캐릭터 설정 필터 -->
@@ -543,6 +574,7 @@
   let selectedChars = new Set();
   let selectedRoles = new Set();
   let selectedAus = new Set();
+  let charFilterMode = 'or'; // 'or' | 'and'
   let searchTerm = '';
 
   // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
@@ -575,9 +607,23 @@
       updateFilterCount(countId, bodyId);
     });
   }
-  makeFilterToggle('charToggle', 'charFilter', 'charCount');
-  makeFilterToggle('roleToggle', 'roleFilter', 'roleCount');
-  makeFilterToggle('auToggle',   'auFilter',   'auCount');
+  makeFilterToggle('charToggle', 'charFilterBody', 'charCount');
+  makeFilterToggle('roleToggle', 'roleFilter',     'roleCount');
+  makeFilterToggle('auToggle',   'auFilter',       'auCount');
+
+  // ── 캐릭터 AND/OR 모드 버튼 ──
+  document.getElementById('charModeOr').addEventListener('click', () => {
+    charFilterMode = 'or';
+    document.getElementById('charModeOr').classList.add('active');
+    document.getElementById('charModeAnd').classList.remove('active');
+    filterAndRender();
+  });
+  document.getElementById('charModeAnd').addEventListener('click', () => {
+    charFilterMode = 'and';
+    document.getElementById('charModeAnd').classList.add('active');
+    document.getElementById('charModeOr').classList.remove('active');
+    filterAndRender();
+  });
 
   // countId 뱃지: 접혀있고 선택 있을 때만 표시
   function updateFilterCount(countId, bodyId) {
@@ -590,7 +636,7 @@
   }
 
   function updateAllCounts() {
-    updateFilterCount('charCount', 'charFilter');
+    updateFilterCount('charCount', 'charFilterBody');
     updateFilterCount('roleCount', 'roleFilter');
     updateFilterCount('auCount',   'auFilter');
     document.getElementById('clearFilter').style.display =
@@ -713,11 +759,11 @@
       filtered = filtered.filter(s => s.title.toLowerCase().includes(term));
     }
 
-    // 캐릭터 필터 (캐릭터끼리 OR)
+    // 캐릭터 필터
     if (selectedChars.size > 0) {
-      filtered = filtered.filter(s =>
-        [...selectedChars].some(name => s.characters.includes(name))
-      );
+      filtered = charFilterMode === 'and'
+        ? filtered.filter(s => [...selectedChars].every(name => s.characters.includes(name)))
+        : filtered.filter(s => [...selectedChars].some(name => s.characters.includes(name)));
     }
 
     // 캐릭터 설정 + 관계성 필터 (둘 사이 OR, 캐릭터 필터와 AND)
