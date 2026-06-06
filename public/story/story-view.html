@@ -5,12 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>연성대나무숲 — 글 읽기</title>
 <link rel="icon" type="image/png" href="../assets/favicon.png">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
 <style>
   @font-face {
     font-family: 'ko-font';
     src: url('../assets/ko-font.ttf') format('truetype');
   }
+  @font-face {
+    font-family: 'ChosunCentennial';
+    src: url('../fonts/ChosunCentennial.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'GowunDodum';
+    src: url('../fonts/GowunDodum.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'RIDIBatang';
+    src: url('../fonts/RIDI-Batang.otf') format('opentype');
+  }
+  :root { --story-font: 'Noto Sans KR', sans-serif; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -309,7 +322,7 @@
     border: 1px solid rgba(184,169,201,0.15);
     border-radius: 12px;
     padding: 1.5rem 1.5rem;
-    font-family: 'Noto Sans KR', sans-serif;
+    font-family: var(--story-font);
     font-size: 0.92rem;
     line-height: 1.9;
     color: #3a2a4b;
@@ -441,6 +454,61 @@
     font-size: 0.8rem;
   }
 
+  /* ── 폰트 선택 ── */
+  .font-picker-wrap { position: relative; }
+
+  .font-picker-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: 'ko-font', sans-serif;
+  }
+  .font-picker-btn:hover { background: rgba(184,169,201,0.15); }
+  .font-picker-btn.active { background: #b8a9c9; color: white; border-color: #b8a9c9; }
+
+  .font-panel {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    background: rgba(250,247,242,0.97);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(90,74,107,0.14);
+    padding: 0.4rem;
+    min-width: 170px;
+    display: none;
+    z-index: 300;
+  }
+  .font-panel.open { display: block; }
+
+  .font-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #4a3a5b;
+    font-size: 0.92rem;
+    line-height: 1;
+  }
+  .font-option:hover { background: rgba(184,169,201,0.12); }
+  .font-option.selected { background: rgba(184,169,201,0.2); }
+  .font-option .check { font-size: 0.7rem; color: #b8a9c9; opacity: 0; }
+  .font-option.selected .check { opacity: 1; }
+
   /* ── 애니메이션 ── */
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -463,6 +531,17 @@
 <div class="top-bar">
   <a href="story-list.html" class="back-btn">← 목록</a>
   <div class="top-bar-actions">
+    <div class="font-picker-wrap">
+      <button class="font-picker-btn" id="fontPickerBtn" title="폰트 설정">가</button>
+      <div class="font-panel" id="fontPanel">
+        <div class="font-option" data-font="Noto Sans KR" style="font-family:'Noto Sans KR',sans-serif">Noto Sans KR <span class="check">✓</span></div>
+        <div class="font-option" data-font="Nanum Gothic" style="font-family:'Nanum Gothic',sans-serif">나눔고딕 <span class="check">✓</span></div>
+        <div class="font-option" data-font="Nanum Myeongjo" style="font-family:'Nanum Myeongjo',serif">나눔명조 <span class="check">✓</span></div>
+        <div class="font-option" data-font="RIDIBatang" style="font-family:'RIDIBatang',serif">RIDI바탕 <span class="check">✓</span></div>
+        <div class="font-option" data-font="ChosunCentennial" style="font-family:'ChosunCentennial',serif">조선센테니얼 <span class="check">✓</span></div>
+        <div class="font-option" data-font="GowunDodum" style="font-family:'GowunDodum',sans-serif">고운돋움 <span class="check">✓</span></div>
+      </div>
+    </div>
     <button class="toc-toggle-btn" id="tocToggleBtn" title="목차" style="display:none;">☰</button>
     <button class="edit-btn" id="editBtn" style="display:none;">수정</button>
   </div>
@@ -741,6 +820,48 @@
       renderStory();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  });
+
+  // ── 폰트 선택 ──
+  const FONT_MAP = {
+    'Noto Sans KR':      "'Noto Sans KR', sans-serif",
+    'Nanum Gothic':      "'Nanum Gothic', sans-serif",
+    'Nanum Myeongjo':    "'Nanum Myeongjo', serif",
+    'RIDIBatang':        "'RIDIBatang', serif",
+    'ChosunCentennial':  "'ChosunCentennial', serif",
+    'GowunDodum':        "'GowunDodum', sans-serif"
+  };
+
+  function applyStoryFont(name) {
+    document.documentElement.style.setProperty('--story-font', FONT_MAP[name] || FONT_MAP['Noto Sans KR']);
+    document.querySelectorAll('.font-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.font === name);
+    });
+  }
+
+  const savedFont = localStorage.getItem('storyFont') || 'Noto Sans KR';
+  applyStoryFont(savedFont);
+
+  document.querySelectorAll('.font-option').forEach(el => {
+    el.addEventListener('click', () => {
+      localStorage.setItem('storyFont', el.dataset.font);
+      applyStoryFont(el.dataset.font);
+      document.getElementById('fontPanel').classList.remove('open');
+      document.getElementById('fontPickerBtn').classList.remove('active');
+    });
+  });
+
+  document.getElementById('fontPickerBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const panel = document.getElementById('fontPanel');
+    const btn = document.getElementById('fontPickerBtn');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+  });
+
+  document.addEventListener('click', () => {
+    document.getElementById('fontPanel').classList.remove('open');
+    document.getElementById('fontPickerBtn').classList.remove('active');
   });
 
   // ── 초기화 ──
