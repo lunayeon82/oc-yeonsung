@@ -678,8 +678,12 @@
         .orderBy('createdAt', 'desc')
         .get();
 
-      allStories = snapshot.docs.map(doc => {
+      allStories = await Promise.all(snapshot.docs.map(async doc => {
         const data = doc.data();
+        // chapterCount가 저장된 경우 바로 사용, 없으면 실제 쿼리 (병렬)
+        const chapterCount = data.chapterCount != null
+          ? data.chapterCount
+          : (await db.collection('chapters').where('storyId', '==', doc.id).get()).size;
         return {
           pid: doc.id,
           title: data.title || '(제목 없음)',
@@ -688,9 +692,9 @@
           aus: data.aus || [],
           theme: data.theme || 'default',
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          chapterCount: data.chapterCount ?? 0
+          chapterCount
         };
-      });
+      }));
       filterAndRender();
     } catch (e) {
       console.error('글 목록 로드 실패:', e);
