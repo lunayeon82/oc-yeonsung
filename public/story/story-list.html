@@ -678,15 +678,9 @@
         .orderBy('createdAt', 'desc')
         .get();
 
-      allStories = [];
-      for (const doc of snapshot.docs) {
+      allStories = snapshot.docs.map(doc => {
         const data = doc.data();
-        // 챕터 수 가져오기
-        const chapSnap = await db.collection('chapters')
-          .where('storyId', '==', doc.id)
-          .get();
-
-        allStories.push({
+        return {
           pid: doc.id,
           title: data.title || '(제목 없음)',
           characters: data.characters || [],
@@ -694,9 +688,9 @@
           aus: data.aus || [],
           theme: data.theme || 'default',
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          chapterCount: chapSnap.size
-        });
-      }
+          chapterCount: data.chapterCount ?? 0
+        };
+      });
       filterAndRender();
     } catch (e) {
       console.error('글 목록 로드 실패:', e);
