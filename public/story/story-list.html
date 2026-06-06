@@ -346,19 +346,10 @@
     gap: 0.25rem;
   }
 
-  .story-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-top: 0.4rem;
-  }
-
-  .story-tag {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
-    background: rgba(184,169,201,0.15);
-    color: #7a6a8a;
-    border-radius: 10px;
+  .story-tag-line {
+    font-size: 0.68rem;
+    color: #a99ab8;
+    margin-top: 0.35rem;
   }
 
   /* ── 새 글 버튼 ── */
@@ -743,7 +734,8 @@
 
     list.innerHTML = stories.map(s => {
       const dateStr = formatDate(s.createdAt);
-      const tags = s.characters.map(c => `<span class="story-tag">${c}</span>`).join('');
+      const allTags = [...s.characters, ...s.roles, ...s.aus]
+        .map(t => escapeHtml(t)).join(' / ');
       return `
         <a class="story-card" href="story-view.html?pid=${s.pid}">
           <div class="story-title">${escapeHtml(s.title)}</div>
@@ -751,7 +743,7 @@
             <span class="story-date">${dateStr}</span>
             <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
           </div>
-          ${tags ? `<div class="story-tags">${tags}</div>` : ''}
+          ${allTags ? `<div class="story-tag-line">${allTags}</div>` : ''}
         </a>`;
     }).join('');
   }

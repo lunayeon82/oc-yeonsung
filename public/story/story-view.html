@@ -252,11 +252,19 @@
     color: #a99ab8;
   }
 
-  .story-tag-line {
-    font-size: 0.72rem;
-    color: #9a8aaa;
-    text-align: center;
-    line-height: 1.6;
+  .story-char-tags {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .char-tag-view {
+    padding: 0.2rem 0.6rem;
+    background: rgba(184,169,201,0.15);
+    color: #7a6a8a;
+    border-radius: 12px;
+    font-size: 0.7rem;
   }
 
   .header-divider {
@@ -553,12 +561,8 @@
   function renderStory() {
     const container = document.getElementById('mainContainer');
     const dateStr = storyData.createdAt?.toDate ? formatDate(storyData.createdAt.toDate()) : '';
-    const allTags = [
-      ...(storyData.characters || []),
-      ...(storyData.roles || []),
-      ...(storyData.aus || [])
-    ];
-    const tagLine = allTags.map(t => escapeHtml(t)).join(' / ');
+    const charTags = (storyData.characters || [])
+      .map(c => `<span class="char-tag-view">${c}</span>`).join('');
 
     let html = `
       <div class="story-header">
@@ -567,7 +571,7 @@
           ${dateStr ? `<span class="meta-date">${dateStr}</span>` : ''}
           ${chapters.length > 1 ? `<span class="meta-chapters">${chapters.length}챕터</span>` : ''}
         </div>
-        ${tagLine ? `<div class="story-tag-line">${tagLine}</div>` : ''}
+        ${charTags ? `<div class="story-char-tags">${charTags}</div>` : ''}
         <div class="header-divider"></div>
       </div>
     `;
