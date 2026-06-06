@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캐릭터 설정</title>
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.ttf') format('truetype');
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    background: url('assets/bg-paper.png') repeat;
+    min-height: 100vh;
+    color: #3a3530;
+    padding: 0;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    background: rgba(244,239,230,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(180,160,130,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #8a7e6b;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(180,160,130,0.15); }
+  .top-title {
+    flex: 1;
+    text-align: center;
+    font-family: 'ko-font', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #6b6055;
+    letter-spacing: 1px;
+  }
+  .top-spacer { width: 36px; }
+
+  /* Main card */
+  .char-card {
+    max-width: 480px;
+    margin: 24px auto;
+    padding: 0 16px 40px;
+  }
+
+  /* Header */
+  .char-header {
+    text-align: center;
+    padding: 32px 0 24px;
+    border-bottom: 1px dashed rgba(180,160,130,0.3);
+    margin-bottom: 24px;
+  }
+  .char-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'ko-font', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .char-avatar.female { background: linear-gradient(135deg, #d4889e, #c06b84); }
+  .char-avatar.male { background: linear-gradient(135deg, #7ba0c4, #5a82a8); }
+  .char-name {
+    font-family: 'ko-font', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #3a3530;
+    margin-bottom: 8px;
+  }
+  .char-badges {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .badge.female { background: #f3dde3; color: #8e3a56; }
+  .badge.male { background: #dce8f3; color: #3a6591; }
+  .badge.solo { background: #e8e3da; color: #7a7060; }
+  .badge.couple { background: #f0e4ce; color: #7a5c2e; }
+
+  .char-id {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #a89d8e;
+    font-family: monospace;
+    letter-spacing: 1px;
+  }
+
+  /* Owner & Group */
+  .char-meta {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #8a7e6b;
+  }
+  .char-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* Info section */
+  .info-section {
+    margin-bottom: 0;
+  }
+  .info-row {
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(180,160,130,0.12);
+    display: flex;
+    gap: 12px;
+  }
+  .info-row:last-child { border-bottom: none; }
+
+  .info-label {
+    flex-shrink: 0;
+    width: 72px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a7e6b;
+    padding-top: 2px;
+    text-align: right;
+    letter-spacing: 0.3px;
+  }
+  .info-value {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #3a3530;
+    word-break: keep-all;
+  }
+
+  /* Speech example special style */
+  .speech-quote {
+    font-family: 'ko-font', serif;
+    font-size: 13.5px;
+    color: #6b6055;
+    background: rgba(180,160,130,0.08);
+    border-left: 2px solid rgba(180,160,130,0.3);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    line-height: 1.8;
+    margin-top: 2px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+  .empty-title {
+    font-family: 'ko-font', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6b6055;
+    margin-bottom: 8px;
+  }
+  .empty-desc {
+    font-size: 13px;
+    color: #a89d8e;
+    line-height: 1.6;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    padding: 14px;
+    background: #6b6055;
+    color: #f4efe6;
+    border: none;
+    border-radius: 12px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .copy-btn:hover { background: #564d43; }
+  .copy-btn:active { transform: scale(0.98); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #3a3530;
+    color: #f4efe6;
+    padding: 10px 24px;
+    border-radius: 100px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 80px 20px;
+    color: #a89d8e;
+    font-size: 14px;
+  }
+  .loading-dot {
+    display: inline-block;
+    animation: pulse 1.2s infinite;
+  }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.3; }
+    40% { opacity: 1; }
+  }
+
+  /* Edit mode */
+  .edit-btn {
+    background: none;
+    border: 1.5px solid rgba(180,160,130,0.35);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a7e6b;
+    padding: 4px 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'ko-font', sans-serif;
+    white-space: nowrap;
+  }
+  .edit-btn:hover { background: rgba(180,160,130,0.12); border-color: rgba(107,96,85,0.4); color: #6b6055; }
+  .info-textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1.5px solid rgba(180,160,130,0.28);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.65);
+    font-family: 'ko-font', sans-serif;
+    font-size: 13.5px;
+    color: #3a3530;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    min-height: 56px;
+  }
+  .info-textarea:focus { border-color: rgba(107,96,85,0.55); background: rgba(255,255,255,0.9); }
+  .info-textarea.speech-input { font-family: 'ko-font', serif; }
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    padding: 0 16px;
+  }
+  .save-btn {
+    flex: 1;
+    padding: 14px;
+    background: #6b6055;
+    color: #f4efe6;
+    border: none;
+    border-radius: 12px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .save-btn:hover { background: #564d43; }
+  .save-btn:disabled { opacity: 0.6; cursor: default; }
+  .cancel-btn {
+    padding: 14px 20px;
+    background: transparent;
+    color: #8a7e6b;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 12px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cancel-btn:hover { background: rgba(180,160,130,0.1); }
+
+  /* List view */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(244,239,230,0.85);
+    border-bottom: 1px solid rgba(180,160,130,0.15);
+    position: sticky;
+    top: 53px;
+    z-index: 9;
+    flex-wrap: wrap;
+  }
+  .filter-select {
+    flex: 1;
+    min-width: 100px;
+    padding: 7px 11px;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 10px;
+    background: #faf7f2;
+    font-family: 'ko-font', sans-serif;
+    font-size: 13px;
+    color: #3a3530;
+    outline: none;
+    cursor: pointer;
+  }
+  .sort-btns { display: flex; gap: 4px; }
+  .sort-btn {
+    padding: 7px 13px;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    border-radius: 10px;
+    background: transparent;
+    font-family: 'ko-font', sans-serif;
+    font-size: 12px;
+    color: #8a7e6b;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .sort-btn.active {
+    background: #6b6055;
+    border-color: #6b6055;
+    color: #f4efe6;
+  }
+  .list-owner-section {
+    max-width: 480px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+  }
+  .list-owner-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1.5px solid rgba(180,160,130,0.22);
+  }
+  .list-owner-title {
+    font-family: 'ko-font', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4a4540;
+  }
+  .list-owner-code {
+    font-family: monospace;
+    font-size: 10px;
+    color: #a89d8e;
+    background: rgba(180,160,130,0.12);
+    padding: 1px 7px;
+    border-radius: 5px;
+    letter-spacing: 1px;
+  }
+  .list-group-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #b0a898;
+    letter-spacing: 0.8px;
+    padding: 14px 2px 6px;
+  }
+  .char-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(180,160,130,0.1);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+  }
+  .char-row:hover {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(180,160,130,0.28);
+    transform: translateX(2px);
+  }
+  .char-row.no-id { opacity: 0.55; cursor: default; }
+  .char-row.no-id:hover { transform: none; background: rgba(255,255,255,0.5); }
+  .char-row-name {
+    flex: 1;
+    font-family: 'ko-font', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #3a3530;
+  }
+  .char-row-id {
+    font-family: monospace;
+    font-size: 10px;
+    color: #c0b5a5;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .char-row-badges { display: flex; gap: 4px; }
+  .char-row-badge {
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .row-badge-f { background: #f3dde3; color: #8e3a56; }
+  .row-badge-m { background: #dce8f3; color: #3a6591; }
+  .row-badge-couple { background: #f0e4ce; color: #7a5c2e; }
+  .row-badge-solo { background: #e8e3da; color: #7a7060; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="back-btn" id="backBtn" onclick="history.back()">←</button>
+  <span class="top-title" id="topTitle">캐릭터</span>
+  <button class="edit-btn" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
+</div>
+
+<div id="app">
+  <div class="loading">
+    <span class="loading-dot">·</span>
+    <span class="loading-dot">·</span>
+    <span class="loading-dot">·</span>
+    <br><br>불러오는 중
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+  authDomain: "oc-yeonsung.firebaseapp.com",
+  projectId: "oc-yeonsung",
+  storageBucket: "oc-yeonsung.firebasestorage.app",
+  messagingSenderId: "145543545184",
+  appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+});
+const db = firebase.firestore();
+
+const INFO_LABELS = [
+  { key: 'look', label: '외형' },
+  { key: 'vibe', label: '인상' },
+  { key: 'speech', label: '말투' },
+  { key: 'speechEx', label: '말투 예시' },
+  { key: 'personality', label: '성격' },
+  { key: 'habits', label: '습관/취향' }
+];
+const PLACEHOLDERS = {
+  look: '키, 체형, 머리색, 눈색 등',
+  vibe: '첫인상, 분위기',
+  speech: '말투 특징, 어조',
+  speechEx: '대표적인 말투 예시 문장',
+  personality: '성격, 성향',
+  habits: '자주 하는 행동, 좋아하는 것'
+};
+const GENDER_MAP = { 0: '남성', 1: '여성' };
+const COUPLE_MAP = { 0: '솔로', 1: '커플' };
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
+
+// ============ ROUTING ============
+document.addEventListener('DOMContentLoaded', () => {
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (id) {
+    document.getElementById('topTitle').textContent = '캐릭터 설정';
+    document.getElementById('backBtn').onclick = () => history.back();
+    loadCharacter(id);
+  } else {
+    document.getElementById('topTitle').textContent = '캐릭터 목록';
+    document.getElementById('backBtn').onclick = () => { location.href = './'; };
+    loadCharacterList();
+  }
+});
+
+// ============ DETAIL VIEW ============
+async function loadCharacter(id) {
+  const app = document.getElementById('app');
+  try {
+    const doc = await db.collection('characters').doc(id).get();
+    if (!doc.exists) {
+      app.innerHTML = renderEmpty('캐릭터를 찾을 수 없어요', `ID: ${id}에 해당하는 캐릭터가 없습니다.`);
+      return;
+    }
+    window._charData = { id, ...doc.data() };
+    document.getElementById('editToggle').style.display = 'inline-block';
+    renderCharDetail(false);
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
+
+function renderCharDetail(editMode) {
+  const d = window._charData;
+  const info = d.info || {};
+  const note = d.note || '';
+  const genderClass = d.g === 1 ? 'female' : 'male';
+  const genderText = GENDER_MAP[d.g] || '?';
+  const coupleClass = d.c === 1 ? 'couple' : 'solo';
+  const coupleText = COUPLE_MAP[d.c] || '?';
+  const hasInfo = INFO_LABELS.some(item => info[item.key]);
+
+  document.getElementById('editToggle').style.display = editMode ? 'none' : 'inline-block';
+
+  let html = `
+    <div class="char-card">
+      <div class="char-header">
+        <div class="char-avatar ${genderClass}">${esc((d.n || '?')[0])}</div>
+        <div class="char-name">${esc(d.n || '이름 없음')}</div>
+        <div class="char-badges">
+          <span class="badge ${genderClass}">${d.g === 1 ? '♀' : '♂'} ${genderText}</span>
+          <span class="badge ${coupleClass}">${coupleText}</span>
+        </div>
+        <div class="char-id">${esc(d.id)}</div>
+        ${d.owner || d.group ? `
+          <div class="char-meta">
+            ${d.owner ? `<span>👤 ${esc(d.owner)}</span>` : ''}
+            ${d.group ? `<span>📁 ${esc(d.group)}</span>` : ''}
+          </div>` : ''}
+      </div>
+      <div class="info-section">`;
+
+  if (editMode) {
+    for (const item of INFO_LABELS) {
+      html += `
+        <div class="info-row">
+          <div class="info-label">${item.label}</div>
+          <div class="info-value">
+            <textarea class="info-textarea${item.key === 'speechEx' ? ' speech-input' : ''}"
+              id="edit_${item.key}"
+              placeholder="${PLACEHOLDERS[item.key] || ''}"
+            >${esc(info[item.key] || '')}</textarea>
+          </div>
+        </div>`;
+    }
+    html += `
+      <div class="info-row">
+        <div class="info-label">메모</div>
+        <div class="info-value">
+          <textarea class="info-textarea" id="edit_note" placeholder="짧은 메모 (선택)">${esc(note)}</textarea>
+        </div>
+      </div>`;
+  } else {
+    if (hasInfo) {
+      for (const item of INFO_LABELS) {
+        const val = info[item.key];
+        if (!val) continue;
+        if (item.key === 'speechEx') {
+          html += `
+            <div class="info-row">
+              <div class="info-label">${item.label}</div>
+              <div class="info-value"><div class="speech-quote">"${esc(val)}"</div></div>
+            </div>`;
+        } else {
+          html += `
+            <div class="info-row">
+              <div class="info-label">${item.label}</div>
+              <div class="info-value">${esc(val)}</div>
+            </div>`;
+        }
+      }
+    } else {
+      html += `<div style="text-align:center;padding:40px 0;color:#a89d8e;font-size:13px;">아직 등록된 설정이 없어요<br><span style="font-size:11px;margin-top:6px;display:block">편집 버튼을 눌러 정보를 추가해보세요</span></div>`;
+    }
+    if (note) {
+      html += `
+        <div class="info-row">
+          <div class="info-label">메모</div>
+          <div class="info-value" style="color:#6b6055;font-style:italic">${esc(note)}</div>
+        </div>`;
+    }
+  }
+
+  html += `</div></div>`;
+
+  if (editMode) {
+    html += `
+      <div class="edit-actions">
+        <button class="cancel-btn" onclick="exitEditMode()">취소</button>
+        <button class="save-btn" id="saveBtn" onclick="saveCharInfo()">저장</button>
+      </div>`;
+  } else if (hasInfo || note) {
+    html += `<button class="copy-btn" onclick="copyCharacter()">📋 전체 복사</button>`;
+  }
+
+  document.getElementById('app').innerHTML = html;
+}
+
+function enterEditMode() { renderCharDetail(true); }
+function exitEditMode()  { renderCharDetail(false); }
+
+async function saveCharInfo() {
+  const d = window._charData;
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  const newInfo = {};
+  for (const item of INFO_LABELS) {
+    const val = (document.getElementById('edit_' + item.key)?.value || '').trim();
+    if (val) newInfo[item.key] = val;
+  }
+  const note = (document.getElementById('edit_note')?.value || '').trim();
+
+  try {
+    await db.collection('characters').doc(d.id).update({ info: newInfo, note });
+    window._charData.info = newInfo;
+    window._charData.note = note;
+    renderCharDetail(false);
+    showToast('저장되었습니다');
+  } catch (err) {
+    console.error(err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = '저장';
+    showToast('저장 실패. 다시 시도해주세요.');
+  }
+}
+
+// ============ LIST VIEW ============
+let _listData = null;
+let _listSort = 'id';
+let _listOwner = '';
+
+async function loadCharacterList() {
+  const app = document.getElementById('app');
+  try {
+    const doc = await db.collection('data').doc('characters').get();
+    if (!doc.exists) {
+      app.innerHTML = renderEmpty('데이터가 없어요', '아직 등록된 캐릭터가 없습니다.');
+      return;
+    }
+    _listData = doc.data();
+    renderList();
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다.');
+  }
+}
+
+function renderList() {
+  const groups = _listData.groups || [];
+  const owners = groups.map(g => g.owner);
+
+  const filterBar = `
+    <div class="filter-bar">
+      <select class="filter-select" onchange="setOwnerFilter(this.value)">
+        <option value="">전체 오너</option>
+        ${owners.map(o => `<option value="${esc(o)}" ${_listOwner === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+      </select>
+      <div class="sort-btns">
+        <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">ID순</button>
+        <button class="sort-btn ${_listSort === 'alpha' ? 'active' : ''}" onclick="setSort('alpha')">가나다순</button>
+      </div>
+    </div>`;
+
+  const filtered = _listOwner ? groups.filter(g => g.owner === _listOwner) : groups;
+  let listHtml = '';
+
+  for (const ownerGroup of filtered) {
+    let ownerContent = '';
+    for (const sub of (ownerGroup.subs || [])) {
+      let items = [...(sub.items || [])];
+      if (_listSort === 'alpha') {
+        items.sort((a, b) => a.n.localeCompare(b.n, 'ko'));
+      } else {
+        items.sort((a, b) => (a.id || a.charCode || '').localeCompare(b.id || b.charCode || ''));
+      }
+
+      const rowsHtml = items.map(it => {
+        const gBadge = it.g === 1 ? 'row-badge-f' : 'row-badge-m';
+        const gText = it.g === 1 ? '♀' : '♂';
+        const cBadge = it.c === 1 ? 'row-badge-couple' : 'row-badge-solo';
+        const cText = it.c === 1 ? '커플' : '솔로';
+        const badges = `<div class="char-row-badges">
+          <span class="char-row-badge ${gBadge}">${gText}</span>
+          <span class="char-row-badge ${cBadge}">${cText}</span>
+        </div>`;
+        if (it.id) {
+          return `<a class="char-row" href="character.html?id=${esc(it.id)}">
+            <span class="char-row-name">${esc(it.n)}</span>
+            <span class="char-row-id">${esc(it.id)}</span>
+            ${badges}
+          </a>`;
+        }
+        return `<div class="char-row no-id">
+          <span class="char-row-name">${esc(it.n)}</span>
+          ${badges}
+        </div>`;
+      }).join('');
+
+      ownerContent += `
+        <div class="list-group-header">${esc(sub.label)}</div>
+        ${rowsHtml}`;
+    }
+
+    listHtml += `
+      <div class="list-owner-section">
+        <div class="list-owner-header">
+          <span class="list-owner-title">${esc(ownerGroup.owner)}</span>
+          ${ownerGroup.code ? `<span class="list-owner-code">${esc(ownerGroup.code)}</span>` : ''}
+        </div>
+        ${ownerContent}
+      </div>`;
+  }
+
+  document.getElementById('app').innerHTML = filterBar + listHtml + '<div style="height:40px"></div>';
+}
+
+function setOwnerFilter(v) { _listOwner = v; renderList(); }
+function setSort(v) { _listSort = v; renderList(); }
+
+// ============ COPY (DETAIL) ============
+function copyCharacter() {
+  const d = window._charData;
+  if (!d) return;
+  const info = d.info || {};
+  let text = `이름: ${d.n} (${GENDER_MAP[d.g] || '?'} / ${COUPLE_MAP[d.c] || '?'})\n`;
+  for (const item of INFO_LABELS) {
+    const val = info[item.key];
+    if (!val) continue;
+    text += item.key === 'speechEx' ? `${item.label}: "${val}"\n` : `${item.label}: ${val}\n`;
+  }
+  if (d.note) text += `메모: ${d.note}\n`;
+  navigator.clipboard.writeText(text.trim())
+    .then(() => showToast('복사되었습니다'))
+    .catch(() => showToast('복사에 실패했습니다'));
+}
+
+// ============ UTIL ============
+function renderEmpty(title, desc) {
+  return `<div class="empty-state">
+    <div class="empty-icon">📄</div>
+    <div class="empty-title">${title}</div>
+    <div class="empty-desc">${desc}</div>
+  </div>`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

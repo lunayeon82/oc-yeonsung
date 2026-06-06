@@ -1,37 +1,31 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="연성대나무숲">
 <title>연성대나무숲</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.ttf') format('truetype');
+  }
   :root {
-    --bg: #0b0b10;
-    --surface: #14141e;
-    --border: #2a2a40;
-    --text: #e4e2f0;
-    --text-dim: #7b7994;
-    --pink: #f472b6;
-    --violet: #a78bfa;
-    --amber: #fbbf24;
+    --bg: #f4efe6;
+    --surface: #faf7f2;
+    --border: #d4c9b8;
+    --text: #3a3530;
+    --text-dim: #8a7e6b;
+    --pink: #c06b84;
+    --violet: #8b7cad;
+    --amber: #c9962a;
     --radius: 12px;
-    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
-    --font-body: 'Noto Sans KR', sans-serif;
+    --font-title: 'ko-font', sans-serif;
+    --font-body: 'ko-font', sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: var(--font-body); background: var(--bg);
+    font-family: var(--font-body); background: url('assets/bg-paper.png') repeat;
     color: var(--text); min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse 50% 40% at 15% 10%, rgba(244,114,182,0.04), transparent),
-      radial-gradient(ellipse 40% 50% at 85% 90%, rgba(167,139,250,0.04), transparent);
-    pointer-events: none;
   }
   .container {
     position: relative; z-index: 1;
@@ -55,13 +49,13 @@
     text-decoration: none; text-align: center;
   }
   .nav-btn.primary {
-    background: linear-gradient(135deg, var(--pink), #c084fc);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     color: #fff;
-    box-shadow: 0 4px 20px rgba(244,114,182,0.25);
+    box-shadow: 0 4px 20px rgba(192,107,132,0.25);
   }
   .nav-btn.primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 28px rgba(244,114,182,0.35);
+    box-shadow: 0 6px 28px rgba(192,107,132,0.35);
   }
   .nav-btn.secondary {
     background: var(--surface);
@@ -79,8 +73,10 @@
   <h1>😎 <span>연성대나무숲</span></h1>
   <div class="btn-group">
     <a class="nav-btn primary" href="random.html">랜덤 뽑기 실행</a>
+    <a class="nav-btn secondary" href="character.html">캐릭터 목록</a>
     <a class="nav-btn secondary" href="random-admin.html">랜덤 뽑기 (관리자 모드)</a>
   </div>
 </div>
-</body>
-</html>
+
+
+</body></html>

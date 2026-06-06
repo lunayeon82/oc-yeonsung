@@ -1,44 +1,38 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🔧 랜덤 뽑기 관리</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.ttf') format('truetype');
+  }
   :root {
-    --bg: #0b0b10;
-    --surface: #14141e;
-    --surface2: #1c1c2a;
-    --surface3: #222236;
-    --border: #2a2a40;
-    --text: #e4e2f0;
-    --text-dim: #7b7994;
-    --text-muted: #55536a;
-    --pink: #f472b6;
-    --pink-dim: rgba(244,114,182,0.12);
-    --blue: #60a5fa;
-    --blue-dim: rgba(96,165,250,0.12);
-    --violet: #a78bfa;
-    --violet-dim: rgba(167,139,250,0.12);
-    --amber: #fbbf24;
-    --amber-dim: rgba(251,191,36,0.12);
-    --mint: #34d399;
-    --mint-dim: rgba(52,211,153,0.12);
-    --rose: #fb7185;
+    --bg: #f4efe6;
+    --surface: #faf7f2;
+    --surface2: #f0ebe0;
+    --surface3: #e8e2d6;
+    --border: #d4c9b8;
+    --text: #3a3530;
+    --text-dim: #8a7e6b;
+    --text-muted: #b0a898;
+    --pink: #c06b84;
+    --pink-dim: rgba(192,107,132,0.15);
+    --blue: #5a82a8;
+    --blue-dim: rgba(90,130,168,0.15);
+    --violet: #8b7cad;
+    --violet-dim: rgba(139,124,173,0.15);
+    --amber: #c9962a;
+    --amber-dim: rgba(201,150,42,0.15);
+    --mint: #5a9e7a;
+    --mint-dim: rgba(90,158,122,0.15);
+    --rose: #c45c6a;
     --radius: 12px;
-    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
-    --font-body: 'Noto Sans KR', sans-serif;
+    --font-title: 'ko-font', sans-serif;
+    --font-body: 'ko-font', sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background: radial-gradient(ellipse 50% 40% at 20% 15%, rgba(167,139,250,0.05), transparent),
-                radial-gradient(ellipse 40% 50% at 80% 85%, rgba(251,191,36,0.04), transparent);
-    pointer-events: none;
-  }
+  body { font-family: var(--font-body); background: url('assets/bg-paper.png') repeat; color: var(--text); min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
@@ -186,10 +180,22 @@
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   .modal {
-    background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 380px;
+    background: #f7f2ec; border: 1px solid #e5ddd3;
+    border-radius: 14px; padding: 24px; width: 100%; max-width: 380px;
     transform: translateY(20px); transition: transform 0.25s;
+    position: relative;
   }
+  .modal-ribbon {
+    display: block; margin: 0 auto 12px;
+    max-height: 36px; width: auto;
+  }
+  .modal-exit {
+    position: absolute; top: 12px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    padding: 0; line-height: 0;
+  }
+  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
+  .modal-exit:hover img { opacity: 1; }
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.05rem; }
   .modal-field { margin-bottom: 14px; }
@@ -218,6 +224,18 @@
     font-family: var(--font-body); font-size: 0.85rem;
   }
   .modal-save:hover { filter: brightness(1.15); }
+
+  /* Owner code badge */
+  .owner-code {
+    display: inline-block; padding: 1px 8px; border-radius: 6px;
+    background: var(--violet-dim); color: var(--violet);
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
+    font-family: monospace;
+  }
+  .char-id-badge {
+    font-family: monospace; font-size: 0.6rem; color: var(--text-muted);
+    letter-spacing: 0.5px; flex-shrink: 0;
+  }
 
   /* Owner / Group headers */
   .owner-section { margin-bottom: 20px; }
@@ -277,7 +295,7 @@
 </head>
 <body>
 
-<div class="sync-badge" id="syncBadge"><span class="dot"></span>연결 중...</div>
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
 <div class="app">
   <header>
@@ -287,16 +305,16 @@
     <a class="back-link" href="random.html">* 랜덤 뽑기로 가기 *</a>
   </header>
 
-  <div class="loading" id="loadingState">
+  <div class="loading" id="loadingState" style="display: none;">
     <div class="spinner"></div>
     <div>데이터 불러오는 중...</div>
   </div>
 
-  <div id="mainContent" style="display:none">
+  <div id="mainContent" style="display: block;">
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('chars')">🎭 캐릭터</button>
-      <button class="admin-tab" onclick="switchTab('roles')">⚔️ 역할</button>
-      <button class="admin-tab" onclick="switchTab('aus')">🌀 세계관</button>
+      <button class="admin-tab" onclick="switchTab('roles')">⚔️ 캐릭터 설정</button>
+      <button class="admin-tab" onclick="switchTab('aus')">🌀 관계성</button>
     </div>
 
     <!-- ===== Characters Panel ===== -->
@@ -308,6 +326,7 @@
         </div>
         <div class="add-row">
           <input class="add-input" id="newOwnerName" placeholder="오너 이름 (예: 예밍)">
+          <input class="add-input" id="newOwnerCode" placeholder="코드 (예: y)" style="max-width:80px">
           <button class="add-btn" onclick="addOwner()">오너 추가</button>
         </div>
       </div>
@@ -318,7 +337,7 @@
           <span class="card-title">그룹 추가</span>
         </div>
         <div class="add-row">
-          <select class="select-input" id="groupOwnerSelect"></select>
+          <select class="select-input" id="groupOwnerSelect"><option value="김굥">김굥</option><option value="하지">하지</option><option value="예밍">예밍</option></select>
           <input class="add-input" id="newGroupName" placeholder="그룹 이름 (예: 02즈)">
           <button class="add-btn" onclick="addGroup()">그룹 추가</button>
         </div>
@@ -330,8 +349,8 @@
           <span class="card-title">캐릭터 추가</span>
         </div>
         <div class="add-row">
-          <select class="select-input" id="charOwnerSelect" onchange="updateCharGroupSelect()"></select>
-          <select class="select-input" id="charGroupSelect"></select>
+          <select class="select-input" id="charOwnerSelect" onchange="updateCharGroupSelect()"><option value="김굥">김굥</option><option value="하지">하지</option><option value="예밍">예밍</option></select>
+          <select class="select-input" id="charGroupSelect"><option value="02즈">02즈</option><option value="가명즈">가명즈</option><option value="게임즈">게임즈</option></select>
           <input class="add-input" id="newCharName" placeholder="캐릭터 이름">
           <select class="select-input" id="newCharGender">
             <option value="0">♂ 남성</option>
@@ -345,47 +364,675 @@
         </div>
       </div>
 
-      <!-- Character List -->
-      <div id="charList"></div>
-    </div>
-
-    <!-- ===== Roles Panel ===== -->
-    <div class="tab-panel" id="panel-roles">
+      <!-- Migration Card -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">역할 추가</span>
+          <span class="card-title">ID 일괄 부여</span>
         </div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;line-height:1.6">
+          오너 코드가 설정된 캐릭터에 자동으로 ID를 부여합니다.<br>기존 ID가 없는 캐릭터에만 적용되며, <code style="font-size:0.75rem;color:var(--violet)">characters/{id}</code> 컬렉션에도 생성됩니다.
+        </div>
+        <button class="add-btn" onclick="migrateIds()" style="background:var(--amber);color:#fff;font-weight:700">⚡ ID 일괄 부여 실행</button>
+      </div>
+
+      <!-- Character List -->
+      <div id="charList">
+      <div class="card owner-section">
+        <div class="owner-header">
+          <span class="owner-title">김굥</span>
+          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(0)">오너 삭제</button>
+        </div>
+        
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">02즈</span>
+            <span class="group-count">4명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(0,0)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,0,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,0,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">도아랑</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,0,0)">변경</button>
+          <button class="item-del" onclick="delChar(0,0,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,0,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,0,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">백설호</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,0,1)">변경</button>
+          <button class="item-del" onclick="delChar(0,0,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,0,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,0,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">진서화</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,0,2)">변경</button>
+          <button class="item-del" onclick="delChar(0,0,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,0,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,0,3,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">진서희</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,0,3)">변경</button>
+          <button class="item-del" onclick="delChar(0,0,3)" title="삭제">✕</button>
+        </div></div>
+        </div>
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">가명즈</span>
+            <span class="group-count">5명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(0,1)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,1,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,1,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">윤신우</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,1,0)">변경</button>
+          <button class="item-del" onclick="delChar(0,1,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,1,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,1,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">윤민우</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,1,1)">변경</button>
+          <button class="item-del" onclick="delChar(0,1,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,1,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,1,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">연이안</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,1,2)">변경</button>
+          <button class="item-del" onclick="delChar(0,1,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,1,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,1,3,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">도하랑</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,1,3)">변경</button>
+          <button class="item-del" onclick="delChar(0,1,3)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,1,4,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,1,4,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">신지호</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,1,4)">변경</button>
+          <button class="item-del" onclick="delChar(0,1,4)" title="삭제">✕</button>
+        </div></div>
+        </div>
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">게임즈</span>
+            <span class="group-count">3명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(0,2)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,2,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,2,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">선유예</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,2,0)">변경</button>
+          <button class="item-del" onclick="delChar(0,2,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,2,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,2,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">한류은</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,2,1)">변경</button>
+          <button class="item-del" onclick="delChar(0,2,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(0,2,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(0,2,2,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">유설</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(0,2,2)">변경</button>
+          <button class="item-del" onclick="delChar(0,2,2)" title="삭제">✕</button>
+        </div></div>
+        </div>
+      </div>
+      <div class="card owner-section">
+        <div class="owner-header">
+          <span class="owner-title">하지</span>
+          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(1)">오너 삭제</button>
+        </div>
+        
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">응애</span>
+            <span class="group-count">4명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(1,0)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,0,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,0,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">채재이</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,0,0)">변경</button>
+          <button class="item-del" onclick="delChar(1,0,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,0,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,0,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">서무연</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,0,1)">변경</button>
+          <button class="item-del" onclick="delChar(1,0,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,0,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,0,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">함시연</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,0,2)">변경</button>
+          <button class="item-del" onclick="delChar(1,0,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,0,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,0,3,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">혜이린</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,0,3)">변경</button>
+          <button class="item-del" onclick="delChar(1,0,3)" title="삭제">✕</button>
+        </div></div>
+        </div>
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">으른</span>
+            <span class="group-count">5명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(1,1)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,1,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,1,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">공준</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,1,0)">변경</button>
+          <button class="item-del" onclick="delChar(1,1,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,1,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,1,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">백단</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,1,1)">변경</button>
+          <button class="item-del" onclick="delChar(1,1,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,1,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,1,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">유세림</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,1,2)">변경</button>
+          <button class="item-del" onclick="delChar(1,1,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,1,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,1,3,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">함시한</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,1,3)">변경</button>
+          <button class="item-del" onclick="delChar(1,1,3)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(1,1,4,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(1,1,4,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">함시현</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(1,1,4)">변경</button>
+          <button class="item-del" onclick="delChar(1,1,4)" title="삭제">✕</button>
+        </div></div>
+        </div>
+      </div>
+      <div class="card owner-section">
+        <div class="owner-header">
+          <span class="owner-title">예밍</span>
+          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(2)">오너 삭제</button>
+        </div>
+        
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">후배즈</span>
+            <span class="group-count">10명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(2,0)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이예민</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,0)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이지성</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,1)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">신우진</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,2)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,3,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">박찬형</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,3)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,3)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,4,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,4,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">서하진</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,4)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,4)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,5,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,5,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이예명</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,5)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,5)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,6,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,6,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">계세휘</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,6)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,6)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,7,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,7,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">백세온</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,7)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,7)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,8,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,8,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">권진혁</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,8)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,8)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,0,9,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,0,9,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">박하린</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,0,9)">변경</button>
+          <button class="item-del" onclick="delChar(2,0,9)" title="삭제">✕</button>
+        </div></div>
+        </div>
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">선배즈</span>
+            <span class="group-count">6명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(2,1)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이예경</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,0)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이예준</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,1)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,2,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">서이다</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,2)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,2)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,3,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,3,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이지한</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,3)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,3)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,4,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,4,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">박찬하</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,4)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,4)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,1,5,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,1,5,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">박하빈</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-couple">💕 커플</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,1,5)">변경</button>
+          <button class="item-del" onclick="delChar(2,1,5)" title="삭제">✕</button>
+        </div></div>
+        </div>
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">신왕즈</span>
+            <span class="group-count">3명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(2,2)">그룹 삭제</button>
+          </div>
+          <div class="item-list">
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,2,0,-1)" disabled="" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,2,0,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이루다</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,2,0)">변경</button>
+          <button class="item-del" onclick="delChar(2,2,0)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,2,1,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,2,1,1)" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이루리</span>
+          <div class="item-tags">
+            <span class="item-tag tag-female">♀</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,2,1)">변경</button>
+          <button class="item-del" onclick="delChar(2,2,1)" title="삭제">✕</button>
+        </div>
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(2,2,2,-1)" title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(2,2,2,1)" disabled="" title="아래로">▼</button>
+          </div>
+          <span class="item-name">이이준</span>
+          <div class="item-tags">
+            <span class="item-tag tag-male">♂</span>
+            <span class="item-tag tag-solo">솔로</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(2,2,2)">변경</button>
+          <button class="item-del" onclick="delChar(2,2,2)" title="삭제">✕</button>
+        </div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 캐릭터 설정 Panel ===== -->
+    <div class="tab-panel" id="panel-roles">
+      <div class="card">
+        <div class="card-header"><span class="card-title">태그 추가</span></div>
         <div class="add-row">
-          <input class="add-input" id="newRoleName" placeholder="역할 이름 (예: 기사)" onkeydown="if(event.key==='Enter')addRole()">
+          <input class="add-input" id="newRoleTagName" placeholder="태그 이름 (예: 판타지)">
+          <button class="add-btn" onclick="addRoleTag()">태그 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">캐릭터 설정 추가</span></div>
+        <div class="add-row">
+          <select class="select-input" id="roleTagSelect"></select>
+          <input class="add-input" id="newRoleName" placeholder="이름 (예: 기사)" onkeydown="if(event.key==='Enter')addRole()">
           <button class="add-btn" onclick="addRole()">추가</button>
         </div>
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">역할 목록</span>
+          <span class="card-title">캐릭터 설정 목록</span>
           <span class="card-count" id="roleCount">0개</span>
         </div>
-        <div class="item-list" id="roleList"></div>
+        <div id="roleList"></div>
       </div>
     </div>
 
     <!-- ===== AUs Panel ===== -->
     <div class="tab-panel" id="panel-aus">
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">세계관 추가</span>
-        </div>
+        <div class="card-header"><span class="card-title">태그 추가</span></div>
         <div class="add-row">
-          <input class="add-input" id="newAUName" placeholder="세계관 이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
+          <input class="add-input" id="newAUTagName" placeholder="태그 이름 (예: 로맨스)">
+          <button class="add-btn" onclick="addAUTag()">태그 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">관계성 추가</span></div>
+        <div class="add-row">
+          <select class="select-input" id="auTagSelect"></select>
+          <input class="add-input" id="newAUName" placeholder="이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
           <button class="add-btn" onclick="addAU()">추가</button>
         </div>
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">세계관 목록</span>
+          <span class="card-title">관계성 목록</span>
           <span class="card-count" id="auCount">0개</span>
         </div>
-        <div class="item-list" id="auList"></div>
+        <div id="auList"></div>
       </div>
     </div>
   </div>
@@ -393,10 +1040,12 @@
 
 <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
   <div class="modal">
+    <button class="modal-exit" onclick="closeEditModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
     <h3>캐릭터 수정</h3>
     <div class="modal-field">
       <label class="modal-label">이름</label>
-      <input class="modal-input" id="editName" disabled style="opacity:0.5">
+      <input class="modal-input" id="editName" disabled="" style="opacity:0.5">
     </div>
     <div class="modal-field">
       <label class="modal-label">성별</label>
@@ -412,9 +1061,33 @@
         <option value="1">커플</option>
       </select>
     </div>
+    <div class="modal-field">
+      <label class="modal-label">메모</label>
+      <textarea class="modal-input" id="editNote" rows="3" style="resize:vertical" placeholder="짧은 메모 (선택 사항)"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeEditModal()">취소</button>
       <button class="modal-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="renameModal" onclick="if(event.target===this)closeRenameModal()">
+  <div class="modal">
+    <button class="modal-exit" onclick="closeRenameModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
+    <h3 id="renameModalTitle">수정</h3>
+    <div class="modal-field">
+      <label class="modal-label">이름</label>
+      <input class="modal-input" id="renameInput" onkeydown="if(event.key==='Enter')saveRename()">
+    </div>
+    <div class="modal-field" id="renameTagField" style="display:none">
+      <label class="modal-label">태그</label>
+      <select class="modal-select" id="renameTagSelect"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeRenameModal()">취소</button>
+      <button class="modal-save" onclick="saveRename()">저장</button>
     </div>
   </div>
 </div>
@@ -441,8 +1114,8 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 let CHARS = { groups: [] };
-let ROLES = [];
-let AUS = [];
+let ROLES = { groups: [] };
+let AUS = { groups: [] };
 
 // ============ INIT ============
 async function init() {
@@ -453,8 +1126,14 @@ async function init() {
       db.collection('data').doc('aus').get()
     ]);
     if (charDoc.exists) CHARS = charDoc.data();
-    if (roleDoc.exists) ROLES = roleDoc.data().list || [];
-    if (auDoc.exists) AUS = auDoc.data().list || [];
+    if (roleDoc.exists) {
+      const rd = roleDoc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+    }
+    if (auDoc.exists) {
+      const ad = auDoc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+    }
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
@@ -473,10 +1152,18 @@ function startListeners() {
     if (doc.exists) { CHARS = doc.data(); renderAll(); setSyncStatus(true); }
   });
   db.collection('data').doc('roles').onSnapshot(doc => {
-    if (doc.exists) { ROLES = doc.data().list || []; renderRoles(); setSyncStatus(true); }
+    if (doc.exists) {
+      const rd = doc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+      renderRoles(); setSyncStatus(true);
+    }
   });
   db.collection('data').doc('aus').onSnapshot(doc => {
-    if (doc.exists) { AUS = doc.data().list || []; renderAUs(); setSyncStatus(true); }
+    if (doc.exists) {
+      const ad = doc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+      renderAUs(); setSyncStatus(true);
+    }
   });
 }
 
@@ -499,8 +1186,8 @@ async function saveChars() {
 async function saveRoles() {
   showSaving();
   try {
-    await db.collection('data').doc('roles').set({ list: ROLES });
-    toast('역할 저장 완료');
+    await db.collection('data').doc('roles').set(ROLES);
+    toast('캐릭터 설정 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
 }
@@ -508,8 +1195,8 @@ async function saveRoles() {
 async function saveAUs() {
   showSaving();
   try {
-    await db.collection('data').doc('aus').set({ list: AUS });
-    toast('세계관 저장 완료');
+    await db.collection('data').doc('aus').set(AUS);
+    toast('관계성 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
 }
@@ -552,6 +1239,7 @@ function renderChars() {
             <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},1)" ${ii===s.items.length-1?'disabled':''} title="아래로">▼</button>
           </div>
           <span class="item-name">${esc(it.n)}</span>
+          ${it.id ? `<span class="char-id-badge">${esc(it.id)}</span>` : ''}
           <div class="item-tags">
             <span class="item-tag ${it.g===0?'tag-male':'tag-female'}">${it.g===0?'♂':'♀'}</span>
             <span class="item-tag ${it.c===1?'tag-couple':'tag-solo'}">${it.c===1?'💕 커플':'솔로'}</span>
@@ -564,6 +1252,7 @@ function renderChars() {
         <div class="group-section">
           <div class="group-header">
             <span class="group-label">${esc(s.label)}</span>
+            ${s.code ? `<span style="font-size:0.6rem;color:var(--text-muted);font-family:monospace">${esc(s.code)}</span>` : ''}
             <span class="group-count">${s.items.length}명</span>
             <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(${gi},${si})">그룹 삭제</button>
           </div>
@@ -575,6 +1264,7 @@ function renderChars() {
       <div class="card owner-section">
         <div class="owner-header">
           <span class="owner-title">${esc(g.owner)}</span>
+          ${g.code ? `<span class="owner-code">${esc(g.code)}</span>` : ''}
           <button class="danger-btn" style="margin-left:auto" onclick="delOwner(${gi})">오너 삭제</button>
         </div>
         ${groupsHtml}
@@ -603,12 +1293,17 @@ function updateCharGroupSelect() {
 }
 
 function addOwner() {
-  const input = document.getElementById('newOwnerName');
-  const name = input.value.trim();
-  if (!name) return;
+  const nameInput = document.getElementById('newOwnerName');
+  const codeInput = document.getElementById('newOwnerCode');
+  const name = nameInput.value.trim();
+  const code = codeInput.value.trim().toLowerCase();
+  if (!name || !code) { toast('이름과 코드를 모두 입력해주세요'); return; }
+  if (!/^[a-z0-9]+$/.test(code)) { toast('코드는 영소문자/숫자만 사용 가능해요'); return; }
   if (CHARS.groups.some(g => g.owner === name)) { toast('이미 존재하는 오너'); return; }
-  CHARS.groups.push({ owner: name, subs: [] });
-  input.value = '';
+  if (CHARS.groups.some(g => g.code === code)) { toast('이미 사용 중인 코드'); return; }
+  CHARS.groups.push({ owner: name, code, subs: [] });
+  nameInput.value = '';
+  codeInput.value = '';
   saveChars();
 }
 
@@ -620,7 +1315,14 @@ function addGroup() {
   const group = CHARS.groups.find(g => g.owner === ownerName);
   if (!group) return;
   if (group.subs.some(s => s.label === label)) { toast('이미 존재하는 그룹'); return; }
-  group.subs.push({ label, items: [] });
+
+  const maxCode = group.subs.reduce((max, s) => {
+    const n = parseInt(s.code || '0');
+    return n > max ? n : max;
+  }, 0);
+  const code = String(maxCode + 1).padStart(2, '0');
+
+  group.subs.push({ label, code, items: [] });
   input.value = '';
   saveChars();
 }
@@ -633,14 +1335,36 @@ function addChar() {
   const couple = parseInt(document.getElementById('newCharCouple').value);
   if (!name) return;
 
-  const group = CHARS.groups.find(g => g.owner === ownerName);
-  if (!group) return;
-  const sub = group.subs.find(s => s.label === groupLabel);
+  const ownerGroup = CHARS.groups.find(g => g.owner === ownerName);
+  if (!ownerGroup) return;
+  const sub = ownerGroup.subs.find(s => s.label === groupLabel);
   if (!sub) return;
   if (sub.items.some(it => it.n === name)) { toast('이미 존재하는 캐릭터'); return; }
 
-  sub.items.push({ n: name, g: gender, c: couple });
+  const maxCode = sub.items.reduce((max, it) => {
+    const n = parseInt(it.charCode || '0');
+    return n > max ? n : max;
+  }, 0);
+  const charCode = String(maxCode + 1).padStart(2, '0');
+
+  const ownerCode = ownerGroup.code || '';
+  const groupCode = sub.code || '';
+  const id = ownerCode && groupCode ? `${ownerCode}${groupCode}${charCode}` : '';
+
+  const charObj = { n: name, g: gender, c: couple, charCode };
+  if (id) charObj.id = id;
+
+  sub.items.push(charObj);
   document.getElementById('newCharName').value = '';
+
+  if (id) {
+    db.collection('characters').doc(id).set({
+      n: name, g: gender, c: couple,
+      owner: ownerName, group: groupLabel,
+      info: {}
+    }).catch(e => console.error('characters doc 생성 실패:', e));
+  }
+
   saveChars();
 }
 
@@ -660,6 +1384,7 @@ function openEditModal(gi, si, ii) {
   document.getElementById('editName').value = it.n;
   document.getElementById('editGender').value = it.g;
   document.getElementById('editCouple').value = it.c;
+  document.getElementById('editNote').value = it.nt || '';
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -674,6 +1399,16 @@ function saveEdit() {
   const it = CHARS.groups[gi].subs[si].items[ii];
   it.g = parseInt(document.getElementById('editGender').value);
   it.c = parseInt(document.getElementById('editCouple').value);
+  const note = document.getElementById('editNote').value.trim();
+  if (note) { it.nt = note; } else { delete it.nt; }
+
+  if (it.id) {
+    db.collection('characters').doc(it.id).set(
+      { g: it.g, c: it.c, note: note || '' },
+      { merge: true }
+    ).catch(e => console.error('characters doc 업데이트 실패:', e));
+  }
+
   closeEditModal();
   saveChars();
 }
@@ -699,63 +1434,254 @@ function delOwner(gi) {
   saveChars();
 }
 
-// ============ ROLES ============
-function renderRoles() {
-  document.getElementById('roleCount').textContent = ROLES.length + '개';
-  const sorted = ROLES.slice().sort((a,b) => a.localeCompare(b,'ko'));
-  document.getElementById('roleList').innerHTML = sorted.map((r, i) => {
-    const origIdx = ROLES.indexOf(r);
-    return `<div class="simple-item">
-      <span class="idx">${i+1}</span>
-      <span class="name">${esc(r)}</span>
-      <button class="item-del" onclick="delRole(${origIdx})" title="삭제">✕</button>
-    </div>`;
-  }).join('');
+async function migrateIds() {
+  const missingCode = CHARS.groups.filter(g => !g.code);
+  if (missingCode.length > 0) {
+    toast(`오너 코드가 없는 오너: ${missingCode.map(g => g.owner).join(', ')} — 먼저 오너 코드를 설정해주세요`);
+    return;
+  }
+
+  const targets = [];
+  for (const ownerGroup of CHARS.groups) {
+    for (let si = 0; si < ownerGroup.subs.length; si++) {
+      const sub = ownerGroup.subs[si];
+      if (!sub.code) {
+        sub.code = String(si + 1).padStart(2, '0');
+      }
+      for (let ii = 0; ii < sub.items.length; ii++) {
+        const it = sub.items[ii];
+        if (!it.charCode) {
+          it.charCode = String(ii + 1).padStart(2, '0');
+        }
+        if (!it.id) {
+          it.id = `${ownerGroup.code}${sub.code}${it.charCode}`;
+          targets.push({ id: it.id, n: it.n, g: it.g, c: it.c, owner: ownerGroup.owner, group: sub.label });
+        }
+      }
+    }
+  }
+
+  if (targets.length === 0) {
+    toast('모든 캐릭터에 이미 ID가 있어요');
+    return;
+  }
+
+  if (!confirm(`${targets.length}명의 캐릭터에 ID를 부여하고 Firestore에 문서를 생성합니다. 계속할까요?`)) return;
+
+  showSaving();
+  try {
+    await Promise.all(targets.map(t =>
+      db.collection('characters').doc(t.id).set(
+        { n: t.n, g: t.g, c: t.c, owner: t.owner, group: t.group, info: {} },
+        { merge: true }
+      )
+    ));
+    await db.collection('data').doc('characters').set(CHARS);
+    toast(`ID 부여 완료 (${targets.length}명)`);
+  } catch (e) {
+    console.error(e);
+    toast('오류 발생! 콘솔을 확인해주세요');
+  }
+  hideSaving();
 }
 
-function addRole() {
-  const input = document.getElementById('newRoleName');
-  const name = input.value.trim();
-  if (!name) return;
-  if (ROLES.includes(name)) { toast('이미 존재하는 역할'); return; }
-  ROLES.push(name);
+// ============ ROLES ============
+function renderRoles() {
+  const total = ROLES.groups.reduce((s, g) => s + g.items.length, 0);
+  document.getElementById('roleCount').textContent = total + '개';
+  const container = document.getElementById('roleList');
+  if (!ROLES.groups.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px 0">태그가 없습니다. 태그를 먼저 추가해주세요.</div>';
+    updateRoleTagSelect(); return;
+  }
+  container.innerHTML = ROLES.groups.map((g, gi) => {
+    const itemsHtml = g.items.map((item, ii) => `
+      <div class="simple-item">
+        <span class="idx">${ii+1}</span>
+        <span class="name">${esc(item)}</span>
+        <button class="item-edit" onclick="openRenameModal('role',${gi},${ii})">변경</button>
+        <button class="item-del" onclick="delRole(${gi},${ii})" title="삭제">✕</button>
+      </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
+    return `<div class="owner-section">
+      <div class="owner-header">
+        <span class="owner-title">${esc(g.label)}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
+        <button class="item-edit" style="margin-left:auto" onclick="openRenameModal('roleTag',${gi})">태그 변경</button>
+        <button class="danger-btn" style="font-size:0.65rem;padding:3px 10px" onclick="delRoleTag(${gi})">태그 삭제</button>
+      </div>
+      <div class="item-list">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+  updateRoleTagSelect();
+}
+
+function updateRoleTagSelect() {
+  document.getElementById('roleTagSelect').innerHTML = ROLES.groups.map(g => `<option value="${esc(g.label)}">${esc(g.label)}</option>`).join('');
+}
+
+function addRoleTag() {
+  const input = document.getElementById('newRoleTagName');
+  const label = input.value.trim();
+  if (!label) return;
+  if (ROLES.groups.some(g => g.label === label)) { toast('이미 존재하는 태그'); return; }
+  ROLES.groups.push({ label, items: [] });
   input.value = '';
   saveRoles();
 }
 
-function delRole(idx) {
-  if (!confirm(`"${ROLES[idx]}" 삭제할까요?`)) return;
-  ROLES.splice(idx, 1);
+function delRoleTag(gi) {
+  if (!confirm(`"${ROLES.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+  ROLES.groups.splice(gi, 1);
+  saveRoles();
+}
+
+function addRole() {
+  const tagLabel = document.getElementById('roleTagSelect').value;
+  const input = document.getElementById('newRoleName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (!tagLabel) { toast('태그를 먼저 추가해주세요'); return; }
+  const g = ROLES.groups.find(g => g.label === tagLabel);
+  if (!g) return;
+  if (g.items.includes(name)) { toast('이미 존재하는 항목'); return; }
+  g.items.push(name);
+  input.value = '';
+  saveRoles();
+}
+
+let renameTarget = null;
+
+function openRenameModal(type, gi, ii) {
+  let current = '';
+  if (type === 'role') current = ROLES.groups[gi].items[ii];
+  else if (type === 'au') current = AUS.groups[gi].items[ii];
+  else if (type === 'roleTag') current = ROLES.groups[gi].label;
+  else if (type === 'auTag') current = AUS.groups[gi].label;
+
+  renameTarget = { type, gi, ii };
+  const titles = { role: '캐릭터 설정 수정', au: '관계성 수정', roleTag: '태그 이름 수정', auTag: '태그 이름 수정' };
+  document.getElementById('renameModalTitle').textContent = titles[type];
+  document.getElementById('renameInput').value = current;
+
+  const tagField = document.getElementById('renameTagField');
+  const tagSelect = document.getElementById('renameTagSelect');
+  if (type === 'role' || type === 'au') {
+    const groups = type === 'role' ? ROLES.groups : AUS.groups;
+    tagSelect.innerHTML = groups.map((g, i) =>
+      `<option value="${i}" ${i === gi ? 'selected' : ''}>${esc(g.label)}</option>`
+    ).join('');
+    tagField.style.display = '';
+  } else {
+    tagField.style.display = 'none';
+  }
+
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(() => document.getElementById('renameInput').select(), 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameModal').classList.remove('open');
+  renameTarget = null;
+}
+
+function saveRename() {
+  if (!renameTarget) return;
+  const { type, gi, ii } = renameTarget;
+  const val = document.getElementById('renameInput').value.trim();
+  if (!val) return;
+
+  if (type === 'role') {
+    const newGi = parseInt(document.getElementById('renameTagSelect').value);
+    ROLES.groups[gi].items.splice(ii, 1);
+    ROLES.groups[newGi].items.push(val);
+    closeRenameModal(); saveRoles();
+  } else if (type === 'au') {
+    const newGi = parseInt(document.getElementById('renameTagSelect').value);
+    AUS.groups[gi].items.splice(ii, 1);
+    AUS.groups[newGi].items.push(val);
+    closeRenameModal(); saveAUs();
+  } else if (type === 'roleTag') {
+    ROLES.groups[gi].label = val;
+    closeRenameModal(); saveRoles();
+  } else if (type === 'auTag') {
+    AUS.groups[gi].label = val;
+    closeRenameModal(); saveAUs();
+  }
+}
+
+function delRole(gi, ii) {
+  if (!confirm(`"${ROLES.groups[gi].items[ii]}" 삭제할까요?`)) return;
+  ROLES.groups[gi].items.splice(ii, 1);
   saveRoles();
 }
 
 // ============ AUs ============
 function renderAUs() {
-  document.getElementById('auCount').textContent = AUS.length + '개';
-  const sorted = AUS.slice().sort((a,b) => a.localeCompare(b,'ko'));
-  document.getElementById('auList').innerHTML = sorted.map((a, i) => {
-    const origIdx = AUS.indexOf(a);
-    return `<div class="simple-item">
-      <span class="idx">${i+1}</span>
-      <span class="name">${esc(a)}</span>
-      <button class="item-del" onclick="delAU(${origIdx})" title="삭제">✕</button>
+  const total = AUS.groups.reduce((s, g) => s + g.items.length, 0);
+  document.getElementById('auCount').textContent = total + '개';
+  const container = document.getElementById('auList');
+  if (!AUS.groups.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px 0">태그가 없습니다. 태그를 먼저 추가해주세요.</div>';
+    updateAUTagSelect(); return;
+  }
+  container.innerHTML = AUS.groups.map((g, gi) => {
+    const itemsHtml = g.items.map((item, ii) => `
+      <div class="simple-item">
+        <span class="idx">${ii+1}</span>
+        <span class="name">${esc(item)}</span>
+        <button class="item-edit" onclick="openRenameModal('au',${gi},${ii})">변경</button>
+        <button class="item-del" onclick="delAU(${gi},${ii})" title="삭제">✕</button>
+      </div>`).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 0">비어있음</div>';
+    return `<div class="owner-section">
+      <div class="owner-header">
+        <span class="owner-title">${esc(g.label)}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">${g.items.length}개</span>
+        <button class="item-edit" style="margin-left:auto" onclick="openRenameModal('auTag',${gi})">태그 변경</button>
+        <button class="danger-btn" style="font-size:0.65rem;padding:3px 10px" onclick="delAUTag(${gi})">태그 삭제</button>
+      </div>
+      <div class="item-list">${itemsHtml}</div>
     </div>`;
   }).join('');
+  updateAUTagSelect();
 }
 
-function addAU() {
-  const input = document.getElementById('newAUName');
-  const name = input.value.trim();
-  if (!name) return;
-  if (AUS.includes(name)) { toast('이미 존재하는 세계관'); return; }
-  AUS.push(name);
+function updateAUTagSelect() {
+  document.getElementById('auTagSelect').innerHTML = AUS.groups.map(g => `<option value="${esc(g.label)}">${esc(g.label)}</option>`).join('');
+}
+
+function addAUTag() {
+  const input = document.getElementById('newAUTagName');
+  const label = input.value.trim();
+  if (!label) return;
+  if (AUS.groups.some(g => g.label === label)) { toast('이미 존재하는 태그'); return; }
+  AUS.groups.push({ label, items: [] });
   input.value = '';
   saveAUs();
 }
 
-function delAU(idx) {
-  if (!confirm(`"${AUS[idx]}" 삭제할까요?`)) return;
-  AUS.splice(idx, 1);
+function delAUTag(gi) {
+  if (!confirm(`"${AUS.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+  AUS.groups.splice(gi, 1);
+  saveAUs();
+}
+
+function addAU() {
+  const tagLabel = document.getElementById('auTagSelect').value;
+  const input = document.getElementById('newAUName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (!tagLabel) { toast('태그를 먼저 추가해주세요'); return; }
+  const g = AUS.groups.find(g => g.label === tagLabel);
+  if (!g) return;
+  if (g.items.includes(name)) { toast('이미 존재하는 항목'); return; }
+  g.items.push(name);
+  input.value = '';
+  saveAUs();
+}
+
+function delAU(gi, ii) {
+  if (!confirm(`"${AUS.groups[gi].items[ii]}" 삭제할까요?`)) return;
+  AUS.groups[gi].items.splice(ii, 1);
   saveAUs();
 }
 
@@ -770,5 +1696,6 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 
 init();
 </script>
-</body>
-</html>
+
+
+</body></html>

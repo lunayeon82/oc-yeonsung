@@ -1,47 +1,40 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎲 랜덤 뽑기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('assets/ko-font.ttf') format('truetype');
+  }
   :root {
-    --bg: #0b0b10;
-    --surface: #14141e;
-    --surface2: #1c1c2a;
-    --border: #2a2a40;
-    --text: #e4e2f0;
-    --text-dim: #7b7994;
-    --text-muted: #55536a;
-    --pink: #f472b6;
-    --pink-dim: rgba(244,114,182,0.12);
-    --blue: #60a5fa;
-    --blue-dim: rgba(96,165,250,0.12);
-    --violet: #a78bfa;
-    --violet-dim: rgba(167,139,250,0.12);
-    --amber: #fbbf24;
-    --amber-dim: rgba(251,191,36,0.12);
-    --mint: #34d399;
-    --mint-dim: rgba(52,211,153,0.12);
-    --rose: #fb7185;
+    --bg: #f4efe6;
+    --surface: #faf7f2;
+    --surface2: #f0ebe0;
+    --border: #d4c9b8;
+    --text: #3a3530;
+    --text-dim: #8a7e6b;
+    --text-muted: #b0a898;
+    --pink: #c06b84;
+    --pink-dim: rgba(192,107,132,0.15);
+    --blue: #5a82a8;
+    --blue-dim: rgba(90,130,168,0.15);
+    --violet: #8b7cad;
+    --violet-dim: rgba(139,124,173,0.15);
+    --amber: #c9962a;
+    --amber-dim: rgba(201,150,42,0.15);
+    --mint: #5a9e7a;
+    --mint-dim: rgba(90,158,122,0.15);
+    --rose: #c45c6a;
     --radius: 12px;
-    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
-    --font-body: 'Noto Sans KR', sans-serif;
+    --font-title: 'ko-font', sans-serif;
+    --font-body: 'ko-font', sans-serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: var(--font-body); background: var(--bg);
+    font-family: var(--font-body); background: url('assets/bg-paper.png') repeat;
     color: var(--text); min-height: 100dvh;
     -webkit-tap-highlight-color: transparent;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse 50% 40% at 15% 10%, rgba(244,114,182,0.04), transparent),
-      radial-gradient(ellipse 40% 50% at 85% 90%, rgba(96,165,250,0.04), transparent);
-    pointer-events: none;
   }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -88,8 +81,8 @@
   }
   .result-side { font-family: var(--font-title); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; min-width: 50px; }
   .result-side .ph { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
-  .result-left { background: linear-gradient(135deg, var(--pink), #e879a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .result-right { background: linear-gradient(135deg, var(--blue), #7cb3f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .result-left { background: linear-gradient(135deg, var(--pink), #a04060); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .result-right { background: linear-gradient(135deg, var(--blue), #3d6d96); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .result-x { font-family: var(--font-title); font-weight: 800; font-size: 1.1rem; color: var(--violet); opacity: 0.7; }
   .result-pop { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes pop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
@@ -99,6 +92,7 @@
   .result-sub-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 44px; text-align: right; }
   .result-sub-value { font-family: var(--font-title); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; min-width: 60px; }
   .result-sub-value .ph { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+  .result-role-sep { color: var(--violet); opacity: 0.7; font-weight: 800; font-size: 0.9rem; margin: 0 4px; }
   .result-role-text { color: var(--amber); }
   .result-au-text { color: var(--mint); }
 
@@ -122,13 +116,13 @@
 
   .pick-btn {
     padding: 12px 44px; border: none; border-radius: 100px;
-    background: linear-gradient(135deg, var(--pink), #c084fc);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     color: #fff; font-family: var(--font-title);
     font-size: 1.05rem; font-weight: 700;
     cursor: pointer; transition: all 0.2s;
-    box-shadow: 0 4px 20px rgba(244,114,182,0.25);
+    box-shadow: 0 4px 20px rgba(192,107,132,0.25);
   }
-  .pick-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(244,114,182,0.35); }
+  .pick-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(192,107,132,0.35); }
   .pick-btn:active { transform: scale(0.97); }
   .pick-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
@@ -230,11 +224,23 @@
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   .modal {
-    background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 400px;
+    background: #f7f2ec; border: 1px solid #e5ddd3;
+    border-radius: 14px; padding: 24px; width: 100%; max-width: 400px;
     max-height: 70vh; overflow-y: auto;
     transform: translateY(20px); transition: transform 0.25s;
+    position: relative;
   }
+  .modal-ribbon {
+    display: block; margin: 0 auto 12px;
+    max-height: 36px; width: auto;
+  }
+  .modal-exit {
+    position: absolute; top: 12px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    padding: 0; line-height: 0;
+  }
+  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
+  .modal-exit:hover img { opacity: 1; }
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.1rem; }
   .modal-list { list-style: none; }
@@ -244,6 +250,11 @@
   }
   .modal-list li:last-child { border-bottom: none; }
   .modal-list .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
+  .modal-list .group-label {
+    padding: 10px 12px 6px; font-size: 0.7rem; font-weight: 700;
+    color: var(--violet); letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
   .modal-close {
     margin-top: 16px; width: 100%; padding: 10px;
     border: none; border-radius: 10px; background: var(--surface2);
@@ -299,7 +310,7 @@
 <body>
 
 <!-- Sync indicator -->
-<div class="sync-badge" id="syncBadge"><span class="dot"></span>연결 중...</div>
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
 <div class="app">
   <header>
@@ -310,13 +321,13 @@
   </header>
 
   <!-- Loading state -->
-  <div class="loading" id="loadingState">
+  <div class="loading" id="loadingState" style="display: none;">
     <div class="spinner"></div>
     <div>데이터 불러오는 중...</div>
   </div>
 
   <!-- Main content (hidden until loaded) -->
-  <div id="mainContent" style="display:none">
+  <div id="mainContent" style="display: block;">
     <div class="pick-zone">
       <div class="pick-counts" id="counts">❤️ <b class="l">0</b>개 · 💙 <b class="r">0</b>개</div>
       <div class="result-coupling" id="resultCoupling">
@@ -326,24 +337,26 @@
       </div>
       <div class="result-subs" id="resultSubs">
         <div class="result-sub-row">
-          <span class="result-sub-label">역할</span>
-          <span class="result-sub-value" id="resRole"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled>🔄 리롤</button>
+          <span class="result-sub-label">캐릭터 설정</span>
+          <span class="result-sub-value" id="resRoleL"><span class="ph">—</span></span>
+          <span class="result-role-sep">✕</span>
+          <span class="result-sub-value" id="resRoleR"><span class="ph">—</span></span>
+          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
         </div>
         <div class="result-sub-row">
-          <span class="result-sub-label">세계관</span>
+          <span class="result-sub-label">관계성</span>
           <span class="result-sub-value" id="resAU"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled>🔄 리롤</button>
+          <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
         </div>
       </div>
       <button class="copy-result-btn" id="copyResultBtn" onclick="copyCurrentResult()" style="display:none">📋 결과 복사</button>
-      <button class="pick-btn" id="pickBtn" onclick="doPick()" disabled>뽑기!</button>
+      <button class="pick-btn" id="pickBtn" onclick="doPick()" disabled="">뽑기!</button>
       <div class="history" id="hist"></div>
     </div>
 
     <div class="list-btns">
-      <button class="list-btn" onclick="showListModal('role')">⚔️ 역할 전체 확인</button>
-      <button class="list-btn" onclick="showListModal('au')">🌀 세계관 전체 확인</button>
+      <button class="list-btn" onclick="showListModal('role')">⚔️ 캐릭터 설정 전체 확인</button>
+      <button class="list-btn" onclick="showListModal('au')">🌀 관계성 전체 확인</button>
     </div>
 
     <div class="side-tabs">
@@ -358,13 +371,49 @@
       <button class="fbtn" data-filter="couple" onclick="toggleFilter(this)">커플만</button>
     </div>
 
-    <div id="sectionLeft" class="section side-left visible"></div>
-    <div id="sectionRight" class="section side-right"></div>
+    <div id="sectionLeft" class="section side-left visible"><div class="category">
+    <div class="cat-header">
+      <div class="cat-icon" style="background:var(--pink-dim)">❤️</div>
+      <div class="cat-title">첫 번째 캐릭터</div>
+      <button class="cat-toggle" onclick="togAll('left')">전체 선택</button>
+    </div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">김굥</span>
+        <button class="cat-toggle" onclick="togOwner('left','김굥')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">02즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="도아랑" onclick="tog(this,'left','도아랑')">도아랑<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="백설호" onclick="tog(this,'left','백설호')">백설호<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="진서화" onclick="tog(this,'left','진서화')">진서화<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="진서희" onclick="tog(this,'left','진서희')">진서희<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">가명즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="윤신우" onclick="tog(this,'left','윤신우')">윤신우<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="윤민우" onclick="tog(this,'left','윤민우')">윤민우<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="연이안" onclick="tog(this,'left','연이안')">연이안<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="도하랑" onclick="tog(this,'left','도하랑')">도하랑<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="신지호" onclick="tog(this,'left','신지호')">신지호<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">게임즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="선유예" onclick="tog(this,'left','선유예')">선유예<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="한류은" onclick="tog(this,'left','한류은')">한류은<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="유설" onclick="tog(this,'left','유설')">유설<span class="tag">♀</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">하지</span>
+        <button class="cat-toggle" onclick="togOwner('left','하지')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">응애</div><div class="sub-items"><button class="ch" data-side="left" data-name="채재이" onclick="tog(this,'left','채재이')">채재이<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="서무연" onclick="tog(this,'left','서무연')">서무연<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="함시연" onclick="tog(this,'left','함시연')">함시연<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="혜이린" onclick="tog(this,'left','혜이린')">혜이린<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">으른</div><div class="sub-items"><button class="ch" data-side="left" data-name="공준" onclick="tog(this,'left','공준')">공준<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="백단" onclick="tog(this,'left','백단')">백단<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="유세림" onclick="tog(this,'left','유세림')">유세림<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="함시한" onclick="tog(this,'left','함시한')">함시한<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="함시현" onclick="tog(this,'left','함시현')">함시현<span class="tag">♂</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">예밍</span>
+        <button class="cat-toggle" onclick="togOwner('left','예밍')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">후배즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이예민" onclick="tog(this,'left','이예민')">이예민<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="이지성" onclick="tog(this,'left','이지성')">이지성<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="신우진" onclick="tog(this,'left','신우진')">신우진<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="박찬형" onclick="tog(this,'left','박찬형')">박찬형<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="서하진" onclick="tog(this,'left','서하진')">서하진<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="이예명" onclick="tog(this,'left','이예명')">이예명<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="계세휘" onclick="tog(this,'left','계세휘')">계세휘<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="백세온" onclick="tog(this,'left','백세온')">백세온<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="권진혁" onclick="tog(this,'left','권진혁')">권진혁<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="박하린" onclick="tog(this,'left','박하린')">박하린<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">선배즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이예경" onclick="tog(this,'left','이예경')">이예경<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="이예준" onclick="tog(this,'left','이예준')">이예준<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="서이다" onclick="tog(this,'left','서이다')">서이다<span class="tag">♂💕</span></button><button class="ch" data-side="left" data-name="이지한" onclick="tog(this,'left','이지한')">이지한<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="박찬하" onclick="tog(this,'left','박찬하')">박찬하<span class="tag">♀💕</span></button><button class="ch" data-side="left" data-name="박하빈" onclick="tog(this,'left','박하빈')">박하빈<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">신왕즈</div><div class="sub-items"><button class="ch" data-side="left" data-name="이루다" onclick="tog(this,'left','이루다')">이루다<span class="tag">♂</span></button><button class="ch" data-side="left" data-name="이루리" onclick="tog(this,'left','이루리')">이루리<span class="tag">♀</span></button><button class="ch" data-side="left" data-name="이이준" onclick="tog(this,'left','이이준')">이이준<span class="tag">♂</span></button></div></div></div></div></div>
+    <div id="sectionRight" class="section side-right"><div class="category">
+    <div class="cat-header">
+      <div class="cat-icon" style="background:var(--blue-dim)">💙</div>
+      <div class="cat-title">두 번째 캐릭터</div>
+      <button class="cat-toggle" onclick="togAll('right')">전체 선택</button>
+    </div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">김굥</span>
+        <button class="cat-toggle" onclick="togOwner('right','김굥')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">02즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="도아랑" onclick="tog(this,'right','도아랑')">도아랑<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="백설호" onclick="tog(this,'right','백설호')">백설호<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="진서화" onclick="tog(this,'right','진서화')">진서화<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="진서희" onclick="tog(this,'right','진서희')">진서희<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">가명즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="윤신우" onclick="tog(this,'right','윤신우')">윤신우<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="윤민우" onclick="tog(this,'right','윤민우')">윤민우<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="연이안" onclick="tog(this,'right','연이안')">연이안<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="도하랑" onclick="tog(this,'right','도하랑')">도하랑<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="신지호" onclick="tog(this,'right','신지호')">신지호<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">게임즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="선유예" onclick="tog(this,'right','선유예')">선유예<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="한류은" onclick="tog(this,'right','한류은')">한류은<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="유설" onclick="tog(this,'right','유설')">유설<span class="tag">♀</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">하지</span>
+        <button class="cat-toggle" onclick="togOwner('right','하지')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">응애</div><div class="sub-items"><button class="ch" data-side="right" data-name="채재이" onclick="tog(this,'right','채재이')">채재이<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="서무연" onclick="tog(this,'right','서무연')">서무연<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="함시연" onclick="tog(this,'right','함시연')">함시연<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="혜이린" onclick="tog(this,'right','혜이린')">혜이린<span class="tag">♂</span></button></div></div><div class="sub-row"><div class="sub-label">으른</div><div class="sub-items"><button class="ch" data-side="right" data-name="공준" onclick="tog(this,'right','공준')">공준<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="백단" onclick="tog(this,'right','백단')">백단<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="유세림" onclick="tog(this,'right','유세림')">유세림<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="함시한" onclick="tog(this,'right','함시한')">함시한<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="함시현" onclick="tog(this,'right','함시현')">함시현<span class="tag">♂</span></button></div></div></div><div class="owner-block">
+      <div class="owner-header">
+        <span class="owner-name">예밍</span>
+        <button class="cat-toggle" onclick="togOwner('right','예밍')">전체 선택</button>
+      </div><div class="sub-row"><div class="sub-label">후배즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이예민" onclick="tog(this,'right','이예민')">이예민<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="이지성" onclick="tog(this,'right','이지성')">이지성<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="신우진" onclick="tog(this,'right','신우진')">신우진<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="박찬형" onclick="tog(this,'right','박찬형')">박찬형<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="서하진" onclick="tog(this,'right','서하진')">서하진<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="이예명" onclick="tog(this,'right','이예명')">이예명<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="계세휘" onclick="tog(this,'right','계세휘')">계세휘<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="백세온" onclick="tog(this,'right','백세온')">백세온<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="권진혁" onclick="tog(this,'right','권진혁')">권진혁<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="박하린" onclick="tog(this,'right','박하린')">박하린<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">선배즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이예경" onclick="tog(this,'right','이예경')">이예경<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="이예준" onclick="tog(this,'right','이예준')">이예준<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="서이다" onclick="tog(this,'right','서이다')">서이다<span class="tag">♂💕</span></button><button class="ch" data-side="right" data-name="이지한" onclick="tog(this,'right','이지한')">이지한<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="박찬하" onclick="tog(this,'right','박찬하')">박찬하<span class="tag">♀💕</span></button><button class="ch" data-side="right" data-name="박하빈" onclick="tog(this,'right','박하빈')">박하빈<span class="tag">♀💕</span></button></div></div><div class="sub-row"><div class="sub-label">신왕즈</div><div class="sub-items"><button class="ch" data-side="right" data-name="이루다" onclick="tog(this,'right','이루다')">이루다<span class="tag">♂</span></button><button class="ch" data-side="right" data-name="이루리" onclick="tog(this,'right','이루리')">이루리<span class="tag">♀</span></button><button class="ch" data-side="right" data-name="이이준" onclick="tog(this,'right','이이준')">이이준<span class="tag">♂</span></button></div></div></div></div></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="listModal" onclick="if(event.target===this)closeListModal()">
   <div class="modal">
+    <button class="modal-exit" onclick="closeListModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
     <h3 id="listModalTitle">목록</h3>
     <ul class="modal-list" id="listModalBody"></ul>
     <button class="modal-close" onclick="closeListModal()">닫기</button>
@@ -411,18 +460,18 @@ const DEFAULT_CHARS = {
   ]
 };
 
-const DEFAULT_ROLES = [
-  '기사','마법사','도적','궁수','성직자'
-];
+const DEFAULT_ROLES = {
+  groups: [{ label: '기본', items: ['기사','마법사','도적','궁수','성직자'] }]
+};
 
-const DEFAULT_AUS = [
-  '판타지 왕국','현대 카페','학원물','우주 SF'
-];
+const DEFAULT_AUS = {
+  groups: [{ label: '기본', items: ['판타지 왕국','현대 카페','학원물','우주 SF'] }]
+};
 
 // ============ APP STATE ============
 let CHARS = { groups: [] };
-let ROLES = [];
-let AUS = [];
+let ROLES = { groups: [] };
+let AUS = { groups: [] };
 let charMap = {};
 
 const selL = new Set(), selR = new Set();
@@ -430,7 +479,7 @@ let activeSide = 'left';
 let spinning = false;
 const hist = [];
 const filtersL = new Set(), filtersR = new Set();
-let currentRole = null, currentAU = null, currentLeft = null, currentRight = null;
+let currentRoleL = null, currentRoleR = null, currentAU = null, currentLeft = null, currentRight = null;
 let hasResult = false;
 
 // ============ FIREBASE LOAD / SEED ============
@@ -444,15 +493,21 @@ async function initData() {
     if (!charDoc.exists) {
       // First time: seed Firestore with defaults
       await db.collection('data').doc('characters').set(DEFAULT_CHARS);
-      await db.collection('data').doc('roles').set({ list: DEFAULT_ROLES });
-      await db.collection('data').doc('aus').set({ list: DEFAULT_AUS });
+      await db.collection('data').doc('roles').set(DEFAULT_ROLES);
+      await db.collection('data').doc('aus').set(DEFAULT_AUS);
       CHARS = DEFAULT_CHARS;
       ROLES = DEFAULT_ROLES;
       AUS = DEFAULT_AUS;
     } else {
       CHARS = charDoc.data();
-      ROLES = roleDoc.exists ? roleDoc.data().list : DEFAULT_ROLES;
-      AUS = auDoc.exists ? auDoc.data().list : DEFAULT_AUS;
+      if (roleDoc.exists) {
+        const rd = roleDoc.data();
+        ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+      } else { ROLES = DEFAULT_ROLES; }
+      if (auDoc.exists) {
+        const ad = auDoc.data();
+        AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+      } else { AUS = DEFAULT_AUS; }
     }
 
     buildCharMap();
@@ -496,12 +551,18 @@ function startListeners() {
   }, err => { console.warn('Char listener error:', err); setSyncStatus(false); });
 
   db.collection('data').doc('roles').onSnapshot(doc => {
-    if (doc.exists) ROLES = doc.data().list;
+    if (doc.exists) {
+      const rd = doc.data();
+      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
+    }
     setSyncStatus(true);
   }, err => setSyncStatus(false));
 
   db.collection('data').doc('aus').onSnapshot(doc => {
-    if (doc.exists) AUS = doc.data().list;
+    if (doc.exists) {
+      const ad = doc.data();
+      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
+    }
     setSyncStatus(true);
   }, err => setSyncStatus(false));
 }
@@ -651,13 +712,39 @@ function updCounts() {
 
 // ============ PICK ============
 function randFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function allRoles() { return ROLES.groups.flatMap(g => g.items); }
+function allAUs() { return AUS.groups.flatMap(g => g.items); }
+
+function randTagFrom(data) {
+  const gs = data.groups.filter(g => g.items.length > 0);
+  return gs.length ? randFrom(gs) : null;
+}
+
+function pickRolesFromTag() {
+  const g = randTagFrom(ROLES);
+  if (!g) return { roleL: '?', roleR: '?' };
+  if (g.label === '세계관') {
+    const role = randFrom(g.items);
+    return { roleL: role, roleR: role };
+  }
+  const roleL = randFrom(g.items);
+  const others = g.items.filter(r => r !== roleL);
+  const roleR = others.length > 0 ? randFrom(others) : randFrom(g.items);
+  return { roleL, roleR };
+}
+
+function pickAUFromTag() {
+  const g = randTagFrom(AUS);
+  return g ? randFrom(g.items) : '?';
+}
 
 function doPick() {
   if(!selL.size||!selR.size||spinning) return;
   spinning = true;
   const btn = document.getElementById('pickBtn');
   const couplingEl = document.getElementById('resultCoupling');
-  const roleEl = document.getElementById('resRole');
+  const roleLEl = document.getElementById('resRoleL');
+  const roleREl = document.getElementById('resRoleR');
   const auEl = document.getElementById('resAU');
   btn.disabled = true;
   document.getElementById('rerollRole').disabled = true;
@@ -672,15 +759,18 @@ function doPick() {
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolL))}</span>
       <span class="result-x">✕</span>
       <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolR))}</span>`;
-    roleEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
-    auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    roleLEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    roleREl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     count++;
     if(count>=total) {
       clearInterval(iv);
       const fL = randFrom(poolL), fR = randFrom(poolR);
       currentLeft = fL; currentRight = fR;
-      currentRole = randFrom(ROLES);
-      currentAU = randFrom(AUS);
+      const roles = pickRolesFromTag();
+      currentRoleL = roles.roleL;
+      currentRoleR = roles.roleR;
+      currentAU = pickAUFromTag();
       hasResult = true;
       document.getElementById('copyResultBtn').style.display = 'block';
 
@@ -688,10 +778,11 @@ function doPick() {
         <span class="result-side result-left result-pop">${esc(fL)}</span>
         <span class="result-x result-pop" style="animation-delay:0.05s">✕</span>
         <span class="result-side result-right result-pop" style="animation-delay:0.1s">${esc(fR)}</span>`;
-      roleEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
-      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.05s">${esc(currentAU)}</span>`;
+      roleLEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
+      roleREl.innerHTML = `<span class="result-role-text result-pop" style="animation-delay:0.05s">${esc(currentRoleR)}</span>`;
+      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.1s">${esc(currentAU)}</span>`;
 
-      const entry = `${fL} ✕ ${fR} / ${currentRole} / ${currentAU}`;
+      const entry = `${fL}(${currentRoleL}) ✕ ${fR}(${currentRoleR}) / ${currentAU}`;
       hist.unshift(entry);
       if(hist.length>20) hist.pop();
       renderHist();
@@ -706,16 +797,21 @@ function doPick() {
 
 function rerollRole() {
   if(!hasResult||spinning) return;
-  const el = document.getElementById('resRole');
+  const elL = document.getElementById('resRoleL');
+  const elR = document.getElementById('resRoleR');
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(ROLES))}</span>`;
+    elL.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    elR.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentRole = randFrom(ROLES);
-      el.innerHTML = `<span class="result-role-text result-pop">${esc(currentRole)}</span>`;
+      const roles = pickRolesFromTag();
+      currentRoleL = roles.roleL;
+      currentRoleR = roles.roleR;
+      elL.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
+      elR.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
     }
   }, 50);
 }
@@ -726,11 +822,11 @@ function rerollAU() {
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(AUS))}</span>`;
+    el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     c++;
     if(c>=total) {
       clearInterval(iv);
-      currentAU = randFrom(AUS);
+      currentAU = pickAUFromTag();
       el.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
     }
   }, 50);
@@ -758,7 +854,7 @@ function copyText(text) {
 
 function copyCurrentResult() {
   if(!hasResult) return;
-  const text = `${currentLeft} ✕ ${currentRight} / ${currentRole} / ${currentAU}`;
+  const text = `${currentLeft}(${currentRoleL}) ✕ ${currentRight}(${currentRoleR}) / ${currentAU}`;
   navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
     document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
@@ -771,9 +867,19 @@ function showListModal(type) {
   const overlay = document.getElementById('listModal');
   const title = document.getElementById('listModalTitle');
   const body = document.getElementById('listModalBody');
-  const list = (type==='role' ? ROLES : AUS).slice().sort((a,b)=>a.localeCompare(b,'ko'));
-  title.textContent = type==='role' ? '⚔️ 역할 목록' : '🌀 세계관 목록';
-  body.innerHTML = list.map((item,i)=>`<li><span class="idx">${i+1}</span>${esc(item)}</li>`).join('');
+  title.textContent = type==='role' ? '⚔️ 캐릭터 설정 목록' : '🌀 관계성 목록';
+
+  const groups = (type==='role' ? ROLES : AUS).groups;
+  let html = '';
+  for (const g of groups) {
+    if (!g.items.length) continue;
+    const sorted = [...g.items].sort((a, b) => a.localeCompare(b, 'ko'));
+    html += `<li class="group-label">${esc(g.label)}</li>`;
+    sorted.forEach((item, i) => {
+      html += `<li><span class="idx">${i+1}</span>${esc(item)}</li>`;
+    });
+  }
+  body.innerHTML = html;
   overlay.classList.add('open');
 }
 
@@ -809,5 +915,6 @@ function esc(s) { const d=document.createElement('div');d.textContent=s;return d
 // ============ START ============
 initData();
 </script>
-</body>
-</html>
+
+
+</body></html>
