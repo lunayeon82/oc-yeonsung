@@ -132,23 +132,68 @@
   }
   .search-btn:hover { background: #a090b5; }
 
+  /* ── 필터 섹션 ── */
+  .filter-section {
+    margin-bottom: 0.5rem;
+  }
+
+  .filter-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
   .filter-label {
     font-size: 0.75rem;
     color: #8a7a9a;
-    margin-bottom: 0.4rem;
-    display: block;
+    font-weight: 500;
   }
 
+  .filter-section-right {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .filter-count {
+    font-size: 0.68rem;
+    color: #9a80b5;
+    background: rgba(184,169,201,0.18);
+    padding: 0.1rem 0.45rem;
+    border-radius: 10px;
+    display: none;
+  }
+
+  .filter-toggle-btn {
+    font-size: 0.72rem;
+    color: #a99ab8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+  .filter-toggle-btn:hover { color: #5a4a6b; }
+
+  .filter-section-body {
+    overflow: hidden;
+    max-height: 300px;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    opacity: 1;
+  }
+  .filter-section-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  /* ── 캐릭터 필터 (오너별) ── */
   .char-filter-wrap {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .flat-filter-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.45rem;
+    padding-bottom: 0.2rem;
   }
 
   .char-filter-row {
@@ -166,6 +211,34 @@
   }
 
   .char-tag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /* ── 그룹형 필터 (캐릭터 설정 / 관계성) ── */
+  .grouped-filter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .filter-group-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .filter-group-label {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    white-space: nowrap;
+    padding-top: 0.25rem;
+    min-width: 3.5rem;
+  }
+
+  .filter-tag-group {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
@@ -392,14 +465,41 @@
       <input type="text" class="search-input" id="searchInput" placeholder="제목으로 검색...">
       <button class="search-btn" id="searchBtn">검색</button>
     </div>
-    <label class="filter-label">캐릭터 필터</label>
-    <div class="char-filter-wrap" id="charFilter"></div>
+    <!-- 캐릭터 필터 -->
+    <div class="filter-section">
+      <div class="filter-section-header">
+        <span class="filter-label">캐릭터</span>
+        <div class="filter-section-right">
+          <span class="filter-count" id="charCount"></span>
+          <button class="filter-toggle-btn" id="charToggle">선택 ▾</button>
+        </div>
+      </div>
+      <div class="filter-section-body collapsed" id="charFilter"></div>
+    </div>
 
-    <label class="filter-label" style="margin-top:0.6rem;">캐릭터 설정 필터</label>
-    <div class="flat-filter-wrap" id="roleFilter"></div>
+    <!-- 캐릭터 설정 필터 -->
+    <div class="filter-section">
+      <div class="filter-section-header">
+        <span class="filter-label">캐릭터 설정</span>
+        <div class="filter-section-right">
+          <span class="filter-count" id="roleCount"></span>
+          <button class="filter-toggle-btn" id="roleToggle">선택 ▾</button>
+        </div>
+      </div>
+      <div class="filter-section-body collapsed" id="roleFilter"></div>
+    </div>
 
-    <label class="filter-label" style="margin-top:0.6rem;">관계성 (AU) 필터</label>
-    <div class="flat-filter-wrap" id="auFilter"></div>
+    <!-- 관계성 필터 -->
+    <div class="filter-section">
+      <div class="filter-section-header">
+        <span class="filter-label">관계성 (AU)</span>
+        <div class="filter-section-right">
+          <span class="filter-count" id="auCount"></span>
+          <button class="filter-toggle-btn" id="auToggle">선택 ▾</button>
+        </div>
+      </div>
+      <div class="filter-section-body collapsed" id="auFilter"></div>
+    </div>
 
     <div class="filter-actions">
       <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
@@ -460,43 +560,65 @@
     }
   }
 
+  // ── 필터 토글 ──
+  function makeFilterToggle(toggleId, bodyId, countId) {
+    document.getElementById(toggleId).addEventListener('click', () => {
+      const body = document.getElementById(bodyId);
+      const btn  = document.getElementById(toggleId);
+      const isCollapsed = body.classList.toggle('collapsed');
+      btn.textContent = isCollapsed ? '선택 ▾' : '접기 ▴';
+      updateFilterCount(countId, bodyId);
+    });
+  }
+  makeFilterToggle('charToggle', 'charFilter', 'charCount');
+  makeFilterToggle('roleToggle', 'roleFilter', 'roleCount');
+  makeFilterToggle('auToggle',   'auFilter',   'auCount');
+
+  // countId 뱃지: 접혀있고 선택 있을 때만 표시
+  function updateFilterCount(countId, bodyId) {
+    const countEl   = document.getElementById(countId);
+    const collapsed = document.getElementById(bodyId).classList.contains('collapsed');
+    const sets = { charCount: selectedChars, roleCount: selectedRoles, auCount: selectedAus };
+    const size = sets[countId]?.size ?? 0;
+    countEl.textContent = `${size}개 선택`;
+    countEl.style.display = (collapsed && size > 0) ? 'inline' : 'none';
+  }
+
+  function updateAllCounts() {
+    updateFilterCount('charCount', 'charFilter');
+    updateFilterCount('roleCount', 'roleFilter');
+    updateFilterCount('auCount',   'auFilter');
+    document.getElementById('clearFilter').style.display =
+      (selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0) ? 'block' : 'none';
+  }
+
+  // ── 캐릭터 필터 렌더 ──
   function renderCharFilter() {
     const wrap = document.getElementById('charFilter');
     if (allCharacters.length === 0) {
-      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">캐릭터 없음</span>';
+      wrap.innerHTML = '<div class="char-filter-wrap"><span style="font-size:0.75rem;color:#a99ab8;">캐릭터 없음</span></div>';
       return;
     }
-
-    wrap.innerHTML = allCharacters.map(g => `
-      <div class="char-filter-row">
-        <span class="char-owner-label">${g.owner}</span>
-        <div class="char-tag-group">
-          ${g.names.map(name =>
-            `<span class="char-tag" data-name="${name}">${name}</span>`
-          ).join('')}
+    wrap.innerHTML = `<div class="char-filter-wrap">${
+      allCharacters.map(g => `
+        <div class="char-filter-row">
+          <span class="char-owner-label">${g.owner}</span>
+          <div class="char-tag-group">
+            ${g.names.map(name => `<span class="char-tag" data-name="${name}">${name}</span>`).join('')}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('')
+    }</div>`;
 
     wrap.querySelectorAll('.char-tag').forEach(tag => {
       tag.addEventListener('click', () => {
         const name = tag.dataset.name;
-        if (selectedChars.has(name)) {
-          selectedChars.delete(name);
-          tag.classList.remove('active');
-        } else {
-          selectedChars.add(name);
-          tag.classList.add('active');
-        }
-        updateClearBtn();
+        if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
+        else                          { selectedChars.add(name);    tag.classList.add('active'); }
+        updateAllCounts();
         filterAndRender();
       });
     });
-  }
-
-  function updateClearBtn() {
-    document.getElementById('clearFilter').style.display =
-      (selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0) ? 'block' : 'none';
   }
 
   // ── 캐릭터 설정 / 관계성 로드 ──
@@ -506,29 +628,39 @@
         db.collection('data').doc('roles').get(),
         db.collection('data').doc('aus').get()
       ]);
-      if (roleDoc.exists) renderFlatFilter('roleFilter', roleDoc.data().groups || [], selectedRoles);
-      if (auDoc.exists)   renderFlatFilter('auFilter',   auDoc.data().groups  || [], selectedAus);
+      if (roleDoc.exists) renderGroupedFilter('roleFilter', roleDoc.data().groups || [], selectedRoles);
+      if (auDoc.exists)   renderGroupedFilter('auFilter',   auDoc.data().groups  || [], selectedAus);
     } catch (e) {
       console.error('설정/관계성 로드 실패:', e);
     }
   }
 
-  function renderFlatFilter(wrpId, groups, selectedSet) {
+  function renderGroupedFilter(wrpId, groups, selectedSet) {
     const wrap = document.getElementById(wrpId);
-    const allItems = groups.flatMap(g => g.items || []);
-    if (allItems.length === 0) {
-      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">항목 없음</span>';
+    const hasItems = groups.some(g => (g.items || []).length > 0);
+    if (!hasItems) {
+      wrap.innerHTML = '<div class="grouped-filter-wrap"><span style="font-size:0.75rem;color:#a99ab8;">항목 없음</span></div>';
       return;
     }
-    wrap.innerHTML = allItems.map(name =>
-      `<span class="char-tag${selectedSet.has(name) ? ' active' : ''}" data-name="${name}">${name}</span>`
-    ).join('');
+    wrap.innerHTML = `<div class="grouped-filter-wrap">${
+      groups.filter(g => (g.items || []).length > 0).map(g => `
+        <div class="filter-group-row">
+          <span class="filter-group-label">${g.label}</span>
+          <div class="filter-tag-group">
+            ${g.items.map(name =>
+              `<span class="char-tag${selectedSet.has(name) ? ' active' : ''}" data-name="${name}">${name}</span>`
+            ).join('')}
+          </div>
+        </div>
+      `).join('')
+    }</div>`;
+
     wrap.querySelectorAll('.char-tag').forEach(tag => {
       tag.addEventListener('click', () => {
         const name = tag.dataset.name;
         if (selectedSet.has(name)) { selectedSet.delete(name); tag.classList.remove('active'); }
         else                        { selectedSet.add(name);    tag.classList.add('active'); }
-        updateClearBtn();
+        updateAllCounts();
         filterAndRender();
       });
     });
@@ -663,7 +795,7 @@
     selectedRoles.clear();
     selectedAus.clear();
     document.querySelectorAll('.char-tag.active').forEach(t => t.classList.remove('active'));
-    document.getElementById('clearFilter').style.display = 'none';
+    updateAllCounts();
     filterAndRender();
   });
 
