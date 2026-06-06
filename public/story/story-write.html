@@ -461,6 +461,30 @@
     </div>
   </div>
 
+  <!-- 캐릭터 설정 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">캐릭터 설정</span>
+      <button class="tag-toggle-btn" id="roleToggle">선택하기 ▾</button>
+    </div>
+    <div class="selected-tags" id="selectedRoleTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">설정 태그를 선택하세요</span>
+    </div>
+    <div class="tag-picker collapsed" id="rolePicker"></div>
+  </div>
+
+  <!-- 관계성 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">관계성 (AU)</span>
+      <button class="tag-toggle-btn" id="auToggle">선택하기 ▾</button>
+    </div>
+    <div class="selected-tags" id="selectedAuTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">관계성 태그를 선택하세요</span>
+    </div>
+    <div class="tag-picker collapsed" id="auPicker"></div>
+  </div>
+
   <!-- 챕터 탭 -->
   <div class="chapter-tabs" id="chapterTabs">
     <div class="chapter-tab active" data-index="0">
@@ -526,6 +550,10 @@
   let currentChapterIndex = 0;
   let selectedCharacters = [];
   let allCharacters = [];
+  let selectedRoles = [];
+  let allRoles = [];
+  let selectedAus = [];
+  let allAus = [];
 
   // ── PID 생성 ──
   function generatePid() {
@@ -622,6 +650,122 @@
   document.getElementById('tagToggle').addEventListener('click', () => {
     const picker = document.getElementById('tagPicker');
     const btn = document.getElementById('tagToggle');
+    picker.classList.toggle('collapsed');
+    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  });
+
+  // ── 캐릭터 설정 / 관계성 로드 ──
+  async function loadRolesAndAus() {
+    try {
+      const [roleDoc, auDoc] = await Promise.all([
+        db.collection('data').doc('roles').get(),
+        db.collection('data').doc('aus').get()
+      ]);
+      if (roleDoc.exists) {
+        allRoles = (roleDoc.data().groups || []).filter(g => (g.items || []).length > 0);
+        renderRolePicker();
+      }
+      if (auDoc.exists) {
+        allAus = (auDoc.data().groups || []).filter(g => (g.items || []).length > 0);
+        renderAuPicker();
+      }
+    } catch (e) {
+      console.error('설정/관계성 로드 실패:', e);
+    }
+  }
+
+  function makeGroupPicker(pickerEl, allGroups, selectedArr, onToggle) {
+    pickerEl.innerHTML = allGroups.map(g => `
+      <div class="tag-picker-group">
+        <span class="tag-group-label">${g.label}</span>
+        <div class="tag-picker-tags">
+          ${(g.items || []).map(name => `
+            <span class="pick-tag${selectedArr.includes(name) ? ' selected' : ''}"
+                  data-name="${name}">${name}</span>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    pickerEl.querySelectorAll('.pick-tag').forEach(tag => {
+      tag.addEventListener('click', () => onToggle(tag.dataset.name, tag));
+    });
+  }
+
+  function renderRolePicker() {
+    makeGroupPicker(
+      document.getElementById('rolePicker'), allRoles, selectedRoles,
+      (name, tag) => {
+        if (selectedRoles.includes(name)) {
+          selectedRoles = selectedRoles.filter(n => n !== name);
+          tag.classList.remove('selected');
+        } else {
+          selectedRoles.push(name);
+          tag.classList.add('selected');
+        }
+        renderSelectedRoleTags();
+      }
+    );
+  }
+
+  function renderAuPicker() {
+    makeGroupPicker(
+      document.getElementById('auPicker'), allAus, selectedAus,
+      (name, tag) => {
+        if (selectedAus.includes(name)) {
+          selectedAus = selectedAus.filter(n => n !== name);
+          tag.classList.remove('selected');
+        } else {
+          selectedAus.push(name);
+          tag.classList.add('selected');
+        }
+        renderSelectedAuTags();
+      }
+    );
+  }
+
+  function makeSelectedTagsRenderer(wrapId, selectedArr, placeholder, onRemove) {
+    const wrap = document.getElementById(wrapId);
+    if (selectedArr.length === 0) {
+      wrap.innerHTML = `<span style="font-size:0.72rem;color:#b8a9c9;">${placeholder}</span>`;
+      return;
+    }
+    wrap.innerHTML = selectedArr.map(name => `
+      <span class="selected-tag">
+        ${name}
+        <span class="remove-tag" data-name="${name}">✕</span>
+      </span>
+    `).join('');
+    wrap.querySelectorAll('.remove-tag').forEach(btn => {
+      btn.addEventListener('click', () => onRemove(btn.dataset.name));
+    });
+  }
+
+  function renderSelectedRoleTags() {
+    makeSelectedTagsRenderer('selectedRoleTags', selectedRoles, '설정 태그를 선택하세요', name => {
+      selectedRoles = selectedRoles.filter(n => n !== name);
+      renderSelectedRoleTags();
+      renderRolePicker();
+    });
+  }
+
+  function renderSelectedAuTags() {
+    makeSelectedTagsRenderer('selectedAuTags', selectedAus, '관계성 태그를 선택하세요', name => {
+      selectedAus = selectedAus.filter(n => n !== name);
+      renderSelectedAuTags();
+      renderAuPicker();
+    });
+  }
+
+  document.getElementById('roleToggle').addEventListener('click', () => {
+    const picker = document.getElementById('rolePicker');
+    const btn = document.getElementById('roleToggle');
+    picker.classList.toggle('collapsed');
+    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  });
+
+  document.getElementById('auToggle').addEventListener('click', () => {
+    const picker = document.getElementById('auPicker');
+    const btn = document.getElementById('auToggle');
     picker.classList.toggle('collapsed');
     btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
   });
@@ -742,6 +886,8 @@
       await db.collection('stories').doc(pid).set({
         title,
         characters: selectedCharacters,
+        roles: selectedRoles,
+        aus: selectedAus,
         theme: 'default',
         ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -799,7 +945,11 @@
       const data = storyDoc.data();
       document.getElementById('storyTitle').value = data.title || '';
       selectedCharacters = data.characters || [];
+      selectedRoles = data.roles || [];
+      selectedAus = data.aus || [];
       renderSelectedTags();
+      renderSelectedRoleTags();
+      renderSelectedAuTags();
 
       // 챕터 로드 (복합 인덱스 없이 JS 정렬)
       const chapSnap = await db.collection('chapters')
@@ -855,6 +1005,7 @@
 
   // ── 초기화 ──
   loadCharacters();
+  loadRolesAndAus();
   loadExistingStory();
 </script>
 </body>

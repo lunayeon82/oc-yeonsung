@@ -145,6 +145,12 @@
     gap: 0.5rem;
   }
 
+  .flat-filter-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
   .char-filter-row {
     display: flex;
     align-items: flex-start;
@@ -387,9 +393,14 @@
       <button class="search-btn" id="searchBtn">검색</button>
     </div>
     <label class="filter-label">캐릭터 필터</label>
-    <div class="char-filter-wrap" id="charFilter">
-      <!-- Firestore에서 캐릭터 목록 로드 -->
-    </div>
+    <div class="char-filter-wrap" id="charFilter"></div>
+
+    <label class="filter-label" style="margin-top:0.6rem;">캐릭터 설정 필터</label>
+    <div class="flat-filter-wrap" id="roleFilter"></div>
+
+    <label class="filter-label" style="margin-top:0.6rem;">관계성 (AU) 필터</label>
+    <div class="flat-filter-wrap" id="auFilter"></div>
+
     <div class="filter-actions">
       <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
     </div>
@@ -423,8 +434,10 @@
 
   // ── 상태 ──
   let allStories = [];
-  let allCharacters = []; // { id, name }
+  let allCharacters = [];
   let selectedChars = new Set();
+  let selectedRoles = new Set();
+  let selectedAus = new Set();
   let searchTerm = '';
 
   // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
@@ -475,8 +488,47 @@
           selectedChars.add(name);
           tag.classList.add('active');
         }
-        document.getElementById('clearFilter').style.display =
-          selectedChars.size > 0 ? 'block' : 'none';
+        updateClearBtn();
+        filterAndRender();
+      });
+    });
+  }
+
+  function updateClearBtn() {
+    document.getElementById('clearFilter').style.display =
+      (selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0) ? 'block' : 'none';
+  }
+
+  // ── 캐릭터 설정 / 관계성 로드 ──
+  async function loadRolesAndAus() {
+    try {
+      const [roleDoc, auDoc] = await Promise.all([
+        db.collection('data').doc('roles').get(),
+        db.collection('data').doc('aus').get()
+      ]);
+      if (roleDoc.exists) renderFlatFilter('roleFilter', roleDoc.data().groups || [], selectedRoles);
+      if (auDoc.exists)   renderFlatFilter('auFilter',   auDoc.data().groups  || [], selectedAus);
+    } catch (e) {
+      console.error('설정/관계성 로드 실패:', e);
+    }
+  }
+
+  function renderFlatFilter(wrpId, groups, selectedSet) {
+    const wrap = document.getElementById(wrpId);
+    const allItems = groups.flatMap(g => g.items || []);
+    if (allItems.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">항목 없음</span>';
+      return;
+    }
+    wrap.innerHTML = allItems.map(name =>
+      `<span class="char-tag${selectedSet.has(name) ? ' active' : ''}" data-name="${name}">${name}</span>`
+    ).join('');
+    wrap.querySelectorAll('.char-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.name;
+        if (selectedSet.has(name)) { selectedSet.delete(name); tag.classList.remove('active'); }
+        else                        { selectedSet.add(name);    tag.classList.add('active'); }
+        updateClearBtn();
         filterAndRender();
       });
     });
@@ -501,6 +553,8 @@
           pid: doc.id,
           title: data.title || '(제목 없음)',
           characters: data.characters || [],
+          roles: data.roles || [],
+          aus: data.aus || [],
           theme: data.theme || 'default',
           createdAt: data.createdAt?.toDate?.() || new Date(),
           chapterCount: chapSnap.size
@@ -528,6 +582,20 @@
     if (selectedChars.size > 0) {
       filtered = filtered.filter(s =>
         [...selectedChars].some(name => s.characters.includes(name))
+      );
+    }
+
+    // 캐릭터 설정 필터
+    if (selectedRoles.size > 0) {
+      filtered = filtered.filter(s =>
+        [...selectedRoles].some(name => s.roles.includes(name))
+      );
+    }
+
+    // 관계성 필터
+    if (selectedAus.size > 0) {
+      filtered = filtered.filter(s =>
+        [...selectedAus].some(name => s.aus.includes(name))
       );
     }
 
@@ -592,6 +660,8 @@
 
   document.getElementById('clearFilter').addEventListener('click', () => {
     selectedChars.clear();
+    selectedRoles.clear();
+    selectedAus.clear();
     document.querySelectorAll('.char-tag.active').forEach(t => t.classList.remove('active'));
     document.getElementById('clearFilter').style.display = 'none';
     filterAndRender();
@@ -614,6 +684,7 @@
 
   // ── 초기화 ──
   loadCharacters();
+  loadRolesAndAus();
   loadStories();
 </script>
 </body>
