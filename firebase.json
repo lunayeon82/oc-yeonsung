@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "oc-yeonsung-bamboo",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

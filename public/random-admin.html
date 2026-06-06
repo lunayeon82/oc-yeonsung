@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔧 랜덤 뽑기 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b10;
+    --surface: #14141e;
+    --surface2: #1c1c2a;
+    --surface3: #222236;
+    --border: #2a2a40;
+    --text: #e4e2f0;
+    --text-dim: #7b7994;
+    --text-muted: #55536a;
+    --pink: #f472b6;
+    --pink-dim: rgba(244,114,182,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --violet: #a78bfa;
+    --violet-dim: rgba(167,139,250,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --mint: #34d399;
+    --mint-dim: rgba(52,211,153,0.12);
+    --rose: #fb7185;
+    --radius: 12px;
+    --font-title: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
+    --font-body: 'Noto Sans KR', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 50% 40% at 20% 15%, rgba(167,139,250,0.05), transparent),
+                radial-gradient(ellipse 40% 50% at 80% 85%, rgba(251,191,36,0.04), transparent);
+    pointer-events: none;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 20px 16px 120px; }
+
+  header { text-align: center; padding: 24px 0 8px; }
+  header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
+  header h1 span { background: linear-gradient(135deg, var(--amber), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .back-link { display: inline-block; margin-top: 8px; color: var(--text-dim); font-size: 0.75rem; text-decoration: none; }
+  .back-link:hover { color: var(--text); }
+
+  /* Sync */
+  .sync-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 100px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 0.6rem; color: var(--text-muted);
+    position: fixed; top: 12px; right: 12px; z-index: 50;
+  }
+  .sync-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); }
+  .sync-badge.offline .dot { background: var(--rose); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 60px 0; color: var(--text-dim); }
+  .spinner { display: inline-block; width: 24px; height: 24px; border: 2.5px solid var(--border); border-top-color: var(--violet); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Tabs */
+  .admin-tabs {
+    display: flex; gap: 0; background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); overflow: hidden; margin: 20px 0 24px;
+  }
+  .admin-tab {
+    flex: 1; padding: 12px 0; text-align: center;
+    font-family: var(--font-title); font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; border: none; background: none; color: var(--text-dim);
+    transition: all 0.2s; position: relative;
+  }
+  .admin-tab + .admin-tab { border-left: 1px solid var(--border); }
+  .admin-tab::after { content: ''; position: absolute; bottom: 0; left: 20%; right: 20%; height: 2px; border-radius: 2px; background: transparent; transition: background 0.2s; }
+  .admin-tab.active { color: var(--violet); }
+  .admin-tab.active::after { background: var(--violet); }
+
+  .tab-panel { display: none; }
+  .tab-panel.visible { display: block; }
+
+  /* Section card */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .card-title { font-family: var(--font-title); font-weight: 700; font-size: 1rem; }
+  .card-count { font-size: 0.7rem; color: var(--text-dim); }
+
+  /* Add row */
+  .add-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .add-input {
+    flex: 1; min-width: 120px; padding: 8px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none;
+  }
+  .add-input:focus { border-color: var(--violet); }
+  .add-input::placeholder { color: var(--text-muted); }
+
+  .select-input {
+    padding: 8px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none;
+    cursor: pointer;
+  }
+  .select-input:focus { border-color: var(--violet); }
+
+  .add-btn {
+    padding: 8px 16px; border: none; border-radius: 10px;
+    background: var(--violet); color: #fff; font-weight: 700;
+    cursor: pointer; font-family: var(--font-body); font-size: 0.85rem;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .add-btn:hover { background: var(--violet); filter: brightness(1.15); }
+
+  .danger-btn {
+    padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: none; color: var(--rose); font-weight: 600;
+    cursor: pointer; font-family: var(--font-body); font-size: 0.8rem;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .danger-btn:hover { border-color: var(--rose); background: rgba(251,113,133,0.1); }
+
+  /* Item list */
+  .item-list { display: flex; flex-direction: column; gap: 6px; }
+  .item-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 10px;
+    background: var(--surface2); transition: background 0.15s;
+  }
+  .item-row:hover { background: var(--surface3); }
+  .item-name { flex: 1; font-size: 0.85rem; font-weight: 600; }
+  .item-tags { display: flex; gap: 4px; }
+  .item-tag {
+    padding: 2px 8px; border-radius: 100px; font-size: 0.6rem; font-weight: 600;
+  }
+  .tag-male { background: var(--blue-dim); color: var(--blue); }
+  .tag-female { background: var(--pink-dim); color: var(--pink); }
+  .tag-couple { background: var(--amber-dim); color: var(--amber); }
+  .tag-solo { background: var(--surface3); color: var(--text-muted); }
+
+  .item-del {
+    width: 24px; height: 24px; border-radius: 50%; border: none;
+    background: transparent; color: var(--text-muted); font-size: 0.75rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .item-del:hover { background: rgba(251,113,133,0.15); color: var(--rose); }
+
+  .item-actions { display: flex; gap: 2px; align-items: center; }
+  .item-arrow {
+    width: 24px; height: 24px; border-radius: 50%; border: none;
+    background: transparent; color: var(--text-muted); font-size: 0.7rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .item-arrow:hover { background: var(--violet-dim); color: var(--violet); }
+  .item-arrow:disabled { opacity: 0.2; cursor: default; }
+  .item-arrow:disabled:hover { background: transparent; color: var(--text-muted); }
+
+  .item-edit {
+    padding: 3px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-dim); font-size: 0.6rem; font-weight: 600;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .item-edit:hover { border-color: var(--violet); color: var(--violet); }
+
+  /* Edit modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); z-index: 150;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 380px;
+    transform: translateY(20px); transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.05rem; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label { display: block; font-size: 0.73rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; }
+  .modal-input {
+    width: 100%; padding: 9px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none;
+  }
+  .modal-input:focus { border-color: var(--violet); }
+  .modal-select {
+    width: 100%; padding: 9px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none; cursor: pointer;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .modal-cancel {
+    padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: none; color: var(--text-dim); cursor: pointer;
+    font-family: var(--font-body); font-size: 0.85rem;
+  }
+  .modal-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+  .modal-save {
+    padding: 8px 16px; border: none; border-radius: 10px;
+    background: var(--violet); color: #fff; font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); font-size: 0.85rem;
+  }
+  .modal-save:hover { filter: brightness(1.15); }
+
+  /* Owner / Group headers */
+  .owner-section { margin-bottom: 20px; }
+  .owner-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .owner-title { font-family: var(--font-title); font-weight: 800; font-size: 1.05rem; }
+  .group-section { margin-bottom: 14px; }
+  .group-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; padding-left: 4px;
+  }
+  .group-label { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); }
+  .group-count { font-size: 0.65rem; color: var(--text-muted); }
+
+  /* Simple list (roles, aus) */
+  .simple-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 10px;
+    background: var(--surface2); transition: background 0.15s;
+  }
+  .simple-item:hover { background: var(--surface3); }
+  .simple-item .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
+  .simple-item .name { flex: 1; font-size: 0.85rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 18px; border-radius: 100px;
+    font-size: 0.8rem; z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Save indicator */
+  .saving-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .saving-overlay.show { opacity: 1; pointer-events: all; }
+  .saving-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 32px; text-align: center; }
+  .saving-box .spinner { border-top-color: var(--amber); }
+
+  @media (max-width: 480px) {
+    .app { padding: 12px 12px 100px; }
+    header h1 { font-size: 1.35rem; }
+    .admin-tab { font-size: 0.78rem; padding: 10px 0; }
+    .add-row { flex-direction: column; }
+    .add-input, .select-input { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>연결 중...</div>
+
+<div class="app">
+  <header>
+    <h1>🔧 <span>관리자 페이지</span></h1>
+    <a class="back-link" href="./">← 메인 화면으로 돌아가기</a>
+    <br>
+    <a class="back-link" href="random.html">* 랜덤 뽑기로 가기 *</a>
+  </header>
+
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div>데이터 불러오는 중...</div>
+  </div>
+
+  <div id="mainContent" style="display:none">
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('chars')">🎭 캐릭터</button>
+      <button class="admin-tab" onclick="switchTab('roles')">⚔️ 역할</button>
+      <button class="admin-tab" onclick="switchTab('aus')">🌀 세계관</button>
+    </div>
+
+    <!-- ===== Characters Panel ===== -->
+    <div class="tab-panel visible" id="panel-chars">
+      <!-- Add Owner -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">오너 추가</span>
+        </div>
+        <div class="add-row">
+          <input class="add-input" id="newOwnerName" placeholder="오너 이름 (예: 예밍)">
+          <button class="add-btn" onclick="addOwner()">오너 추가</button>
+        </div>
+      </div>
+
+      <!-- Add Group -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">그룹 추가</span>
+        </div>
+        <div class="add-row">
+          <select class="select-input" id="groupOwnerSelect"></select>
+          <input class="add-input" id="newGroupName" placeholder="그룹 이름 (예: 02즈)">
+          <button class="add-btn" onclick="addGroup()">그룹 추가</button>
+        </div>
+      </div>
+
+      <!-- Add Character -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">캐릭터 추가</span>
+        </div>
+        <div class="add-row">
+          <select class="select-input" id="charOwnerSelect" onchange="updateCharGroupSelect()"></select>
+          <select class="select-input" id="charGroupSelect"></select>
+          <input class="add-input" id="newCharName" placeholder="캐릭터 이름">
+          <select class="select-input" id="newCharGender">
+            <option value="0">♂ 남성</option>
+            <option value="1">♀ 여성</option>
+          </select>
+          <select class="select-input" id="newCharCouple">
+            <option value="0">솔로</option>
+            <option value="1">커플</option>
+          </select>
+          <button class="add-btn" onclick="addChar()">추가</button>
+        </div>
+      </div>
+
+      <!-- Character List -->
+      <div id="charList"></div>
+    </div>
+
+    <!-- ===== Roles Panel ===== -->
+    <div class="tab-panel" id="panel-roles">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">역할 추가</span>
+        </div>
+        <div class="add-row">
+          <input class="add-input" id="newRoleName" placeholder="역할 이름 (예: 기사)" onkeydown="if(event.key==='Enter')addRole()">
+          <button class="add-btn" onclick="addRole()">추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">역할 목록</span>
+          <span class="card-count" id="roleCount">0개</span>
+        </div>
+        <div class="item-list" id="roleList"></div>
+      </div>
+    </div>
+
+    <!-- ===== AUs Panel ===== -->
+    <div class="tab-panel" id="panel-aus">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">세계관 추가</span>
+        </div>
+        <div class="add-row">
+          <input class="add-input" id="newAUName" placeholder="세계관 이름 (예: 판타지 왕국)" onkeydown="if(event.key==='Enter')addAU()">
+          <button class="add-btn" onclick="addAU()">추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">세계관 목록</span>
+          <span class="card-count" id="auCount">0개</span>
+        </div>
+        <div class="item-list" id="auList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <h3>캐릭터 수정</h3>
+    <div class="modal-field">
+      <label class="modal-label">이름</label>
+      <input class="modal-input" id="editName" disabled style="opacity:0.5">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">성별</label>
+      <select class="modal-select" id="editGender">
+        <option value="0">♂ 남성</option>
+        <option value="1">♀ 여성</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">커플 여부</label>
+      <select class="modal-select" id="editCouple">
+        <option value="0">솔로</option>
+        <option value="1">커플</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeEditModal()">취소</button>
+      <button class="modal-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="saving-overlay" id="savingOverlay">
+  <div class="saving-box"><div class="spinner"></div><div>저장 중...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+  authDomain: "oc-yeonsung.firebaseapp.com",
+  projectId: "oc-yeonsung",
+  storageBucket: "oc-yeonsung.firebasestorage.app",
+  messagingSenderId: "145543545184",
+  appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+});
+const db = firebase.firestore();
+
+let CHARS = { groups: [] };
+let ROLES = [];
+let AUS = [];
+
+// ============ INIT ============
+async function init() {
+  try {
+    const [charDoc, roleDoc, auDoc] = await Promise.all([
+      db.collection('data').doc('characters').get(),
+      db.collection('data').doc('roles').get(),
+      db.collection('data').doc('aus').get()
+    ]);
+    if (charDoc.exists) CHARS = charDoc.data();
+    if (roleDoc.exists) ROLES = roleDoc.data().list || [];
+    if (auDoc.exists) AUS = auDoc.data().list || [];
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    setSyncStatus(true);
+    renderAll();
+    startListeners();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loadingState').innerHTML = '<div style="color:var(--rose)">연결 실패. 새로고침 해주세요.</div>';
+    setSyncStatus(false);
+  }
+}
+
+function startListeners() {
+  db.collection('data').doc('characters').onSnapshot(doc => {
+    if (doc.exists) { CHARS = doc.data(); renderAll(); setSyncStatus(true); }
+  });
+  db.collection('data').doc('roles').onSnapshot(doc => {
+    if (doc.exists) { ROLES = doc.data().list || []; renderRoles(); setSyncStatus(true); }
+  });
+  db.collection('data').doc('aus').onSnapshot(doc => {
+    if (doc.exists) { AUS = doc.data().list || []; renderAUs(); setSyncStatus(true); }
+  });
+}
+
+function setSyncStatus(on) {
+  const b = document.getElementById('syncBadge');
+  b.className = 'sync-badge' + (on ? '' : ' offline');
+  b.innerHTML = `<span class="dot"></span>${on ? '실시간 연결됨' : '오프라인'}`;
+}
+
+// ============ SAVE HELPERS ============
+async function saveChars() {
+  showSaving();
+  try {
+    await db.collection('data').doc('characters').set(CHARS);
+    toast('캐릭터 저장 완료');
+  } catch (e) { console.error(e); toast('저장 실패!'); }
+  hideSaving();
+}
+
+async function saveRoles() {
+  showSaving();
+  try {
+    await db.collection('data').doc('roles').set({ list: ROLES });
+    toast('역할 저장 완료');
+  } catch (e) { console.error(e); toast('저장 실패!'); }
+  hideSaving();
+}
+
+async function saveAUs() {
+  showSaving();
+  try {
+    await db.collection('data').doc('aus').set({ list: AUS });
+    toast('세계관 저장 완료');
+  } catch (e) { console.error(e); toast('저장 실패!'); }
+  hideSaving();
+}
+
+function showSaving() { document.getElementById('savingOverlay').classList.add('show'); }
+function hideSaving() { document.getElementById('savingOverlay').classList.remove('show'); }
+
+// ============ TABS ============
+function switchTab(id) {
+  document.querySelectorAll('.admin-tab').forEach((t,i) => {
+    const panels = ['chars','roles','aus'];
+    const isActive = panels[i] === id;
+    t.classList.toggle('active', isActive);
+    document.getElementById('panel-'+panels[i]).classList.toggle('visible', isActive);
+  });
+}
+
+// ============ RENDER ALL ============
+function renderAll() {
+  renderChars();
+  renderRoles();
+  renderAUs();
+  updateSelects();
+}
+
+// ============ CHARACTERS ============
+function renderChars() {
+  const container = document.getElementById('charList');
+  if (!CHARS.groups || !CHARS.groups.length) {
+    container.innerHTML = '<div class="card"><div style="color:var(--text-muted);text-align:center;padding:20px">캐릭터가 없습니다</div></div>';
+    return;
+  }
+
+  container.innerHTML = CHARS.groups.map((g, gi) => {
+    const groupsHtml = g.subs.map((s, si) => {
+      const itemsHtml = s.items.map((it, ii) => `
+        <div class="item-row">
+          <div class="item-actions">
+            <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},-1)" ${ii===0?'disabled':''} title="위로">▲</button>
+            <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},1)" ${ii===s.items.length-1?'disabled':''} title="아래로">▼</button>
+          </div>
+          <span class="item-name">${esc(it.n)}</span>
+          <div class="item-tags">
+            <span class="item-tag ${it.g===0?'tag-male':'tag-female'}">${it.g===0?'♂':'♀'}</span>
+            <span class="item-tag ${it.c===1?'tag-couple':'tag-solo'}">${it.c===1?'💕 커플':'솔로'}</span>
+          </div>
+          <button class="item-edit" onclick="openEditModal(${gi},${si},${ii})">변경</button>
+          <button class="item-del" onclick="delChar(${gi},${si},${ii})" title="삭제">✕</button>
+        </div>`).join('');
+
+      return `
+        <div class="group-section">
+          <div class="group-header">
+            <span class="group-label">${esc(s.label)}</span>
+            <span class="group-count">${s.items.length}명</span>
+            <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(${gi},${si})">그룹 삭제</button>
+          </div>
+          <div class="item-list">${itemsHtml || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 12px">비어있음</div>'}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="card owner-section">
+        <div class="owner-header">
+          <span class="owner-title">${esc(g.owner)}</span>
+          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(${gi})">오너 삭제</button>
+        </div>
+        ${groupsHtml}
+      </div>`;
+  }).join('');
+}
+
+function updateSelects() {
+  const owners = CHARS.groups.map(g => g.owner);
+  const opts = owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+
+  document.getElementById('groupOwnerSelect').innerHTML = opts;
+  document.getElementById('charOwnerSelect').innerHTML = opts;
+  updateCharGroupSelect();
+}
+
+function updateCharGroupSelect() {
+  const ownerName = document.getElementById('charOwnerSelect').value;
+  const group = CHARS.groups.find(g => g.owner === ownerName);
+  const sel = document.getElementById('charGroupSelect');
+  if (group) {
+    sel.innerHTML = group.subs.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('');
+  } else {
+    sel.innerHTML = '';
+  }
+}
+
+function addOwner() {
+  const input = document.getElementById('newOwnerName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (CHARS.groups.some(g => g.owner === name)) { toast('이미 존재하는 오너'); return; }
+  CHARS.groups.push({ owner: name, subs: [] });
+  input.value = '';
+  saveChars();
+}
+
+function addGroup() {
+  const ownerName = document.getElementById('groupOwnerSelect').value;
+  const input = document.getElementById('newGroupName');
+  const label = input.value.trim();
+  if (!ownerName || !label) return;
+  const group = CHARS.groups.find(g => g.owner === ownerName);
+  if (!group) return;
+  if (group.subs.some(s => s.label === label)) { toast('이미 존재하는 그룹'); return; }
+  group.subs.push({ label, items: [] });
+  input.value = '';
+  saveChars();
+}
+
+function addChar() {
+  const ownerName = document.getElementById('charOwnerSelect').value;
+  const groupLabel = document.getElementById('charGroupSelect').value;
+  const name = document.getElementById('newCharName').value.trim();
+  const gender = parseInt(document.getElementById('newCharGender').value);
+  const couple = parseInt(document.getElementById('newCharCouple').value);
+  if (!name) return;
+
+  const group = CHARS.groups.find(g => g.owner === ownerName);
+  if (!group) return;
+  const sub = group.subs.find(s => s.label === groupLabel);
+  if (!sub) return;
+  if (sub.items.some(it => it.n === name)) { toast('이미 존재하는 캐릭터'); return; }
+
+  sub.items.push({ n: name, g: gender, c: couple });
+  document.getElementById('newCharName').value = '';
+  saveChars();
+}
+
+function moveChar(gi, si, ii, dir) {
+  const items = CHARS.groups[gi].subs[si].items;
+  const target = ii + dir;
+  if (target < 0 || target >= items.length) return;
+  [items[ii], items[target]] = [items[target], items[ii]];
+  saveChars();
+}
+
+let editTarget = null; // {gi, si, ii}
+
+function openEditModal(gi, si, ii) {
+  editTarget = { gi, si, ii };
+  const it = CHARS.groups[gi].subs[si].items[ii];
+  document.getElementById('editName').value = it.n;
+  document.getElementById('editGender').value = it.g;
+  document.getElementById('editCouple').value = it.c;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editTarget = null;
+}
+
+function saveEdit() {
+  if (!editTarget) return;
+  const { gi, si, ii } = editTarget;
+  const it = CHARS.groups[gi].subs[si].items[ii];
+  it.g = parseInt(document.getElementById('editGender').value);
+  it.c = parseInt(document.getElementById('editCouple').value);
+  closeEditModal();
+  saveChars();
+}
+
+function delChar(gi, si, ii) {
+  const it = CHARS.groups[gi].subs[si].items[ii];
+  if (!confirm(`"${it.n}" 삭제할까요?`)) return;
+  CHARS.groups[gi].subs[si].items.splice(ii, 1);
+  saveChars();
+}
+
+function delGroup(gi, si) {
+  const label = CHARS.groups[gi].subs[si].label;
+  if (!confirm(`"${label}" 그룹 전체를 삭제할까요?`)) return;
+  CHARS.groups[gi].subs.splice(si, 1);
+  saveChars();
+}
+
+function delOwner(gi) {
+  const name = CHARS.groups[gi].owner;
+  if (!confirm(`"${name}" 오너와 하위 모든 데이터를 삭제할까요?`)) return;
+  CHARS.groups.splice(gi, 1);
+  saveChars();
+}
+
+// ============ ROLES ============
+function renderRoles() {
+  document.getElementById('roleCount').textContent = ROLES.length + '개';
+  const sorted = ROLES.slice().sort((a,b) => a.localeCompare(b,'ko'));
+  document.getElementById('roleList').innerHTML = sorted.map((r, i) => {
+    const origIdx = ROLES.indexOf(r);
+    return `<div class="simple-item">
+      <span class="idx">${i+1}</span>
+      <span class="name">${esc(r)}</span>
+      <button class="item-del" onclick="delRole(${origIdx})" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addRole() {
+  const input = document.getElementById('newRoleName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (ROLES.includes(name)) { toast('이미 존재하는 역할'); return; }
+  ROLES.push(name);
+  input.value = '';
+  saveRoles();
+}
+
+function delRole(idx) {
+  if (!confirm(`"${ROLES[idx]}" 삭제할까요?`)) return;
+  ROLES.splice(idx, 1);
+  saveRoles();
+}
+
+// ============ AUs ============
+function renderAUs() {
+  document.getElementById('auCount').textContent = AUS.length + '개';
+  const sorted = AUS.slice().sort((a,b) => a.localeCompare(b,'ko'));
+  document.getElementById('auList').innerHTML = sorted.map((a, i) => {
+    const origIdx = AUS.indexOf(a);
+    return `<div class="simple-item">
+      <span class="idx">${i+1}</span>
+      <span class="name">${esc(a)}</span>
+      <button class="item-del" onclick="delAU(${origIdx})" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addAU() {
+  const input = document.getElementById('newAUName');
+  const name = input.value.trim();
+  if (!name) return;
+  if (AUS.includes(name)) { toast('이미 존재하는 세계관'); return; }
+  AUS.push(name);
+  input.value = '';
+  saveAUs();
+}
+
+function delAU(idx) {
+  if (!confirm(`"${AUS[idx]}" 삭제할까요?`)) return;
+  AUS.splice(idx, 1);
+  saveAUs();
+}
+
+// ============ UTIL ============
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>

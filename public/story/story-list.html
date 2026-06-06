@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 글 목록</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    background-color: #f5f0e8;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(184,169,201,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(184,169,201,0.06) 0%, transparent 50%);
+    /* 종이 질감은 나중에 public/assets/ 이미지로 교체 */
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── 헤더 ── */
+  .page-header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  .page-header h1 {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.6rem;
+    color: #5a4a6b;
+    letter-spacing: 0.05em;
+    position: relative;
+    display: inline-block;
+  }
+
+  .page-header h1::after {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #b8a9c9, transparent);
+    margin: 0.5rem auto 0;
+  }
+
+  .page-header .subtitle {
+    font-size: 0.8rem;
+    color: #9a8aaa;
+    margin-top: 0.4rem;
+    font-weight: 300;
+  }
+
+  /* ── 홈 버튼 ── */
+  .home-btn {
+    position: absolute;
+    top: 1.2rem;
+    left: 1.2rem;
+    z-index: 10;
+    text-decoration: none;
+    color: #8a7a9a;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: color 0.2s;
+  }
+  .home-btn:hover { color: #5a4a6b; }
+
+  /* ── 컨테이너 ── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.2rem 3rem;
+  }
+
+  /* ── 검색 + 필터 영역 ── */
+  .search-area {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(90,74,107,0.06);
+  }
+
+  .search-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: #b8a9c9; }
+  .search-input:focus { border-color: #b8a9c9; }
+
+  .search-btn {
+    padding: 0.6rem 1rem;
+    background: #b8a9c9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { background: #a090b5; }
+
+  .filter-label {
+    font-size: 0.75rem;
+    color: #8a7a9a;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .char-filter-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .char-tag {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .char-tag:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.1);
+  }
+  .char-tag.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  .clear-filter {
+    font-size: 0.7rem;
+    color: #9a8aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .clear-filter:hover { color: #5a4a6b; }
+
+  /* ── 글 목록 ── */
+  .story-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .story-card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .story-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #b8a9c9, #d4c8e0);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .story-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
+    border-color: rgba(184,169,201,0.4);
+  }
+  .story-card:hover::before { opacity: 1; }
+
+  .story-title {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.05rem;
+    color: #4a3a5b;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+  }
+
+  .story-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .story-date {
+    font-size: 0.7rem;
+    color: #a99ab8;
+  }
+
+  .story-chapter-count {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .story-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+  }
+
+  .story-tag {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(184,169,201,0.15);
+    color: #7a6a8a;
+    border-radius: 10px;
+  }
+
+  /* ── 새 글 버튼 ── */
+  .new-story-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b8a9c9, #9a86b5);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(90,74,107,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+  }
+  .new-story-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(90,74,107,0.35);
+  }
+
+  /* ── 빈 상태 ── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #a99ab8;
+  }
+  .empty-state .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+  .empty-state p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  /* ── 로딩 ── */
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #a99ab8;
+    font-size: 0.85rem;
+  }
+
+  .loading .dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+
+  /* ── 반응형 ── */
+  @media (max-width: 480px) {
+    .page-header h1 { font-size: 1.3rem; }
+    .container { padding: 0 0.8rem 4rem; }
+    .search-area { padding: 0.8rem; }
+    .story-card { padding: 0.8rem 1rem; }
+  }
+
+  /* ── 페이드인 애니메이션 ── */
+  .story-card {
+    animation: fadeUp 0.4s ease both;
+  }
+  .story-card:nth-child(1) { animation-delay: 0.05s; }
+  .story-card:nth-child(2) { animation-delay: 0.1s; }
+  .story-card:nth-child(3) { animation-delay: 0.15s; }
+  .story-card:nth-child(4) { animation-delay: 0.2s; }
+  .story-card:nth-child(5) { animation-delay: 0.25s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="home-btn">← 홈</a>
+
+<div class="page-header">
+  <h1>연성 글 목록</h1>
+  <div class="subtitle">우리들의 이야기</div>
+</div>
+
+<div class="container">
+
+  <!-- 검색 + 캐릭터 필터 -->
+  <div class="search-area">
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="제목으로 검색...">
+      <button class="search-btn" id="searchBtn">검색</button>
+    </div>
+    <label class="filter-label">캐릭터 필터</label>
+    <div class="char-filter-wrap" id="charFilter">
+      <!-- Firestore에서 캐릭터 목록 로드 -->
+    </div>
+    <div class="filter-actions">
+      <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
+    </div>
+  </div>
+
+  <!-- 글 목록 -->
+  <div class="story-list" id="storyList">
+    <div class="loading">불러오는 중<span class="dots"></span></div>
+  </div>
+
+</div>
+
+<!-- 새 글 쓰기 FAB -->
+<button class="new-story-btn" id="newStoryBtn" title="새 글 쓰기">✎</button>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+  // ★ firebaseConfig는 기존 프로젝트 파일에서 복사해 넣으세요
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ── 상태 ──
+  let allStories = [];
+  let allCharacters = []; // { id, name }
+  let selectedChars = new Set();
+  let searchTerm = '';
+
+  // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
+  async function loadCharacters() {
+    const charFilter = document.getElementById('charFilter');
+    try {
+      // 기존 프로젝트의 캐릭터 문서들에서 이름 추출
+      // 문서 구조: owners 하위 그룹들 → {n, g, c} 배열
+      const snapshot = await db.collection('characters').get();
+      const chars = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        // 각 그룹의 캐릭터 배열을 순회
+        Object.keys(data).forEach(groupKey => {
+          const group = data[groupKey];
+          if (Array.isArray(group)) {
+            group.forEach(ch => {
+              if (ch && ch.n) {
+                chars.push({ id: doc.id + '_' + ch.n, name: ch.n, docId: doc.id });
+              }
+            });
+          }
+        });
+      });
+
+      allCharacters = chars;
+      renderCharFilter();
+    } catch (e) {
+      console.error('캐릭터 로드 실패:', e);
+    }
+  }
+
+  function renderCharFilter() {
+    const wrap = document.getElementById('charFilter');
+    if (allCharacters.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">캐릭터 없음</span>';
+      return;
+    }
+    wrap.innerHTML = allCharacters.map(ch =>
+      `<span class="char-tag" data-name="${ch.name}">${ch.name}</span>`
+    ).join('');
+
+    wrap.querySelectorAll('.char-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.name;
+        if (selectedChars.has(name)) {
+          selectedChars.delete(name);
+          tag.classList.remove('active');
+        } else {
+          selectedChars.add(name);
+          tag.classList.add('active');
+        }
+        document.getElementById('clearFilter').style.display =
+          selectedChars.size > 0 ? 'block' : 'none';
+        filterAndRender();
+      });
+    });
+  }
+
+  // ── 글 목록 로드 ──
+  async function loadStories() {
+    try {
+      const snapshot = await db.collection('stories')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      allStories = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        // 챕터 수 가져오기
+        const chapSnap = await db.collection('chapters')
+          .where('storyId', '==', doc.id)
+          .get();
+
+        allStories.push({
+          pid: doc.id,
+          title: data.title || '(제목 없음)',
+          characters: data.characters || [],
+          theme: data.theme || 'default',
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          chapterCount: chapSnap.size
+        });
+      }
+      filterAndRender();
+    } catch (e) {
+      console.error('글 목록 로드 실패:', e);
+      document.getElementById('storyList').innerHTML =
+        '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+    }
+  }
+
+  // ── 필터링 + 렌더 ──
+  function filterAndRender() {
+    let filtered = allStories;
+
+    // 제목 검색
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(s => s.title.toLowerCase().includes(term));
+    }
+
+    // 캐릭터 필터
+    if (selectedChars.size > 0) {
+      filtered = filtered.filter(s =>
+        [...selectedChars].some(name => s.characters.includes(name))
+      );
+    }
+
+    renderStories(filtered);
+  }
+
+  function renderStories(stories) {
+    const list = document.getElementById('storyList');
+
+    if (stories.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📝</div>
+          <p>${searchTerm || selectedChars.size > 0
+            ? '검색 결과가 없어요'
+            : '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
+          }</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = stories.map(s => {
+      const dateStr = formatDate(s.createdAt);
+      const tags = s.characters.map(c => `<span class="story-tag">${c}</span>`).join('');
+      return `
+        <a class="story-card" href="story-view.html?pid=${s.pid}">
+          <div class="story-title">${escapeHtml(s.title)}</div>
+          <div class="story-meta">
+            <span class="story-date">${dateStr}</span>
+            <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
+          </div>
+          ${tags ? `<div class="story-tags">${tags}</div>` : ''}
+        </a>`;
+    }).join('');
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ── 이벤트 ──
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    searchTerm = document.getElementById('searchInput').value.trim();
+    filterAndRender();
+  });
+
+  document.getElementById('searchInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      searchTerm = e.target.value.trim();
+      filterAndRender();
+    }
+  });
+
+  document.getElementById('clearFilter').addEventListener('click', () => {
+    selectedChars.clear();
+    document.querySelectorAll('.char-tag.active').forEach(t => t.classList.remove('active'));
+    document.getElementById('clearFilter').style.display = 'none';
+    filterAndRender();
+  });
+
+  document.getElementById('newStoryBtn').addEventListener('click', () => {
+    // 새 pid 생성 후 write 페이지로 이동
+    const newPid = generatePid();
+    window.location.href = `story-write.html?pid=${newPid}&new=1`;
+  });
+
+  function generatePid() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+  }
+
+  // ── 초기화 ──
+  loadCharacters();
+  loadStories();
+</script>
+</body>
+</html>
