@@ -179,8 +179,8 @@
 
   .filter-section-body {
     overflow: hidden;
-    max-height: 300px;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 800px;
+    transition: max-height 0.35s ease, opacity 0.2s ease;
     opacity: 1;
   }
   .filter-section-body.collapsed {
@@ -220,22 +220,20 @@
   .grouped-filter-wrap {
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    gap: 0.6rem;
     padding-bottom: 0.2rem;
   }
 
   .filter-group-row {
     display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.3rem;
   }
 
   .filter-group-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #a99ab8;
-    white-space: nowrap;
-    padding-top: 0.25rem;
-    min-width: 3.5rem;
+    font-weight: 500;
   }
 
   .filter-tag-group {
@@ -710,23 +708,17 @@
       filtered = filtered.filter(s => s.title.toLowerCase().includes(term));
     }
 
-    // 캐릭터 필터
+    // 캐릭터 필터 (캐릭터끼리 OR)
     if (selectedChars.size > 0) {
       filtered = filtered.filter(s =>
         [...selectedChars].some(name => s.characters.includes(name))
       );
     }
 
-    // 캐릭터 설정 필터
-    if (selectedRoles.size > 0) {
+    // 캐릭터 설정 + 관계성 필터 (둘 사이 OR, 캐릭터 필터와 AND)
+    if (selectedRoles.size > 0 || selectedAus.size > 0) {
       filtered = filtered.filter(s =>
-        [...selectedRoles].some(name => s.roles.includes(name))
-      );
-    }
-
-    // 관계성 필터
-    if (selectedAus.size > 0) {
-      filtered = filtered.filter(s =>
+        [...selectedRoles].some(name => s.roles.includes(name)) ||
         [...selectedAus].some(name => s.aus.includes(name))
       );
     }
