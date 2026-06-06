@@ -546,23 +546,17 @@
   // ── 캐릭터 로드 ──
   async function loadCharacters() {
     try {
-      const snapshot = await db.collection('characters').get();
-      const groups = [];
+      const charDoc = await db.collection('data').doc('characters').get();
+      if (!charDoc.exists) return;
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const groupChars = [];
-        Object.keys(data).forEach(key => {
-          const arr = data[key];
-          if (Array.isArray(arr)) {
-            arr.forEach(ch => {
-              if (ch && ch.n) groupChars.push(ch.n);
-            });
+      const groups = [];
+      (charDoc.data().groups || []).forEach(owner => {
+        (owner.subs || []).forEach(sub => {
+          const chars = (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n);
+          if (chars.length > 0) {
+            groups.push({ label: `${owner.owner} — ${sub.label}`, chars });
           }
         });
-        if (groupChars.length > 0) {
-          groups.push({ docId: doc.id, chars: groupChars });
-        }
       });
 
       allCharacters = groups;
@@ -576,7 +570,7 @@
     const picker = document.getElementById('tagPicker');
     picker.innerHTML = allCharacters.map(g => `
       <div class="tag-picker-group">
-        <span class="tag-group-label">${g.docId}</span>
+        <span class="tag-group-label">${g.label}</span>
         <div class="tag-picker-tags">
           ${g.chars.map(name => `
             <span class="pick-tag${selectedCharacters.includes(name) ? ' selected' : ''}"
