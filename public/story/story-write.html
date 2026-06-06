@@ -638,8 +638,8 @@
     chapters[currentChapterIndex].body = document.getElementById('editorBody').innerHTML;
   }
 
-  function switchChapter(index) {
-    saveCurrentChapter();
+  function switchChapter(index, skipSave = false) {
+    if (!skipSave) saveCurrentChapter();
     currentChapterIndex = index;
     document.getElementById('chapterTitle').value = chapters[index].title || '';
     document.getElementById('editorBody').innerHTML = chapters[index].body || '';
@@ -821,7 +821,7 @@
         })).sort((a, b) => a.order - b.order);
       }
 
-      switchChapter(0);
+      switchChapter(0, true);
       document.getElementById('bottomActions').style.display = 'flex';
     } catch (e) {
       console.error('로드 실패:', e);
