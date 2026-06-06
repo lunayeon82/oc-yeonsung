@@ -527,18 +527,17 @@
 
       storyData = storyDoc.data();
 
-      // 챕터 로드
+      // 챕터 로드 (복합 인덱스 없이 JS 정렬)
       const chapSnap = await db.collection('chapters')
         .where('storyId', '==', pid)
-        .orderBy('order')
         .get();
 
       chapters = chapSnap.docs.map(doc => ({
         chapterPid: doc.id,
         title: doc.data().title || '',
         body: doc.data().body || '',
-        order: doc.data().order
-      }));
+        order: doc.data().order ?? 0
+      })).sort((a, b) => a.order - b.order);
 
       // 수정 버튼 표시
       document.getElementById('editBtn').style.display = 'block';

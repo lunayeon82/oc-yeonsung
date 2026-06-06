@@ -749,7 +749,7 @@
         title,
         characters: selectedCharacters,
         theme: 'default',
-        createdAt: isNew ? firebase.firestore.FieldValue.serverTimestamp() : undefined,
+        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
@@ -807,18 +807,18 @@
       selectedCharacters = data.characters || [];
       renderSelectedTags();
 
-      // 챕터 로드
+      // 챕터 로드 (복합 인덱스 없이 JS 정렬)
       const chapSnap = await db.collection('chapters')
         .where('storyId', '==', pid)
-        .orderBy('order')
         .get();
 
       if (!chapSnap.empty) {
         chapters = chapSnap.docs.map(doc => ({
           chapterPid: doc.id,
           title: doc.data().title || '',
-          body: doc.data().body || ''
-        }));
+          body: doc.data().body || '',
+          order: doc.data().order ?? 0
+        })).sort((a, b) => a.order - b.order);
       }
 
       switchChapter(0);
