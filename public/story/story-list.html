@@ -409,25 +409,16 @@
 
   // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
   async function loadCharacters() {
-    const charFilter = document.getElementById('charFilter');
     try {
-      // 기존 프로젝트의 캐릭터 문서들에서 이름 추출
-      // 문서 구조: owners 하위 그룹들 → {n, g, c} 배열
-      const snapshot = await db.collection('characters').get();
-      const chars = [];
+      const charDoc = await db.collection('data').doc('characters').get();
+      if (!charDoc.exists) { renderCharFilter(); return; }
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        // 각 그룹의 캐릭터 배열을 순회
-        Object.keys(data).forEach(groupKey => {
-          const group = data[groupKey];
-          if (Array.isArray(group)) {
-            group.forEach(ch => {
-              if (ch && ch.n) {
-                chars.push({ id: doc.id + '_' + ch.n, name: ch.n, docId: doc.id });
-              }
-            });
-          }
+      const chars = [];
+      (charDoc.data().groups || []).forEach(owner => {
+        (owner.subs || []).forEach(sub => {
+          (sub.items || []).forEach(ch => {
+            if (ch && ch.n) chars.push({ name: ch.n });
+          });
         });
       });
 
