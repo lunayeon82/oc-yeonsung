@@ -509,6 +509,215 @@
   .font-option .check { font-size: 0.7rem; color: #b8a9c9; opacity: 0; }
   .font-option.selected .check { opacity: 1; }
 
+  /* ── 댓글/공감 버튼 ── */
+  .comment-toggle-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .comment-toggle-btn:hover { background: rgba(184,169,201,0.15); }
+  .comment-toggle-btn.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  /* ── 댓글 패널 ── */
+  .comment-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.15);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  .comment-overlay.open { opacity: 1; visibility: visible; }
+
+  .comment-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 340px;
+    max-width: 88vw;
+    background: rgba(245,240,232,0.97);
+    backdrop-filter: blur(16px);
+    z-index: 200;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(90,74,107,0.1);
+  }
+  .comment-panel.open { transform: translateX(0); }
+
+  .comment-panel-header {
+    padding: 1.2rem 1rem;
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .comment-panel-header h3 {
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.95rem;
+    color: #5a4a6b;
+    font-weight: 700;
+  }
+
+  .comment-panel-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #8a7a9a;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comment-panel-close:hover { background: rgba(184,169,201,0.15); }
+
+  .reaction-section {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    display: flex;
+    justify-content: center;
+  }
+
+  .reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.4rem;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 999px;
+    color: #7a6a8a;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .reaction-btn:hover {
+    background: rgba(184,169,201,0.12);
+    border-color: rgba(184,169,201,0.5);
+  }
+  .reaction-btn.liked {
+    background: #e8a0b0;
+    border-color: #e8a0b0;
+    color: white;
+  }
+  .reaction-btn .reaction-icon { font-size: 1rem; }
+  .reaction-btn .reaction-count { font-weight: 700; }
+
+  .comment-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.4rem 1rem;
+  }
+
+  .comment-item {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(184,169,201,0.1);
+  }
+  .comment-item:last-child { border-bottom: none; }
+
+  .comment-body {
+    font-size: 0.85rem;
+    color: #4a3a5b;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .comment-date {
+    font-size: 0.68rem;
+    color: #a99ab8;
+    margin-top: 0.3rem;
+  }
+
+  .comment-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #a99ab8;
+    font-size: 0.8rem;
+  }
+
+  .comment-form {
+    padding: 0.9rem 1rem;
+    border-top: 1px solid rgba(184,169,201,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .comment-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 56px;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.6);
+    color: #4a3a5b;
+    font-size: 0.82rem;
+    font-family: 'ko-font', sans-serif;
+    line-height: 1.5;
+  }
+  .comment-input:focus {
+    outline: none;
+    border-color: #b8a9c9;
+  }
+
+  .comment-submit-btn {
+    align-self: flex-end;
+    padding: 0.45rem 1.1rem;
+    background: #b8a9c9;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .comment-submit-btn:hover { background: #a594b8; }
+  .comment-submit-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* ── 애니메이션 ── */
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -522,6 +731,7 @@
     .story-body { padding: 1rem; font-size: 0.88rem; }
     .nav-btn-sub { display: none; }
     .toc-sidebar { width: 260px; }
+    .comment-panel { width: 300px; }
   }
 </style>
 </head>
@@ -542,6 +752,7 @@
         <div class="font-option" data-font="GowunDodum" style="font-family:'GowunDodum',sans-serif">고운돋움 <span class="check">✓</span></div>
       </div>
     </div>
+    <button class="comment-toggle-btn" id="commentToggleBtn" title="댓글·공감" style="display:none;">💬</button>
     <button class="toc-toggle-btn" id="tocToggleBtn" title="목차" style="display:none;">☰</button>
     <button class="edit-btn" id="editBtn" style="display:none;">수정</button>
   </div>
@@ -556,6 +767,30 @@
   </div>
   <div class="toc-list" id="tocList"></div>
 </div>
+
+<!-- 댓글·공감 패널 -->
+<div class="comment-overlay" id="commentOverlay"></div>
+<div class="comment-panel" id="commentPanel">
+  <div class="comment-panel-header">
+    <h3>댓글 · 공감</h3>
+    <button class="comment-panel-close" id="commentPanelClose">✕</button>
+  </div>
+  <div class="reaction-section">
+    <button class="reaction-btn" id="reactionBtn">
+      <span class="reaction-icon">♥</span>
+      <span>공감</span>
+      <span class="reaction-count" id="reactionCount">0</span>
+    </button>
+  </div>
+  <div class="comment-list" id="commentList"></div>
+  <div class="comment-form">
+    <textarea class="comment-input" id="commentInput" placeholder="댓글을 남겨보세요" rows="2" maxlength="500"></textarea>
+    <button class="comment-submit-btn" id="commentSubmitBtn">등록</button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
 
 <!-- 메인 콘텐츠 -->
 <div class="container" id="mainContainer">
@@ -593,6 +828,9 @@
   let storyData = null;
   let chapters = [];
   let currentChapterIndex = 0;
+  let comments = [];
+  let likeCount = 0;
+  let liked = false;
 
   // ── 로드 ──
   async function loadStory() {
@@ -616,11 +854,15 @@
         chapterPid: doc.id,
         title: doc.data().title || '',
         body: doc.data().body || '',
-        order: doc.data().order ?? 0
+        order: doc.data().order ?? 0,
+        likes: doc.data().likes || 0
       })).sort((a, b) => a.order - b.order);
 
       // 수정 버튼 표시
       document.getElementById('editBtn').style.display = 'block';
+
+      // 댓글·공감 버튼 표시
+      document.getElementById('commentToggleBtn').style.display = 'flex';
 
       // 목차 버튼 (챕터 2개 이상일 때)
       if (chapters.length > 1) {
@@ -672,6 +914,7 @@
     container.innerHTML = html;
     bindNavEvents();
     updateTocActive();
+    refreshCommentPanel();
   }
 
   function renderChapter(index) {
@@ -794,12 +1037,167 @@
     location.href = `story-write.html?pid=${pid}`;
   });
 
+  // ── 댓글·공감 (챕터별) ──
+  function currentChapter() {
+    return chapters[currentChapterIndex] || null;
+  }
+
+  function likeStorageKey(chapterPid) { return `chapterLiked_${chapterPid}`; }
+
+  async function refreshCommentPanel() {
+    const ch = currentChapter();
+    if (!ch) return;
+
+    updateCommentPanelHeader(ch);
+    liked = localStorage.getItem(likeStorageKey(ch.chapterPid)) === '1';
+    likeCount = ch.likes || 0;
+    renderReaction();
+    await loadComments(ch.chapterPid);
+  }
+
+  function updateCommentPanelHeader(ch) {
+    const titleEl = document.querySelector('#commentPanel .comment-panel-header h3');
+    titleEl.textContent = chapters.length > 1
+      ? `댓글 · 공감 — ${currentChapterIndex + 1}화`
+      : '댓글 · 공감';
+  }
+
+  async function loadComments(chapterPid) {
+    try {
+      const snap = await db.collection('comments').where('chapterPid', '==', chapterPid).get();
+      comments = snap.docs.map(doc => ({
+        id: doc.id,
+        body: doc.data().body || '',
+        createdAt: doc.data().createdAt
+      })).sort((a, b) => {
+        const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return bt - at;
+      });
+      renderComments();
+    } catch (e) {
+      console.error('댓글 로드 실패:', e);
+    }
+  }
+
+  function renderReaction() {
+    document.getElementById('reactionBtn').classList.toggle('liked', liked);
+    document.getElementById('reactionCount').textContent = likeCount;
+  }
+
+  function renderComments() {
+    const list = document.getElementById('commentList');
+    if (comments.length === 0) {
+      list.innerHTML = '<div class="comment-empty">아직 댓글이 없어요. 첫 댓글을 남겨보세요!</div>';
+      return;
+    }
+    list.innerHTML = comments.map(c => {
+      const dateStr = c.createdAt?.toDate ? formatCommentDate(c.createdAt.toDate()) : '';
+      return `
+        <div class="comment-item">
+          <div class="comment-body">${escapeHtml(c.body)}</div>
+          ${dateStr ? `<div class="comment-date">${dateStr}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function toggleLike() {
+    const ch = currentChapter();
+    if (!ch) return;
+    const btn = document.getElementById('reactionBtn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const next = !liked;
+    try {
+      await db.collection('chapters').doc(ch.chapterPid).update({
+        likes: firebase.firestore.FieldValue.increment(next ? 1 : -1)
+      });
+      liked = next;
+      likeCount = Math.max(0, likeCount + (next ? 1 : -1));
+      ch.likes = likeCount;
+      localStorage.setItem(likeStorageKey(ch.chapterPid), liked ? '1' : '0');
+      renderReaction();
+    } catch (e) {
+      console.error('공감 처리 실패:', e);
+      showToast('공감 처리에 실패했어요');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function submitComment() {
+    const ch = currentChapter();
+    if (!ch) return;
+
+    const input = document.getElementById('commentInput');
+    const body = input.value.trim();
+    if (!body) return;
+
+    const btn = document.getElementById('commentSubmitBtn');
+    btn.disabled = true;
+    try {
+      await db.collection('comments').add({
+        storyId: pid,
+        chapterPid: ch.chapterPid,
+        body,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      input.value = '';
+      await loadComments(ch.chapterPid);
+      showToast('댓글이 등록되었어요');
+    } catch (e) {
+      console.error('댓글 등록 실패:', e);
+      showToast('댓글 등록에 실패했어요');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function openCommentPanel() {
+    document.getElementById('commentPanel').classList.add('open');
+    document.getElementById('commentOverlay').classList.add('open');
+    document.getElementById('commentToggleBtn').classList.add('active');
+  }
+
+  function closeCommentPanel() {
+    document.getElementById('commentPanel').classList.remove('open');
+    document.getElementById('commentOverlay').classList.remove('open');
+    document.getElementById('commentToggleBtn').classList.remove('active');
+  }
+
+  document.getElementById('commentToggleBtn').addEventListener('click', () => {
+    const isOpen = document.getElementById('commentPanel').classList.contains('open');
+    isOpen ? closeCommentPanel() : openCommentPanel();
+  });
+  document.getElementById('commentPanelClose').addEventListener('click', closeCommentPanel);
+  document.getElementById('commentOverlay').addEventListener('click', closeCommentPanel);
+  document.getElementById('reactionBtn').addEventListener('click', toggleLike);
+  document.getElementById('commentSubmitBtn').addEventListener('click', submitComment);
+
+  // ── 토스트 ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
   // ── 유틸 ──
   function formatDate(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}.${m}.${d}`;
+  }
+
+  function formatCommentDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${y}.${m}.${d} ${hh}:${mm}`;
   }
 
   function escapeHtml(str) {
