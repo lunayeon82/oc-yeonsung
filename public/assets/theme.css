@@ -1,0 +1,29 @@
+/* 사이트 공용 색상 팔레트 — thumbnail-v3.png(타이틀 일러스트)의 차분한 라벤더·아이보리 톤에 맞춰 정리 */
+:root {
+  --bg: #f4efe6;
+  --surface: #faf7f2;
+  --surface2: #f0ebe0;
+  --surface3: #e8e2d6;
+  --border: #d4c9b8;
+
+  --text: #3a3530;
+  --text-dim: #8a7e6b;
+  --text-muted: #b0a898;
+
+  --pink: #c0899e;
+  --pink-dim: rgba(192,137,158,0.15);
+  --violet: #a89ec4;
+  --violet-dim: rgba(168,158,196,0.15);
+  --blue: #5a82a8;
+  --blue-dim: rgba(90,130,168,0.15);
+  --amber: #c9962a;
+  --amber-dim: rgba(201,150,42,0.15);
+  --mint: #5a9e7a;
+  --mint-dim: rgba(90,158,122,0.15);
+  --rose: #c2727f;
+
+  --radius: 12px;
+  --font-title: 'ko-font', sans-serif;
+  --font-body: 'ko-font', sans-serif;
+}
+</content>

@@ -44,7 +44,7 @@
       width: 48px; height: 3px;
       margin: 0 auto 16px;
       border-radius: 3px;
-      background: linear-gradient(90deg, #c06b84, #8b7cad);
+      background: linear-gradient(90deg, #c0899e, #a89ec4);
     }
     .cc-message {
       font-family: 'ko-font', sans-serif;
@@ -70,11 +70,11 @@
     .cc-cancel { background: #f0ebe0; color: #8a7e6b; }
     .cc-cancel:hover { background: #e6dccb; }
     .cc-confirm {
-      background: linear-gradient(135deg, #c06b84, #8b7cad);
+      background: linear-gradient(135deg, #c0899e, #a89ec4);
       color: #fff;
-      box-shadow: 0 4px 16px rgba(192,107,132,0.3);
+      box-shadow: 0 4px 16px rgba(192,137,158,0.3);
     }
-    .cc-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,107,132,0.4); }
+    .cc-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,137,158,0.4); }
   `;
 
   let activeResolve = null;

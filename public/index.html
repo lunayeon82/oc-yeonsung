@@ -6,27 +6,18 @@
 <meta property="og:image" content="https://oc-yeonsung.web.app/assets/thumbnail-v3.png">
 <title>연성대나무숲</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/theme.css">
 <style>
   @font-face {
     font-family: 'ko-font';
     src: url('assets/ko-font.ttf') format('truetype');
   }
-  :root {
-    --bg: #f4efe6;
-    --surface: #faf7f2;
-    --border: #d4c9b8;
-    --text: #3a3530;
-    --text-dim: #8a7e6b;
-    --pink: #c06b84;
-    --violet: #8b7cad;
-    --amber: #c9962a;
-    --radius: 12px;
-    --font-title: 'ko-font', sans-serif;
-    --font-body: 'ko-font', sans-serif;
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: var(--font-body); background: url('assets/thumbnail-v3.png') center center / cover no-repeat;
+    font-family: var(--font-body);
+    background:
+      linear-gradient(160deg, rgba(168,158,196,0.22), rgba(244,239,230,0.12)),
+      url('assets/thumbnail-v3.png') center center / cover no-repeat;
     color: var(--text); min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
   }
