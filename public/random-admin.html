@@ -1102,6 +1102,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/confirm-modal.js"></script>
 
 <script>
 firebase.initializeApp({
@@ -1414,23 +1415,23 @@ function saveEdit() {
   saveChars();
 }
 
-function delChar(gi, si, ii) {
+async function delChar(gi, si, ii) {
   const it = CHARS.groups[gi].subs[si].items[ii];
-  if (!confirm(`"${it.n}" 삭제할까요?`)) return;
+  if (!(await customConfirm(`"${it.n}" 삭제할까요?`))) return;
   CHARS.groups[gi].subs[si].items.splice(ii, 1);
   saveChars();
 }
 
-function delGroup(gi, si) {
+async function delGroup(gi, si) {
   const label = CHARS.groups[gi].subs[si].label;
-  if (!confirm(`"${label}" 그룹 전체를 삭제할까요?`)) return;
+  if (!(await customConfirm(`"${label}" 그룹 전체를 삭제할까요?`))) return;
   CHARS.groups[gi].subs.splice(si, 1);
   saveChars();
 }
 
-function delOwner(gi) {
+async function delOwner(gi) {
   const name = CHARS.groups[gi].owner;
-  if (!confirm(`"${name}" 오너와 하위 모든 데이터를 삭제할까요?`)) return;
+  if (!(await customConfirm(`"${name}" 오너와 하위 모든 데이터를 삭제할까요?`))) return;
   CHARS.groups.splice(gi, 1);
   saveChars();
 }
@@ -1467,7 +1468,7 @@ async function migrateIds() {
     return;
   }
 
-  if (!confirm(`${targets.length}명의 캐릭터에 ID를 부여하고 Firestore에 문서를 생성합니다. 계속할까요?`)) return;
+  if (!(await customConfirm(`${targets.length}명의 캐릭터에 ID를 부여하고 Firestore에 문서를 생성합니다. 계속할까요?`))) return;
 
   showSaving();
   try {
@@ -1530,8 +1531,8 @@ function addRoleTag() {
   saveRoles();
 }
 
-function delRoleTag(gi) {
-  if (!confirm(`"${ROLES.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+async function delRoleTag(gi) {
+  if (!(await customConfirm(`"${ROLES.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`))) return;
   ROLES.groups.splice(gi, 1);
   saveRoles();
 }
@@ -1610,8 +1611,8 @@ function saveRename() {
   }
 }
 
-function delRole(gi, ii) {
-  if (!confirm(`"${ROLES.groups[gi].items[ii]}" 삭제할까요?`)) return;
+async function delRole(gi, ii) {
+  if (!(await customConfirm(`"${ROLES.groups[gi].items[ii]}" 삭제할까요?`))) return;
   ROLES.groups[gi].items.splice(ii, 1);
   saveRoles();
 }
@@ -1660,8 +1661,8 @@ function addAUTag() {
   saveAUs();
 }
 
-function delAUTag(gi) {
-  if (!confirm(`"${AUS.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`)) return;
+async function delAUTag(gi) {
+  if (!(await customConfirm(`"${AUS.groups[gi].label}" 태그와 하위 항목을 모두 삭제할까요?`))) return;
   AUS.groups.splice(gi, 1);
   saveAUs();
 }
@@ -1680,8 +1681,8 @@ function addAU() {
   saveAUs();
 }
 
-function delAU(gi, ii) {
-  if (!confirm(`"${AUS.groups[gi].items[ii]}" 삭제할까요?`)) return;
+async function delAU(gi, ii) {
+  if (!(await customConfirm(`"${AUS.groups[gi].items[ii]}" 삭제할까요?`))) return;
   AUS.groups[gi].items.splice(ii, 1);
   saveAUs();
 }

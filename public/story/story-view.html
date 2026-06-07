@@ -794,6 +794,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
 <script>
   // ★ firebaseConfig는 기존 프로젝트 파일에서 복사
   const firebaseConfig = {
@@ -1083,7 +1084,7 @@
   }
 
   async function deleteComment(commentId) {
-    if (!confirm('이 댓글을 삭제할까요?')) return;
+    if (!(await customConfirm('이 댓글을 삭제할까요?'))) return;
     try {
       const batch = db.batch();
       batch.delete(db.collection('comments').doc(commentId));
