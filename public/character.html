@@ -276,48 +276,56 @@
   .cancel-btn:hover { background: rgba(180,160,130,0.1); }
 
   /* List view */
-  .filter-bar {
+  /* 검색/필터 영역 — story-list.html과 동일한 디자인 */
+  .search-area {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0 auto 1.5rem;
+    max-width: 480px;
+    box-shadow: 0 2px 12px rgba(90,74,107,0.06);
+  }
+  .search-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: rgba(244,239,230,0.85);
-    border-bottom: 1px solid rgba(180,160,130,0.15);
-    position: sticky;
-    top: 53px;
-    z-index: 9;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+  .search-row + .search-row { margin-top: 0.6rem; }
+  .filter-label {
+    font-size: 0.75rem;
+    color: #8a7a9a;
+    font-weight: 500;
   }
   .filter-select {
-    flex: 1;
-    min-width: 100px;
-    padding: 7px 11px;
-    border: 1.5px solid rgba(180,160,130,0.3);
-    border-radius: 10px;
-    background: #faf7f2;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
     font-family: 'ko-font', sans-serif;
-    font-size: 13px;
-    color: #3a3530;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
     outline: none;
     cursor: pointer;
   }
-  .sort-btns { display: flex; gap: 4px; }
+  .sort-btns { display: flex; gap: 0.4rem; }
   .sort-btn {
-    padding: 7px 13px;
-    border: 1.5px solid rgba(180,160,130,0.3);
-    border-radius: 10px;
-    background: transparent;
-    font-family: 'ko-font', sans-serif;
-    font-size: 12px;
-    color: #8a7e6b;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.68rem;
+    color: #8a7a9a;
+    background: rgba(255,255,255,0.5);
     cursor: pointer;
+    font-family: 'ko-font', sans-serif;
     transition: all 0.2s;
-    white-space: nowrap;
   }
   .sort-btn.active {
-    background: #6b6055;
-    border-color: #6b6055;
-    color: #f4efe6;
+    background: #b8a9c9;
+    border-color: #b8a9c9;
+    color: white;
   }
   .list-owner-section {
     max-width: 480px;
@@ -648,14 +656,20 @@ function renderList() {
   const owners = groups.map(g => g.owner);
 
   const filterBar = `
-    <div class="filter-bar">
-      <select class="filter-select" onchange="setOwnerFilter(this.value)">
-        <option value="">전체 오너</option>
-        ${owners.map(o => `<option value="${esc(o)}" ${_listOwner === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
-      </select>
-      <div class="sort-btns">
-        <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">ID순</button>
-        <button class="sort-btn ${_listSort === 'alpha' ? 'active' : ''}" onclick="setSort('alpha')">가나다순</button>
+    <div class="search-area">
+      <div class="search-row">
+        <span class="filter-label">오너</span>
+        <select class="filter-select" onchange="setOwnerFilter(this.value)">
+          <option value="">전체 오너</option>
+          ${owners.map(o => `<option value="${esc(o)}" ${_listOwner === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="search-row">
+        <span class="filter-label">정렬</span>
+        <div class="sort-btns">
+          <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">ID순</button>
+          <button class="sort-btn ${_listSort === 'alpha' ? 'active' : ''}" onclick="setSort('alpha')">가나다순</button>
+        </div>
       </div>
     </div>`;
 
