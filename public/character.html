@@ -22,29 +22,6 @@
     padding: 0;
   }
 
-  /* Top bar */
-  .top-bar {
-    display: flex;
-    align-items: center;
-    padding: 14px 18px;
-    background: var(--surface-glass-strong);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(180,160,130,0.2);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .top-title {
-    flex: 1;
-    text-align: center;
-    font-family: 'ko-font', serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: #6b6055;
-    letter-spacing: 1px;
-  }
-  .top-spacer { width: 36px; }
-
   /* Main card */
   .char-card {
     max-width: 480px;
@@ -245,21 +222,6 @@
     40% { opacity: 1; }
   }
 
-  /* Edit mode */
-  .edit-btn {
-    background: none;
-    border: 1.5px solid rgba(180,160,130,0.35);
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #8a7e6b;
-    padding: 4px 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'ko-font', sans-serif;
-    white-space: nowrap;
-  }
-  .edit-btn:hover { background: rgba(180,160,130,0.12); border-color: rgba(107,96,85,0.4); color: #6b6055; }
   .info-textarea {
     width: 100%;
     padding: 9px 11px;
@@ -442,11 +404,12 @@
 </head>
 <body>
 
-<div class="top-bar">
-  <button class="nav-link" id="backBtn">← 홈</button>
-  <span class="top-title" id="topTitle">캐릭터</span>
-  <button class="edit-btn" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
-</div>
+<button class="nav-link nav-corner" id="backBtn">← 홈</button>
+
+<header class="page-hero">
+  <h1 id="topTitle">캐릭터</h1>
+  <button class="action-pill" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
+</header>
 
 <div id="app">
   <div class="loading">
@@ -525,7 +488,7 @@ async function loadCharacter(id) {
       return;
     }
     window._charData = { id, ...doc.data() };
-    document.getElementById('editToggle').style.display = 'inline-block';
+    document.getElementById('editToggle').style.display = 'inline-flex';
     renderCharDetail(false);
   } catch (err) {
     console.error(err);
@@ -543,7 +506,7 @@ function renderCharDetail(editMode) {
   const coupleText = COUPLE_MAP[d.c] || '?';
   const hasInfo = INFO_LABELS.some(item => info[item.key]);
 
-  document.getElementById('editToggle').style.display = editMode ? 'none' : 'inline-block';
+  document.getElementById('editToggle').style.display = editMode ? 'none' : 'inline-flex';
 
   let html = `
     <div class="char-card">

@@ -84,7 +84,7 @@
 /* 공용 페이지 타이틀 — 큰 헤더형 페이지(랜덤 뽑기/관리자/글 목록 등)의 제목 영역을 통일 */
 .page-hero {
   text-align: center;
-  padding: 28px 16px 24px;
+  padding: 44px 16px 36px;
 }
 .page-hero h1 {
   font-family: var(--font-title);
