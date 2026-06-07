@@ -433,6 +433,32 @@
     line-height: 1.6;
   }
 
+  .load-more-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  .load-more-btn {
+    padding: 0.6rem 1.6rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 999px;
+    color: #7a6a8a;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .load-more-btn:hover {
+    background: rgba(184,169,201,0.12);
+    border-color: rgba(184,169,201,0.5);
+  }
+  .load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
   /* ── 로딩 ── */
   .loading {
     text-align: center;
@@ -568,7 +594,11 @@
   const db = firebase.firestore();
 
   // ── 상태 ──
+  const STORY_PAGE_SIZE = 5;
   let allStories = [];
+  let lastStoryDoc = null;
+  let noMoreStories = false;
+  let isLoadingMoreStories = false;
   let allCharacters = [];
   let selectedChars = new Set();
   let selectedRoles = new Set();
@@ -716,14 +746,28 @@
     });
   }
 
-  // ── 글 목록 로드 ──
+  // ── 글 목록 로드 (최신순 페이지네이션) ──
   async function loadStories() {
-    try {
-      const snapshot = await db.collection('stories')
-        .orderBy('createdAt', 'desc')
-        .get();
+    allStories = [];
+    lastStoryDoc = null;
+    noMoreStories = false;
+    await loadMoreStories();
+  }
 
-      allStories = await Promise.all(snapshot.docs.map(async doc => {
+  async function loadMoreStories() {
+    if (noMoreStories || isLoadingMoreStories) return;
+    isLoadingMoreStories = true;
+    updateLoadMoreBtn();
+
+    try {
+      let query = db.collection('stories')
+        .orderBy('createdAt', 'desc')
+        .limit(STORY_PAGE_SIZE);
+      if (lastStoryDoc) query = query.startAfter(lastStoryDoc);
+
+      const snapshot = await query.get();
+
+      const page = await Promise.all(snapshot.docs.map(async doc => {
         const data = doc.data();
         // chapterCount가 저장된 경우 바로 사용, 없으면 실제 쿼리 (병렬)
         const chapterCount = data.chapterCount != null
@@ -741,12 +785,29 @@
           commentCount: data.commentCount || 0
         };
       }));
+
+      allStories = allStories.concat(page);
+      lastStoryDoc = snapshot.docs[snapshot.docs.length - 1] || lastStoryDoc;
+      if (snapshot.docs.length < STORY_PAGE_SIZE) noMoreStories = true;
+
       filterAndRender();
     } catch (e) {
       console.error('글 목록 로드 실패:', e);
-      document.getElementById('storyList').innerHTML =
-        '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+      if (allStories.length === 0) {
+        document.getElementById('storyList').innerHTML =
+          '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+      }
+    } finally {
+      isLoadingMoreStories = false;
+      updateLoadMoreBtn();
     }
+  }
+
+  function updateLoadMoreBtn() {
+    const btn = document.getElementById('loadMoreBtn');
+    if (!btn) return;
+    btn.disabled = isLoadingMoreStories;
+    btn.textContent = isLoadingMoreStories ? '불러오는 중...' : '더보기';
   }
 
   // ── 필터링 + 렌더 ──
@@ -779,6 +840,10 @@
 
   function renderStories(stories) {
     const list = document.getElementById('storyList');
+    const loadMoreHtml = noMoreStories ? '' : `
+      <div class="load-more-wrap">
+        <button class="load-more-btn" id="loadMoreBtn">더보기</button>
+      </div>`;
 
     if (stories.length === 0) {
       list.innerHTML = `
@@ -788,27 +853,34 @@
             ? '검색 결과가 없어요'
             : '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
           }</p>
-        </div>`;
-      return;
+        </div>` + loadMoreHtml;
+    } else {
+      const cardsHtml = stories.map(s => {
+        const dateStr = formatDate(s.createdAt);
+        const tagGroups = [s.characters, s.roles, s.aus].filter(g => g.length > 0);
+        const tagsHtml = tagGroups
+          .map(g => g.map(t => `<span class="story-tag">${escapeHtml(t)}</span>`).join(''))
+          .join('<span class="tag-sep">|</span>');
+        return `
+          <a class="story-card" href="story-view.html?pid=${s.pid}">
+            <div class="story-title">${escapeHtml(s.title)}</div>
+            <div class="story-meta">
+              <span class="story-date">${dateStr}</span>
+              <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
+              <span class="story-comment-count">💬 ${s.commentCount}개</span>
+            </div>
+            ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
+          </a>`;
+      }).join('');
+
+      list.innerHTML = cardsHtml + loadMoreHtml;
     }
 
-    list.innerHTML = stories.map(s => {
-      const dateStr = formatDate(s.createdAt);
-      const tagGroups = [s.characters, s.roles, s.aus].filter(g => g.length > 0);
-      const tagsHtml = tagGroups
-        .map(g => g.map(t => `<span class="story-tag">${escapeHtml(t)}</span>`).join(''))
-        .join('<span class="tag-sep">|</span>');
-      return `
-        <a class="story-card" href="story-view.html?pid=${s.pid}">
-          <div class="story-title">${escapeHtml(s.title)}</div>
-          <div class="story-meta">
-            <span class="story-date">${dateStr}</span>
-            <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
-            <span class="story-comment-count">💬 ${s.commentCount}개</span>
-          </div>
-          ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
-        </a>`;
-    }).join('');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', loadMoreStories);
+      updateLoadMoreBtn();
+    }
   }
 
   function formatDate(date) {
