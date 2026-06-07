@@ -85,7 +85,7 @@
   .enter-modal {
     position: relative;
     width: 90%;
-    max-width: 380px;
+    max-width: 440px;
     padding: 32px 28px 28px;
     border-radius: 18px;
     background: var(--surface);
@@ -122,31 +122,44 @@
     background: rgba(0,0,0,0.12);
     color: var(--text);
   }
-  .enter-modal-links { display: flex; flex-direction: column; gap: 12px; }
-  .modal-link {
-    display: block; width: 100%; padding: 16px 24px;
-    border-radius: var(--radius); border: none;
-    font-family: var(--font-title); font-size: 1rem; font-weight: 700;
-    cursor: pointer; transition: all 0.2s;
-    text-decoration: none; text-align: center;
-  }
-  .modal-link.primary {
-    background: linear-gradient(135deg, var(--pink), var(--violet));
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(192,137,158,0.25);
-  }
-  .modal-link.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 28px rgba(192,137,158,0.35);
-  }
-  .modal-link.secondary {
+  .enter-modal-links { display: flex; flex-direction: row; gap: 10px; }
+  .modal-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 16px 8px;
+    border-radius: var(--radius);
     background: var(--surface);
     border: 1.5px solid var(--border);
+    font-family: var(--font-title); font-size: 0.85rem; font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, background 0.2s, color 0.2s;
+    text-decoration: none; text-align: center;
     color: var(--text-dim);
   }
-  .modal-link.secondary:hover {
+  .modal-card:hover {
+    transform: translateY(-3px);
     border-color: var(--violet);
+    background: var(--violet-dim);
     color: var(--text);
+  }
+  .modal-card-icon {
+    width: 60px; height: 60px;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  @media (max-width: 480px) {
+    .enter-modal-links { flex-direction: column; }
+    .modal-card {
+      flex-direction: row;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 12px 14px;
+    }
+    .modal-card-icon { width: 48px; height: 48px; flex-shrink: 0; }
   }
 </style>
 </head>
@@ -161,10 +174,18 @@
     <button class="enter-modal-close" id="enterModalClose" aria-label="닫기">✕</button>
     <h2>어디로 가시겠어요?</h2>
     <div class="enter-modal-links">
-      <a class="modal-link primary" href="random.html">🎲 랜덤 뽑기 실행</a>
-      <a class="modal-link primary" href="story/story-list.html">📖 연성글 보러가기</a>
-      <a class="modal-link secondary" href="character.html">👤 캐릭터 목록</a>
-      <a class="modal-link secondary" href="random-admin.html">⚙ 랜덤 뽑기 (관리자 모드)</a>
+      <a class="modal-card" href="random.html">
+        <img src="assets/icon/chick-v0.png" alt="" class="modal-card-icon">
+        <span>랜덤 뽑기 실행</span>
+      </a>
+      <a class="modal-card" href="story/story-list.html">
+        <img src="assets/icon/hedgehog-v0.png" alt="" class="modal-card-icon">
+        <span>연성글 보러가기</span>
+      </a>
+      <a class="modal-card" href="character.html">
+        <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
+        <span>캐릭터 목록</span>
+      </a>
     </div>
   </div>
 </div>
