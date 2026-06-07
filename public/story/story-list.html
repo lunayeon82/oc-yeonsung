@@ -33,24 +33,6 @@
     font-size: 1.6rem;
     color: #5a4a6b;
     letter-spacing: 0.05em;
-    position: relative;
-    display: inline-block;
-  }
-
-  .page-header h1::after {
-    content: '';
-    display: block;
-    width: 60%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #b8a9c9, transparent);
-    margin: 0.5rem auto 0;
-  }
-
-  .page-header .subtitle {
-    font-size: 0.8rem;
-    color: #9a8aaa;
-    margin-top: 0.4rem;
-    font-weight: 300;
   }
 
   /* ── 컨테이너 ── */
@@ -75,17 +57,24 @@
 
   .search-row {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.6rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .search-controls {
+    display: flex;
+    gap: 0.4rem;
   }
 
   .search-input {
-    flex: 1;
-    padding: 0.6rem 1rem;
+    width: 150px;
+    padding: 0.45rem 0.8rem;
     border: 1px solid rgba(184,169,201,0.3);
     border-radius: 8px;
     font-family: 'ko-font', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     background: rgba(255,255,255,0.7);
     color: #4a3a5b;
     outline: none;
@@ -95,13 +84,13 @@
   .search-input:focus { border-color: #b8a9c9; }
 
   .search-btn {
-    padding: 0.6rem 1rem;
+    padding: 0.45rem 0.9rem;
     background: #b8a9c9;
     color: white;
     border: none;
     border-radius: 8px;
     font-family: 'ko-font', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
     transition: background 0.2s;
     white-space: nowrap;
@@ -514,7 +503,6 @@
 
 <div class="page-header">
   <h1>연성 글 목록</h1>
-  <div class="subtitle">우리들의 이야기</div>
 </div>
 
 <div class="container">
@@ -522,8 +510,11 @@
   <!-- 검색 + 캐릭터 필터 -->
   <div class="search-area">
     <div class="search-row">
-      <input type="text" class="search-input" id="searchInput" placeholder="제목으로 검색...">
-      <button class="search-btn" id="searchBtn">검색</button>
+      <span class="filter-label">제목</span>
+      <div class="search-controls">
+        <input type="text" class="search-input" id="searchInput" placeholder="검색어 입력...">
+        <button class="search-btn" id="searchBtn">검색</button>
+      </div>
     </div>
     <!-- 캐릭터 필터 -->
     <div class="filter-section">
