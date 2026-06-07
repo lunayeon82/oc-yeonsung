@@ -296,6 +296,24 @@
   }
   .clear-filter:hover { color: #5a4a6b; }
 
+  .apply-filter-btn {
+    padding: 0.4rem 1.1rem;
+    background: #b8a9c9;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .apply-filter-btn:hover { background: #a090b5; }
+  .apply-filter-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
   /* ── 글 목록 ── */
   .story-list {
     display: flex;
@@ -564,6 +582,7 @@
 
     <div class="filter-actions">
       <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
+      <button class="apply-filter-btn" id="applyFilterBtn">필터 적용</button>
     </div>
   </div>
 
@@ -599,6 +618,9 @@
   let lastStoryDoc = null;
   let noMoreStories = false;
   let isLoadingMoreStories = false;
+  let allStoriesFull = null;       // 필터 적용 시 1회 캐싱되는 전체 글 목록 (지연 로드)
+  let isFilterActive = false;
+  let filteredVisibleCount = STORY_PAGE_SIZE;
   let allCharacters = [];
   let selectedChars = new Set();
   let selectedRoles = new Set();
@@ -645,13 +667,11 @@
     charFilterMode = 'or';
     document.getElementById('charModeOr').classList.add('active');
     document.getElementById('charModeAnd').classList.remove('active');
-    filterAndRender();
   });
   document.getElementById('charModeAnd').addEventListener('click', () => {
     charFilterMode = 'and';
     document.getElementById('charModeAnd').classList.add('active');
     document.getElementById('charModeOr').classList.remove('active');
-    filterAndRender();
   });
 
   // countId 뱃지: 접혀있고 선택 있을 때만 표시
@@ -696,7 +716,6 @@
         if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
         else                          { selectedChars.add(name);    tag.classList.add('active'); }
         updateAllCounts();
-        filterAndRender();
       });
     });
   }
@@ -741,7 +760,6 @@
         if (selectedSet.has(name)) { selectedSet.delete(name); tag.classList.remove('active'); }
         else                        { selectedSet.add(name);    tag.classList.add('active'); }
         updateAllCounts();
-        filterAndRender();
       });
     });
   }
@@ -757,7 +775,7 @@
   async function loadMoreStories() {
     if (noMoreStories || isLoadingMoreStories) return;
     isLoadingMoreStories = true;
-    updateLoadMoreBtn();
+    renderDefaultStories();
 
     try {
       let query = db.collection('stories')
@@ -789,97 +807,162 @@
       allStories = allStories.concat(page);
       lastStoryDoc = snapshot.docs[snapshot.docs.length - 1] || lastStoryDoc;
       if (snapshot.docs.length < STORY_PAGE_SIZE) noMoreStories = true;
-
-      filterAndRender();
     } catch (e) {
       console.error('글 목록 로드 실패:', e);
       if (allStories.length === 0) {
+        isLoadingMoreStories = false;
         document.getElementById('storyList').innerHTML =
           '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+        return;
       }
-    } finally {
-      isLoadingMoreStories = false;
-      updateLoadMoreBtn();
     }
+
+    isLoadingMoreStories = false;
+    renderDefaultStories();
   }
 
-  function updateLoadMoreBtn() {
-    const btn = document.getElementById('loadMoreBtn');
-    if (!btn) return;
-    btn.disabled = isLoadingMoreStories;
-    btn.textContent = isLoadingMoreStories ? '불러오는 중...' : '더보기';
+  // ── 카드 HTML 빌드 ──
+  function buildCardsHtml(stories) {
+    return stories.map(s => {
+      const dateStr = formatDate(s.createdAt);
+      const tagGroups = [s.characters, s.roles, s.aus].filter(g => g.length > 0);
+      const tagsHtml = tagGroups
+        .map(g => g.map(t => `<span class="story-tag">${escapeHtml(t)}</span>`).join(''))
+        .join('<span class="tag-sep">|</span>');
+      return `
+        <a class="story-card" href="story-view.html?pid=${s.pid}">
+          <div class="story-title">${escapeHtml(s.title)}</div>
+          <div class="story-meta">
+            <span class="story-date">${dateStr}</span>
+            <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
+            <span class="story-comment-count">💬 ${s.commentCount}개</span>
+          </div>
+          ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
+        </a>`;
+    }).join('');
   }
 
-  // ── 필터링 + 렌더 ──
-  function filterAndRender() {
-    let filtered = allStories;
-
-    // 제목 검색
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(s => s.title.toLowerCase().includes(term));
-    }
-
-    // 캐릭터 필터
-    if (selectedChars.size > 0) {
-      filtered = charFilterMode === 'and'
-        ? filtered.filter(s => [...selectedChars].every(name => s.characters.includes(name)))
-        : filtered.filter(s => [...selectedChars].some(name => s.characters.includes(name)));
-    }
-
-    // 캐릭터 설정 + 관계성 필터 (둘 사이 OR, 캐릭터 필터와 AND)
-    if (selectedRoles.size > 0 || selectedAus.size > 0) {
-      filtered = filtered.filter(s =>
-        [...selectedRoles].some(name => s.roles.includes(name)) ||
-        [...selectedAus].some(name => s.aus.includes(name))
-      );
-    }
-
-    renderStories(filtered);
-  }
-
-  function renderStories(stories) {
+  // ── 목록 렌더 (기본 모드 / 필터 모드 공용) ──
+  function renderList({ items, visibleCount, hasMore, isLoadingMore, onLoadMore, emptyMessage }) {
     const list = document.getElementById('storyList');
-    const loadMoreHtml = noMoreStories ? '' : `
-      <div class="load-more-wrap">
-        <button class="load-more-btn" id="loadMoreBtn">더보기</button>
-      </div>`;
+    const visible = items.slice(0, visibleCount);
 
-    if (stories.length === 0) {
-      list.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">📝</div>
-          <p>${searchTerm || selectedChars.size > 0
-            ? '검색 결과가 없어요'
-            : '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
-          }</p>
-        </div>` + loadMoreHtml;
-    } else {
-      const cardsHtml = stories.map(s => {
-        const dateStr = formatDate(s.createdAt);
-        const tagGroups = [s.characters, s.roles, s.aus].filter(g => g.length > 0);
-        const tagsHtml = tagGroups
-          .map(g => g.map(t => `<span class="story-tag">${escapeHtml(t)}</span>`).join(''))
-          .join('<span class="tag-sep">|</span>');
-        return `
-          <a class="story-card" href="story-view.html?pid=${s.pid}">
-            <div class="story-title">${escapeHtml(s.title)}</div>
-            <div class="story-meta">
-              <span class="story-date">${dateStr}</span>
-              <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
-              <span class="story-comment-count">💬 ${s.commentCount}개</span>
-            </div>
-            ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
-          </a>`;
-      }).join('');
+    let html = visible.length === 0
+      ? `<div class="empty-state"><div class="icon">📝</div><p>${emptyMessage}</p></div>`
+      : buildCardsHtml(visible);
 
-      list.innerHTML = cardsHtml + loadMoreHtml;
+    if (hasMore) {
+      html += `
+        <div class="load-more-wrap">
+          <button class="load-more-btn" id="loadMoreBtn" ${isLoadingMore ? 'disabled' : ''}>${isLoadingMore ? '불러오는 중...' : '더보기'}</button>
+        </div>`;
     }
+
+    list.innerHTML = html;
 
     const loadMoreBtn = document.getElementById('loadMoreBtn');
-    if (loadMoreBtn) {
-      loadMoreBtn.addEventListener('click', loadMoreStories);
-      updateLoadMoreBtn();
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', onLoadMore);
+  }
+
+  // ── 기본 모드 렌더 (최신순 페이지네이션) ──
+  function renderDefaultStories() {
+    renderList({
+      items: allStories,
+      visibleCount: allStories.length,
+      hasMore: !noMoreStories,
+      isLoadingMore: isLoadingMoreStories,
+      onLoadMore: loadMoreStories,
+      emptyMessage: '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
+    });
+  }
+
+  // ── 필터 일치 여부 판정 ──
+  function matchesFilters(s) {
+    if (searchTerm && !s.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+    if (selectedChars.size > 0) {
+      const matchChars = charFilterMode === 'and'
+        ? [...selectedChars].every(name => s.characters.includes(name))
+        : [...selectedChars].some(name => s.characters.includes(name));
+      if (!matchChars) return false;
+    }
+
+    if (selectedRoles.size > 0 || selectedAus.size > 0) {
+      const matchGroups =
+        [...selectedRoles].some(name => s.roles.includes(name)) ||
+        [...selectedAus].some(name => s.aus.includes(name));
+      if (!matchGroups) return false;
+    }
+
+    return true;
+  }
+
+  function hasAnyFilterCriteria() {
+    return !!searchTerm || selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0;
+  }
+
+  // ── 필터 모드 렌더 (캐싱된 전체 목록에서 필터링, 캐시 내에서 더보기) ──
+  function renderFilteredStories() {
+    const filtered = (allStoriesFull || []).filter(matchesFilters);
+    renderList({
+      items: filtered,
+      visibleCount: filteredVisibleCount,
+      hasMore: filteredVisibleCount < filtered.length,
+      isLoadingMore: false,
+      onLoadMore: () => { filteredVisibleCount += STORY_PAGE_SIZE; renderFilteredStories(); },
+      emptyMessage: '검색 결과가 없어요'
+    });
+  }
+
+  // ── 전체 글 목록 캐싱 (필터 적용 시 1회만 로드) ──
+  async function ensureFullStoriesLoaded() {
+    if (allStoriesFull !== null) return;
+    const snapshot = await db.collection('stories').orderBy('createdAt', 'desc').get();
+    // chapterCount/commentCount는 story 문서에 이미 저장돼 있어 추가 쿼리 없이 바로 사용 가능
+    allStoriesFull = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        pid: doc.id,
+        title: data.title || '(제목 없음)',
+        characters: data.characters || [],
+        roles: data.roles || [],
+        aus: data.aus || [],
+        theme: data.theme || 'default',
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        chapterCount: data.chapterCount || 0,
+        commentCount: data.commentCount || 0
+      };
+    });
+  }
+
+  function setApplyBtnLoading(loading) {
+    const btn = document.getElementById('applyFilterBtn');
+    btn.disabled = loading;
+    btn.textContent = loading ? '불러오는 중...' : '필터 적용';
+  }
+
+  // ── 필터 적용: 전체 목록을 캐싱한 뒤 필터링해서 보여줌 ──
+  async function applyFilters() {
+    searchTerm = document.getElementById('searchInput').value.trim();
+
+    if (!hasAnyFilterCriteria()) {
+      isFilterActive = false;
+      renderDefaultStories();
+      return;
+    }
+
+    setApplyBtnLoading(true);
+    try {
+      await ensureFullStoriesLoaded();
+      isFilterActive = true;
+      filteredVisibleCount = STORY_PAGE_SIZE;
+      renderFilteredStories();
+    } catch (e) {
+      console.error('전체 목록 로드 실패:', e);
+      document.getElementById('storyList').innerHTML =
+        '<div class="empty-state"><div class="icon">⚠</div><p>필터 적용에 실패했어요<br>잠시 후 다시 시도해주세요</p></div>';
+    } finally {
+      setApplyBtnLoading(false);
     }
   }
 
@@ -897,25 +980,24 @@
   }
 
   // ── 이벤트 ──
-  document.getElementById('searchBtn').addEventListener('click', () => {
-    searchTerm = document.getElementById('searchInput').value.trim();
-    filterAndRender();
-  });
+  document.getElementById('searchBtn').addEventListener('click', applyFilters);
 
   document.getElementById('searchInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      searchTerm = e.target.value.trim();
-      filterAndRender();
-    }
+    if (e.key === 'Enter') applyFilters();
   });
+
+  document.getElementById('applyFilterBtn').addEventListener('click', applyFilters);
 
   document.getElementById('clearFilter').addEventListener('click', () => {
     selectedChars.clear();
     selectedRoles.clear();
     selectedAus.clear();
     document.querySelectorAll('.char-tag.active').forEach(t => t.classList.remove('active'));
+    document.getElementById('searchInput').value = '';
+    searchTerm = '';
     updateAllCounts();
-    filterAndRender();
+    isFilterActive = false;
+    renderDefaultStories();
   });
 
   document.getElementById('newStoryBtn').addEventListener('click', () => {
