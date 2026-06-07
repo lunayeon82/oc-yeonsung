@@ -34,13 +34,6 @@
     top: 0;
     z-index: 10;
   }
-  .top-bar .nav-link {
-    font-size: 20px;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: background 0.2s, color 0.2s;
-  }
-  .top-bar .nav-link:hover { background: rgba(180,160,130,0.15); }
   .top-title {
     flex: 1;
     text-align: center;
@@ -450,7 +443,7 @@
 <body>
 
 <div class="top-bar">
-  <button class="nav-link" id="backBtn" onclick="history.back()">←</button>
+  <button class="nav-link" id="backBtn">← 홈</button>
   <span class="top-title" id="topTitle">캐릭터</span>
   <button class="edit-btn" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
 </div>
@@ -508,13 +501,16 @@ function esc(s) {
 // ============ ROUTING ============
 document.addEventListener('DOMContentLoaded', () => {
   const id = new URLSearchParams(window.location.search).get('id');
+  const backBtn = document.getElementById('backBtn');
   if (id) {
     document.getElementById('topTitle').textContent = '캐릭터 설정';
-    document.getElementById('backBtn').onclick = () => history.back();
+    backBtn.textContent = '← 뒤로';
+    backBtn.onclick = () => history.back();
     loadCharacter(id);
   } else {
     document.getElementById('topTitle').textContent = '캐릭터 목록';
-    document.getElementById('backBtn').onclick = () => { location.href = './'; };
+    backBtn.textContent = '← 홈';
+    backBtn.onclick = () => { location.href = './'; };
     loadCharacterList();
   }
 });

@@ -72,4 +72,12 @@
   border-color: var(--violet);
   color: var(--text);
 }
+
+/* 페이지 좌상단 고정 위치 — 홈/뒤로가기 등 진입 내비게이션을 모든 페이지에서 같은 자리에 */
+.nav-corner {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  z-index: 10;
+}
 </content>
