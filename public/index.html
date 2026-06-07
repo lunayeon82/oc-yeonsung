@@ -122,9 +122,9 @@
     background: rgba(0,0,0,0.12);
     color: var(--text);
   }
-  .enter-modal-links { display: flex; flex-direction: row; gap: 10px; }
+  .enter-modal-links { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 10px; }
   .modal-card {
-    flex: 1;
+    flex: 0 1 140px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -148,20 +148,10 @@
     color: var(--text);
   }
   .modal-card-icon {
-    width: 90px; height: 90px;
+    width: 110px; height: 110px;
     max-width: 100%;
     object-fit: contain;
     pointer-events: none;
-  }
-  @media (max-width: 480px) {
-    .enter-modal-links { flex-direction: column; }
-    .modal-card {
-      flex-direction: row;
-      justify-content: flex-start;
-      text-align: left;
-      padding: 12px 14px;
-    }
-    .modal-card-icon { width: 80px; height: 80px; flex-shrink: 0; }
   }
 </style>
 </head>
