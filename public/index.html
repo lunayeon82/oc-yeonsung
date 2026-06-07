@@ -85,7 +85,7 @@
   .enter-modal {
     position: relative;
     width: 90%;
-    max-width: 440px;
+    max-width: 500px;
     padding: 32px 28px 28px;
     border-radius: 18px;
     background: var(--surface);
@@ -125,6 +125,7 @@
   .enter-modal-links { display: flex; flex-direction: row; gap: 10px; }
   .modal-card {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -147,7 +148,8 @@
     color: var(--text);
   }
   .modal-card-icon {
-    width: 150px; height: 150px;
+    width: 90px; height: 90px;
+    max-width: 100%;
     object-fit: contain;
     pointer-events: none;
   }
@@ -159,7 +161,7 @@
       text-align: left;
       padding: 12px 14px;
     }
-    .modal-card-icon { width: 60px; height: 60px; flex-shrink: 0; }
+    .modal-card-icon { width: 80px; height: 80px; flex-shrink: 0; }
   }
 </style>
 </head>
