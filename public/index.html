@@ -21,18 +21,18 @@
     color: var(--text); min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
   }
-  .container {
+  .title-logo {
     position: relative; z-index: 1;
-    text-align: center; padding: 40px 24px;
-    max-width: 400px; width: 100%;
+    display: block;
+    width: 80%;
+    max-width: 420px;
+    height: auto;
+    filter: drop-shadow(0 8px 28px rgba(90,74,107,0.35));
+    animation: title-float 4s ease-in-out infinite;
   }
-  h1 {
-    font-family: var(--font-title); font-weight: 800;
-    font-size: 1.8rem; letter-spacing: -0.03em; margin-bottom: 32px;
-  }
-  h1 span {
-    background: linear-gradient(135deg, var(--pink), var(--violet));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  @keyframes title-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
   }
   /* ── 입장하기 버튼 (게임 타이틀 화면 느낌) ── */
   .enter-btn {
@@ -149,6 +149,8 @@
 </style>
 </head>
 <body>
+
+<img src="assets/title.png" alt="연성대나무숲" class="title-logo">
 
 <button class="enter-btn" id="enterBtn">입장하기</button>
 
