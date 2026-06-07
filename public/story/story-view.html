@@ -597,10 +597,33 @@
   }
 
   .comment-item {
-    padding: 0.8rem 0;
+    position: relative;
+    padding: 0.8rem 1.7rem 0.8rem 0;
     border-bottom: 1px solid rgba(184,169,201,0.1);
   }
   .comment-item:last-child { border-bottom: none; }
+
+  .comment-delete-btn {
+    position: absolute;
+    top: 0.7rem;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #c8b8d8;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .comment-delete-btn:hover {
+    background: rgba(184,169,201,0.18);
+    color: #8a6a9a;
+  }
 
   .comment-chapter-tag {
     display: inline-block;
@@ -1046,12 +1069,35 @@
       const chapterTag = chapters.length > 1 ? chapterLabel(c.chapterPid) : '';
       return `
         <div class="comment-item">
+          <button class="comment-delete-btn" data-id="${c.id}" title="댓글 삭제" aria-label="댓글 삭제">✕</button>
           ${chapterTag ? `<span class="comment-chapter-tag">${escapeHtml(chapterTag)}</span>` : ''}
           <div class="comment-body">${escapeHtml(c.body)}</div>
           ${dateStr ? `<div class="comment-date">${dateStr}</div>` : ''}
         </div>
       `;
     }).join('');
+
+    list.querySelectorAll('.comment-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteComment(btn.dataset.id));
+    });
+  }
+
+  async function deleteComment(commentId) {
+    if (!confirm('이 댓글을 삭제할까요?')) return;
+    try {
+      const batch = db.batch();
+      batch.delete(db.collection('comments').doc(commentId));
+      batch.update(db.collection('stories').doc(pid), {
+        commentCount: firebase.firestore.FieldValue.increment(-1)
+      });
+      await batch.commit();
+
+      await loadComments();
+      showToast('댓글을 삭제했어요');
+    } catch (e) {
+      console.error('댓글 삭제 실패:', e);
+      showToast('댓글 삭제에 실패했어요');
+    }
   }
 
   async function submitComment() {
