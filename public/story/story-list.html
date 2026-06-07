@@ -21,19 +21,6 @@
   }
 
   /* ── 헤더 ── */
-  .page-header {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: 2.5rem 1rem 1.5rem;
-  }
-
-  .page-header h1 {
-    font-family: 'ko-font', sans-serif;
-    font-size: 1.6rem;
-    color: #5a4a6b;
-    letter-spacing: 0.05em;
-  }
 
   /* ── 컨테이너 ── */
   .container {
@@ -475,7 +462,6 @@
 
   /* ── 반응형 ── */
   @media (max-width: 480px) {
-    .page-header h1 { font-size: 1.3rem; }
     .container { padding: 0 0.8rem 4rem; }
     .search-area { padding: 0.8rem; }
     .story-card { padding: 0.8rem 1rem; }
@@ -501,9 +487,9 @@
 
 <a href="../index.html" class="nav-link nav-corner">← 홈</a>
 
-<div class="page-header">
+<header class="page-hero">
   <h1>연성 글 목록</h1>
-</div>
+</header>
 
 <div class="container">
 

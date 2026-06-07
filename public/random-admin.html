@@ -16,10 +16,6 @@
 
   .app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 20px 16px 120px; }
 
-  header { text-align: center; padding: 24px 0 8px; }
-  header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
-  header h1 span { background: linear-gradient(135deg, var(--amber), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  header .action-pill { margin-top: 10px; }
 
   /* Sync */
   .sync-badge {
@@ -263,7 +259,6 @@
 
   @media (max-width: 480px) {
     .app { padding: 12px 12px 100px; }
-    header h1 { font-size: 1.35rem; }
     .admin-tab { font-size: 0.78rem; padding: 10px 0; }
     .add-row { flex-direction: column; }
     .add-input, .select-input { width: 100%; }
@@ -277,8 +272,8 @@
 <a class="nav-link nav-corner" href="./">← 홈</a>
 
 <div class="app">
-  <header>
-    <h1>🔧 <span>관리자 페이지</span></h1>
+  <header class="page-hero">
+    <h1>관리자 페이지</h1>
     <a class="action-pill" href="random.html">🎲 랜덤 뽑기</a>
   </header>
 

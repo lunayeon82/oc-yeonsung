@@ -24,10 +24,6 @@
     padding: 20px 16px 120px;
   }
 
-  header { text-align: center; padding: 24px 0 28px; }
-  header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.75rem; letter-spacing: -0.03em; }
-  header h1 span { background: linear-gradient(135deg, var(--pink), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  header .action-pill { margin-top: 10px; }
 
   /* Loading */
   .loading { text-align: center; padding: 60px 0; color: var(--text-dim); font-size: 0.9rem; }
@@ -272,7 +268,6 @@
 
   @media (max-width: 480px) {
     .app { padding: 12px 12px 100px; }
-    header h1 { font-size: 1.45rem; }
     .sub-label { width: 48px; font-size: 0.68rem; }
     .ch { padding: 5px 11px; font-size: 0.75rem; }
     .ch .tag { font-size: 0.5rem; }
@@ -293,8 +288,8 @@
 <a class="nav-link nav-corner" href="./">← 홈</a>
 
 <div class="app">
-  <header>
-    <h1>🎲 <span>랜덤 뽑기</span></h1>
+  <header class="page-hero">
+    <h1>랜덤 뽑기</h1>
     <a class="action-pill" href="random-admin.html">🔧 관리자 모드</a>
   </header>
 

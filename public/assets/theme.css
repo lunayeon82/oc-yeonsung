@@ -80,4 +80,21 @@
   left: 1.2rem;
   z-index: 10;
 }
+
+/* 공용 페이지 타이틀 — 큰 헤더형 페이지(랜덤 뽑기/관리자/글 목록 등)의 제목 영역을 통일 */
+.page-hero {
+  text-align: center;
+  padding: 28px 16px 24px;
+}
+.page-hero h1 {
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+  color: #5a4a6b;
+}
+.page-hero .action-pill { margin-top: 10px; }
+@media (max-width: 420px) {
+  .page-hero h1 { font-size: 1.4rem; }
+}
 </content>
