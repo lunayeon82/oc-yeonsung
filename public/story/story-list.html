@@ -362,6 +362,14 @@
     gap: 0.25rem;
   }
 
+  .story-comment-count {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
   .story-tags {
     display: flex;
     flex-wrap: wrap;
@@ -729,7 +737,8 @@
           aus: data.aus || [],
           theme: data.theme || 'default',
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          chapterCount
+          chapterCount,
+          commentCount: data.commentCount || 0
         };
       }));
       filterAndRender();
@@ -795,6 +804,7 @@
           <div class="story-meta">
             <span class="story-date">${dateStr}</span>
             <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
+            <span class="story-comment-count">💬 ${s.commentCount}개</span>
           </div>
           ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
         </a>`;
