@@ -281,7 +281,9 @@
 
   .filter-actions {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 1rem;
     margin-top: 0.5rem;
   }
 
@@ -846,6 +848,11 @@
   function renderList({ items, visibleCount, hasMore, isLoadingMore, onLoadMore, emptyMessage }) {
     const list = document.getElementById('storyList');
     const visible = items.slice(0, visibleCount);
+
+    if (visible.length === 0 && isLoadingMore) {
+      list.innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
+      return;
+    }
 
     let html = visible.length === 0
       ? `<div class="empty-state"><div class="icon">📝</div><p>${emptyMessage}</p></div>`
