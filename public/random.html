@@ -11,7 +11,7 @@
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: var(--font-body); background: url('assets/bg-paper.png') repeat;
+    font-family: var(--font-body); background: var(--page-gradient); background-attachment: fixed;
     color: var(--text); min-height: 100dvh;
     -webkit-tap-highlight-color: transparent;
   }
@@ -27,8 +27,8 @@
   header { text-align: center; padding: 24px 0 28px; }
   header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.75rem; letter-spacing: -0.03em; }
   header h1 span { background: linear-gradient(135deg, var(--pink), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .back-link { display: inline-block; margin-top: 8px; color: var(--text-dim); font-size: 0.75rem; text-decoration: none; }
-  .back-link:hover { color: var(--text); }
+  header .nav-link { margin-top: 8px; }
+  header .action-pill { margin-top: 10px; }
 
   /* Loading */
   .loading { text-align: center; padding: 60px 0; color: var(--text-dim); font-size: 0.9rem; }
@@ -37,7 +37,7 @@
 
   /* Pick Zone */
   .pick-zone {
-    background: var(--surface); border: 1px solid var(--border);
+    background: var(--surface-glass); backdrop-filter: blur(8px); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 28px 16px 24px;
     text-align: center; margin-bottom: 24px;
     position: relative; overflow: hidden;
@@ -294,9 +294,9 @@
 <div class="app">
   <header>
     <h1>🎲 <span>랜덤 뽑기</span></h1>
-    <a class="back-link" href="./">← 메인 화면으로 돌아가기</a>
+    <a class="nav-link" href="./">← 메인 화면으로 돌아가기</a>
     <br>
-    <a class="back-link" href="random-admin.html">* 관리자 모드로 가기 *</a>
+    <a class="action-pill" href="random-admin.html">🔧 관리자 모드</a>
   </header>
 
   <!-- Loading state -->

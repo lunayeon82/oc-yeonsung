@@ -30,7 +30,7 @@
   body {
     font-family: 'ko-font', sans-serif;
     min-height: 100vh;
-    background: url('../assets/bg-paper.png') repeat;
+    background: var(--page-gradient); background-attachment: fixed;
     position: relative;
   }
 
@@ -39,7 +39,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(245,240,232,0.92);
+    background: var(--surface-glass-strong);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(184,169,201,0.15);
     padding: 0.7rem 1.2rem;
@@ -47,21 +47,6 @@
     align-items: center;
     justify-content: space-between;
   }
-
-  .top-bar .back-btn {
-    text-decoration: none;
-    color: #8a7a9a;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    transition: color 0.2s;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: 'ko-font', sans-serif;
-  }
-  .top-bar .back-btn:hover { color: #5a4a6b; }
 
   .top-bar-actions {
     display: flex;
@@ -740,7 +725,7 @@
 
 <!-- 상단 바 -->
 <div class="top-bar">
-  <a href="story-list.html" class="back-btn">← 목록</a>
+  <a href="story-list.html" class="nav-link">← 목록</a>
   <div class="top-bar-actions">
     <div class="font-picker-wrap">
       <button class="font-picker-btn" id="fontPickerBtn" title="폰트 설정">가</button>

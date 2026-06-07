@@ -10,7 +10,7 @@
     src: url('assets/ko-font.ttf') format('truetype');
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font-body); background: url('assets/bg-paper.png') repeat; color: var(--text); min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
+  body { font-family: var(--font-body); background: var(--page-gradient); background-attachment: fixed; color: var(--text); min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
@@ -19,8 +19,8 @@
   header { text-align: center; padding: 24px 0 8px; }
   header h1 { font-family: var(--font-title); font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
   header h1 span { background: linear-gradient(135deg, var(--amber), var(--violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .back-link { display: inline-block; margin-top: 8px; color: var(--text-dim); font-size: 0.75rem; text-decoration: none; }
-  .back-link:hover { color: var(--text); }
+  header .nav-link { margin-top: 8px; }
+  header .action-pill { margin-top: 10px; }
 
   /* Sync */
   .sync-badge {
@@ -59,7 +59,7 @@
 
   /* Section card */
   .card {
-    background: var(--surface); border: 1px solid var(--border);
+    background: var(--surface-glass); backdrop-filter: blur(8px); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
   }
   .card-header {
@@ -278,9 +278,9 @@
 <div class="app">
   <header>
     <h1>🔧 <span>관리자 페이지</span></h1>
-    <a class="back-link" href="./">← 메인 화면으로 돌아가기</a>
+    <a class="nav-link" href="./">← 메인 화면으로 돌아가기</a>
     <br>
-    <a class="back-link" href="random.html">* 랜덤 뽑기로 가기 *</a>
+    <a class="action-pill" href="random.html">🎲 랜덤 뽑기</a>
   </header>
 
   <div class="loading" id="loadingState" style="display: none;">

@@ -16,7 +16,7 @@
 
   body {
     font-family: 'ko-font', sans-serif;
-    background: url('assets/bg-paper.png') repeat;
+    background: var(--page-gradient); background-attachment: fixed;
     min-height: 100vh;
     color: #3a3530;
     padding: 0;
@@ -27,24 +27,20 @@
     display: flex;
     align-items: center;
     padding: 14px 18px;
-    background: rgba(244,239,230,0.92);
+    background: var(--surface-glass-strong);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(180,160,130,0.2);
     position: sticky;
     top: 0;
     z-index: 10;
   }
-  .back-btn {
-    background: none;
-    border: none;
+  .top-bar .nav-link {
     font-size: 20px;
-    cursor: pointer;
-    color: #8a7e6b;
     padding: 4px 8px;
     border-radius: 8px;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
   }
-  .back-btn:hover { background: rgba(180,160,130,0.15); }
+  .top-bar .nav-link:hover { background: rgba(180,160,130,0.15); }
   .top-title {
     flex: 1;
     text-align: center;
@@ -454,7 +450,7 @@
 <body>
 
 <div class="top-bar">
-  <button class="back-btn" id="backBtn" onclick="history.back()">←</button>
+  <button class="nav-link" id="backBtn" onclick="history.back()">←</button>
   <span class="top-title" id="topTitle">캐릭터</span>
   <button class="edit-btn" id="editToggle" style="display:none" onclick="enterEditMode()">편집</button>
 </div>

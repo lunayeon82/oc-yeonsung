@@ -25,5 +25,51 @@
   --radius: 12px;
   --font-title: 'ko-font', sans-serif;
   --font-body: 'ko-font', sans-serif;
+
+  /* 페이지 배경 그라데이션 — 위: 햇살(아이보리), 아래: 심해(보라) */
+  --page-gradient: linear-gradient(180deg, #f8f3ea 0%, #ece2ea 48%, #b6a9cf 82%, #a89ec4 100%);
+
+  /* 그라데이션 위에 얹는 반투명 블록 */
+  --surface-glass: rgba(250, 247, 242, 0.7);
+  --surface-glass-strong: rgba(250, 247, 242, 0.86);
+}
+
+/* 공용 내비게이션 링크 — 뒤로가기/홈/목록 등. 라벨·목적지는 페이지마다 다를 수 있음 */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--text); }
+
+/* 공용 보조 액션 버튼 — "편집/수정/관리자 모드" 등 작은 아웃라인 필 */
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-glass);
+  color: var(--text-dim);
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.action-pill:hover {
+  background: var(--violet-dim);
+  border-color: var(--violet);
+  color: var(--text);
 }
 </content>
