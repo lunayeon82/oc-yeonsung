@@ -33,15 +33,15 @@
     position: absolute;
     bottom: -5%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.7), rgba(255,255,255,0) 72%);
-    filter: blur(0.5px);
+    background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,255,255,0) 72%);
+    filter: blur(0.3px);
     opacity: 0;
     animation: particle-rise linear infinite;
   }
   @keyframes particle-rise {
     0%   { transform: translate(0, 0); opacity: 0; }
-    10%  { opacity: 0.35; }
-    88%  { opacity: 0.18; }
+    10%  { opacity: 0.6; }
+    88%  { opacity: 0.35; }
     100% { transform: translate(var(--dx, 0px), -115vh); opacity: 0; }
   }
   .title-logo {
@@ -224,7 +224,7 @@
   for (let i = 0; i < PARTICLE_COUNT; i++) {
     const p = document.createElement('span');
     p.className = 'particle';
-    const size = 3 + Math.random() * 5;
+    const size = 4 + Math.random() * 6;
     const duration = 28 + Math.random() * 20;
     p.style.width = p.style.height = size.toFixed(1) + 'px';
     p.style.left = (Math.random() * 100).toFixed(1) + '%';
