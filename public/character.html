@@ -537,6 +537,13 @@ function renderCharDetail(editMode) {
       <div class="info-section">`;
 
   if (editMode) {
+    html += `
+      <div class="info-row">
+        <div class="info-label">이름</div>
+        <div class="info-value">
+          <textarea class="info-textarea" id="edit_name" placeholder="캐릭터 이름" rows="1">${esc(d.n || '')}</textarea>
+        </div>
+      </div>`;
     for (const item of INFO_LABELS) {
       html += `
         <div class="info-row">
@@ -607,6 +614,10 @@ function exitEditMode()  { renderCharDetail(false); }
 
 async function saveCharInfo() {
   const d = window._charData;
+
+  const newName = (document.getElementById('edit_name')?.value || '').trim();
+  if (!newName) { showToast('이름을 입력해주세요'); return; }
+
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = true;
   saveBtn.textContent = '저장 중...';
@@ -619,7 +630,27 @@ async function saveCharInfo() {
   const note = (document.getElementById('edit_note')?.value || '').trim();
 
   try {
-    await db.collection('characters').doc(d.id).update({ info: newInfo, note });
+    await db.collection('characters').doc(d.id).update({ n: newName, info: newInfo, note });
+
+    if (newName !== d.n) {
+      const charsDoc = await db.collection('data').doc('characters').get();
+      if (charsDoc.exists) {
+        const chars = charsDoc.data();
+        let found = false;
+        for (const group of (chars.groups || [])) {
+          for (const sub of (group.subs || [])) {
+            for (const item of (sub.items || [])) {
+              if (item.id === d.id) { item.n = newName; found = true; break; }
+            }
+            if (found) break;
+          }
+          if (found) break;
+        }
+        if (found) await db.collection('data').doc('characters').set(chars);
+      }
+    }
+
+    window._charData.n = newName;
     window._charData.info = newInfo;
     window._charData.note = note;
     renderCharDetail(false);

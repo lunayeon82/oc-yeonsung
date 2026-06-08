@@ -1017,7 +1017,7 @@
     <h3>캐릭터 수정</h3>
     <div class="modal-field">
       <label class="modal-label">이름</label>
-      <input class="modal-input" id="editName" disabled="" style="opacity:0.5">
+      <input class="modal-input" id="editName" placeholder="캐릭터 이름">
     </div>
     <div class="modal-field">
       <label class="modal-label">성별</label>
@@ -1370,6 +1370,16 @@ function saveEdit() {
   if (!editTarget) return;
   const { gi, si, ii } = editTarget;
   const it = CHARS.groups[gi].subs[si].items[ii];
+
+  const newName = document.getElementById('editName').value.trim();
+  if (!newName) { toast('이름을 입력해주세요'); return; }
+
+  const siblings = CHARS.groups[gi].subs[si].items;
+  if (siblings.some((item, idx) => idx !== ii && item.n === newName)) {
+    toast('같은 그룹에 동일한 이름이 이미 있어요'); return;
+  }
+
+  it.n = newName;
   it.g = parseInt(document.getElementById('editGender').value);
   it.c = parseInt(document.getElementById('editCouple').value);
   const note = document.getElementById('editNote').value.trim();
@@ -1377,7 +1387,7 @@ function saveEdit() {
 
   if (it.id) {
     db.collection('characters').doc(it.id).set(
-      { g: it.g, c: it.c, note: note || '' },
+      { n: it.n, g: it.g, c: it.c, note: note || '' },
       { merge: true }
     ).catch(e => console.error('characters doc 업데이트 실패:', e));
   }
