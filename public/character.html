@@ -275,6 +275,68 @@
   }
   .cancel-btn:hover { background: rgba(180,160,130,0.1); }
 
+  .add-section-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0 4px;
+    padding: 10px 14px;
+    background: transparent;
+    color: #8a7e6b;
+    border: 1.5px dashed rgba(180,160,130,0.4);
+    border-radius: 10px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .add-section-btn:hover { background: rgba(180,160,130,0.08); border-color: rgba(107,96,85,0.4); color: #6b6055; }
+  .edit-section-row {
+    padding: 14px 0 10px;
+    border-bottom: 1px solid rgba(180,160,130,0.12);
+  }
+  .edit-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .section-title-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1.5px solid rgba(180,160,130,0.28);
+    border-radius: 7px;
+    background: rgba(255,255,255,0.65);
+    font-family: 'ko-font', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b6055;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .section-title-input:focus { border-color: rgba(107,96,85,0.55); background: rgba(255,255,255,0.9); }
+  .section-title-input::placeholder { color: #b5a898; font-weight: 400; }
+  .section-del-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(180,160,130,0.15);
+    color: #a89d8e;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+  }
+  .section-del-btn:hover { background: rgba(180,100,90,0.15); color: #a05046; }
+
   /* List view */
   /* 검색/필터 영역 — story-list.html과 동일한 디자인 */
   .search-area {
@@ -514,7 +576,9 @@ function renderCharDetail(editMode) {
   const genderText = GENDER_MAP[d.g] || '?';
   const coupleClass = d.c === 1 ? 'couple' : 'solo';
   const coupleText = COUPLE_MAP[d.c] || '?';
-  const hasInfo = INFO_LABELS.some(item => info[item.key]);
+  const customSections = d.customSections || [];
+  const hasOldInfo = INFO_LABELS.some(item => info[item.key]);
+  const hasInfo = customSections.length > 0 || hasOldInfo;
 
   document.getElementById('editToggle').style.display = editMode ? 'none' : 'inline-flex';
 
@@ -537,26 +601,19 @@ function renderCharDetail(editMode) {
       <div class="info-section">`;
 
   if (editMode) {
+    window._editSections = customSections.length > 0
+      ? customSections.map(s => ({ title: s.title || '', content: s.content || '' }))
+      : INFO_LABELS.filter(item => info[item.key]).map(item => ({ title: item.label, content: info[item.key] }));
+
     html += `
       <div class="info-row">
         <div class="info-label">이름</div>
         <div class="info-value">
           <textarea class="info-textarea" id="edit_name" placeholder="캐릭터 이름" rows="1">${esc(d.n || '')}</textarea>
         </div>
-      </div>`;
-    for (const item of INFO_LABELS) {
-      html += `
-        <div class="info-row">
-          <div class="info-label">${item.label}</div>
-          <div class="info-value">
-            <textarea class="info-textarea${item.key === 'speechEx' ? ' speech-input' : ''}"
-              id="edit_${item.key}"
-              placeholder="${PLACEHOLDERS[item.key] || ''}"
-            >${esc(info[item.key] || '')}</textarea>
-          </div>
-        </div>`;
-    }
-    html += `
+      </div>
+      <div id="sections-container"></div>
+      <button class="add-section-btn" onclick="addSection()">+ 내용 추가하기</button>
       <div class="info-row">
         <div class="info-label">메모</div>
         <div class="info-value">
@@ -564,7 +621,15 @@ function renderCharDetail(editMode) {
         </div>
       </div>`;
   } else {
-    if (hasInfo) {
+    if (customSections.length > 0) {
+      for (const sec of customSections) {
+        html += `
+          <div class="info-row">
+            <div class="info-label">${esc(sec.title)}</div>
+            <div class="info-value">${esc(sec.content)}</div>
+          </div>`;
+      }
+    } else if (hasOldInfo) {
       for (const item of INFO_LABELS) {
         const val = info[item.key];
         if (!val) continue;
@@ -607,6 +672,44 @@ function renderCharDetail(editMode) {
   }
 
   document.getElementById('app').innerHTML = html;
+  if (editMode) renderSections();
+}
+
+function renderSections() {
+  const container = document.getElementById('sections-container');
+  if (!container) return;
+  container.innerHTML = (window._editSections || []).map((sec, i) => `
+    <div class="edit-section-row">
+      <div class="edit-section-header">
+        <input class="section-title-input" value="${esc(sec.title)}" placeholder="항목 이름">
+        <button class="section-del-btn" onclick="removeSection(${i})">×</button>
+      </div>
+      <textarea class="info-textarea" placeholder="내용을 입력해주세요">${esc(sec.content)}</textarea>
+    </div>
+  `).join('');
+}
+
+function syncSectionsFromDOM() {
+  document.querySelectorAll('.edit-section-row').forEach((row, i) => {
+    if (window._editSections[i]) {
+      window._editSections[i].title = row.querySelector('.section-title-input')?.value || '';
+      window._editSections[i].content = row.querySelector('.info-textarea')?.value || '';
+    }
+  });
+}
+
+function addSection() {
+  syncSectionsFromDOM();
+  window._editSections.push({ title: '', content: '' });
+  renderSections();
+  const rows = document.querySelectorAll('.edit-section-row');
+  if (rows.length) rows[rows.length - 1].querySelector('.section-title-input')?.focus();
+}
+
+function removeSection(idx) {
+  syncSectionsFromDOM();
+  window._editSections.splice(idx, 1);
+  renderSections();
 }
 
 function enterEditMode() { renderCharDetail(true); }
@@ -622,15 +725,16 @@ async function saveCharInfo() {
   saveBtn.disabled = true;
   saveBtn.textContent = '저장 중...';
 
-  const newInfo = {};
-  for (const item of INFO_LABELS) {
-    const val = (document.getElementById('edit_' + item.key)?.value || '').trim();
-    if (val) newInfo[item.key] = val;
-  }
+  const newCustomSections = [];
+  document.querySelectorAll('.edit-section-row').forEach(row => {
+    const title = (row.querySelector('.section-title-input')?.value || '').trim();
+    const content = (row.querySelector('.info-textarea')?.value || '').trim();
+    if (title || content) newCustomSections.push({ title, content });
+  });
   const note = (document.getElementById('edit_note')?.value || '').trim();
 
   try {
-    await db.collection('characters').doc(d.id).update({ n: newName, info: newInfo, note });
+    await db.collection('characters').doc(d.id).update({ n: newName, customSections: newCustomSections, note });
 
     if (newName !== d.n) {
       const charsDoc = await db.collection('data').doc('characters').get();
@@ -651,7 +755,7 @@ async function saveCharInfo() {
     }
 
     window._charData.n = newName;
-    window._charData.info = newInfo;
+    window._charData.customSections = newCustomSections;
     window._charData.note = note;
     renderCharDetail(false);
     showToast('저장되었습니다');
@@ -767,11 +871,18 @@ function copyCharacter() {
   const d = window._charData;
   if (!d) return;
   const info = d.info || {};
+  const customSections = d.customSections || [];
   let text = `이름: ${d.n} (${GENDER_MAP[d.g] || '?'} / ${COUPLE_MAP[d.c] || '?'})\n`;
-  for (const item of INFO_LABELS) {
-    const val = info[item.key];
-    if (!val) continue;
-    text += item.key === 'speechEx' ? `${item.label}: "${val}"\n` : `${item.label}: ${val}\n`;
+  if (customSections.length > 0) {
+    for (const sec of customSections) {
+      if (sec.title || sec.content) text += `${sec.title}: ${sec.content}\n`;
+    }
+  } else {
+    for (const item of INFO_LABELS) {
+      const val = info[item.key];
+      if (!val) continue;
+      text += item.key === 'speechEx' ? `${item.label}: "${val}"\n` : `${item.label}: ${val}\n`;
+    }
   }
   if (d.note) text += `메모: ${d.note}\n`;
   navigator.clipboard.writeText(text.trim())
