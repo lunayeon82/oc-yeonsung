@@ -41,14 +41,20 @@
 
   /* ── 보관함 섹션 공통 ── */
   .storage-section { margin-bottom: 2rem; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(184,169,201,0.2);
+  }
   .section-title {
     font-family: 'ko-font', sans-serif;
     font-size: 1.05rem;
     font-weight: 700;
     color: #5a4a6b;
-    margin-bottom: 0.8rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(184,169,201,0.2);
   }
   .empty-state {
     text-align: center;
@@ -227,7 +233,10 @@
 
   <!-- 🎲 뽑기 보관함 -->
   <section class="storage-section">
-    <h2 class="section-title">🎲 뽑기 보관함</h2>
+    <div class="section-header">
+      <h2 class="section-title">🎲 뽑기 보관함</h2>
+      <a class="action-pill" href="../random.html">🎲 랜덤 뽑기</a>
+    </div>
     <div class="draw-list" id="drawList">
       <div class="empty-state">불러오는 중...</div>
     </div>
@@ -235,7 +244,10 @@
 
   <!-- 📌 나중에 볼 연성 -->
   <section class="storage-section">
-    <h2 class="section-title">📌 나중에 볼 연성</h2>
+    <div class="section-header">
+      <h2 class="section-title">📌 나중에 볼 연성</h2>
+      <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+    </div>
     <div class="story-list" id="readLaterList">
       <div class="empty-state">불러오는 중...</div>
     </div>
@@ -243,7 +255,10 @@
 
   <!-- 📚 연성 보관함 -->
   <section class="storage-section">
-    <h2 class="section-title">📚 연성 보관함</h2>
+    <div class="section-header">
+      <h2 class="section-title">📚 연성 보관함</h2>
+      <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+    </div>
     <div class="story-list" id="storyBoxList">
       <div class="empty-state">불러오는 중...</div>
     </div>
