@@ -104,9 +104,9 @@
   border: 1px solid var(--border);
   font-size: 0.6rem;
   color: var(--text-muted);
-  position: fixed;
-  bottom: 5vh;
-  right: 1.2rem;
+  position: absolute;
+  bottom: 3%;
+  left: 1.2rem;
   z-index: 50;
   transition: all 0.3s;
 }
