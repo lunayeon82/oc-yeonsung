@@ -50,6 +50,12 @@
     padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(184,169,201,0.2);
   }
+  .section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .toggle-all-btn { display: none; }
   .section-title {
     font-family: 'ko-font', sans-serif;
     font-size: 1.05rem;
@@ -235,7 +241,10 @@
   <section class="storage-section">
     <div class="section-header">
       <h2 class="section-title">🎲 뽑기 보관함</h2>
-      <a class="action-pill" href="../random.html">🎲 랜덤 뽑기</a>
+      <div class="section-header-actions">
+        <button class="action-pill toggle-all-btn" id="drawToggleBtn">전체보기</button>
+        <a class="action-pill" href="../random.html">🎲 랜덤 뽑기</a>
+      </div>
     </div>
     <div class="draw-list" id="drawList">
       <div class="empty-state">불러오는 중...</div>
@@ -246,7 +255,10 @@
   <section class="storage-section">
     <div class="section-header">
       <h2 class="section-title">📌 나중에 볼 연성</h2>
-      <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+      <div class="section-header-actions">
+        <button class="action-pill toggle-all-btn" id="readLaterToggleBtn">전체보기</button>
+        <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+      </div>
     </div>
     <div class="story-list" id="readLaterList">
       <div class="empty-state">불러오는 중...</div>
@@ -257,7 +269,10 @@
   <section class="storage-section">
     <div class="section-header">
       <h2 class="section-title">📚 연성 보관함</h2>
-      <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+      <div class="section-header-actions">
+        <button class="action-pill toggle-all-btn" id="storyBoxToggleBtn">전체보기</button>
+        <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+      </div>
     </div>
     <div class="story-list" id="storyBoxList">
       <div class="empty-state">불러오는 중...</div>
@@ -326,23 +341,39 @@
   // ============ 🎲 뽑기 보관함 ============
   let lastDrawDocs = [];
   let editingId = null;
+  let drawExpanded = false;
+  let drawUnsub = null;
 
-  userRef.collection('drawBox').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    lastDrawDocs = snap.docs;
-    renderDrawList();
-    setSyncStatus(true);
-  }, err => {
-    console.error('뽑기 보관함 로드 실패:', err);
-    setSyncStatus(false);
+  function subscribeDraw() {
+    if (drawUnsub) drawUnsub();
+    let q = userRef.collection('drawBox').orderBy('createdAt', 'desc');
+    if (!drawExpanded) q = q.limit(4);
+    drawUnsub = q.onSnapshot(snap => {
+      lastDrawDocs = snap.docs;
+      renderDrawList();
+      setSyncStatus(true);
+    }, err => {
+      console.error('뽑기 보관함 로드 실패:', err);
+      setSyncStatus(false);
+    });
+  }
+  subscribeDraw();
+
+  document.getElementById('drawToggleBtn').addEventListener('click', () => {
+    drawExpanded = !drawExpanded;
+    subscribeDraw();
   });
 
   function renderDrawList() {
     const el = document.getElementById('drawList');
+    const toggleBtn = document.getElementById('drawToggleBtn');
     if (!lastDrawDocs.length) {
       el.innerHTML = '<div class="empty-state">아직 저장된 뽑기 결과가 없어요</div>';
+      toggleBtn.style.display = 'none';
       return;
     }
-    el.innerHTML = lastDrawDocs.map(doc => {
+    const docsToShow = (!drawExpanded && lastDrawDocs.length > 3) ? lastDrawDocs.slice(0, 3) : lastDrawDocs;
+    el.innerHTML = docsToShow.map(doc => {
       const d = doc.data();
       if (doc.id === editingId) return renderDrawEditForm(doc.id, d);
       return `
@@ -364,6 +395,13 @@
       `;
     }).join('');
     bindDrawEvents();
+
+    if (drawExpanded || lastDrawDocs.length > 3) {
+      toggleBtn.style.display = 'inline-flex';
+      toggleBtn.textContent = drawExpanded ? '최소화하기' : '전체보기';
+    } else {
+      toggleBtn.style.display = 'none';
+    }
   }
 
   function renderDrawEditForm(id, d) {
@@ -430,13 +468,16 @@
   }
 
   // ============ 📌📚 글 목록 (나중에 볼 연성 / 연성 보관함) ============
-  function renderStoryList(elId, docs, coll) {
+  function renderStoryList(elId, toggleBtnId, docs, coll, expanded) {
     const el = document.getElementById(elId);
+    const toggleBtn = document.getElementById(toggleBtnId);
     if (!docs.length) {
       el.innerHTML = '<div class="empty-state">아직 저장된 글이 없어요</div>';
+      toggleBtn.style.display = 'none';
       return;
     }
-    el.innerHTML = docs.map(doc => {
+    const docsToShow = (!expanded && docs.length > 3) ? docs.slice(0, 3) : docs;
+    el.innerHTML = docsToShow.map(doc => {
       const d = doc.data();
       return `
         <div class="story-row" data-id="${doc.id}">
@@ -448,15 +489,46 @@
     el.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteItem(btn.dataset.coll, btn.dataset.id));
     });
+
+    if (expanded || docs.length > 3) {
+      toggleBtn.style.display = 'inline-flex';
+      toggleBtn.textContent = expanded ? '최소화하기' : '전체보기';
+    } else {
+      toggleBtn.style.display = 'none';
+    }
   }
 
-  userRef.collection('readLater').orderBy('addedAt', 'desc').onSnapshot(snap => {
-    renderStoryList('readLaterList', snap.docs, 'readLater');
-  }, err => console.error('나중에 볼 연성 로드 실패:', err));
+  let readLaterExpanded = false;
+  let readLaterUnsub = null;
+  function subscribeReadLater() {
+    if (readLaterUnsub) readLaterUnsub();
+    let q = userRef.collection('readLater').orderBy('addedAt', 'desc');
+    if (!readLaterExpanded) q = q.limit(4);
+    readLaterUnsub = q.onSnapshot(snap => {
+      renderStoryList('readLaterList', 'readLaterToggleBtn', snap.docs, 'readLater', readLaterExpanded);
+    }, err => console.error('나중에 볼 연성 로드 실패:', err));
+  }
+  subscribeReadLater();
+  document.getElementById('readLaterToggleBtn').addEventListener('click', () => {
+    readLaterExpanded = !readLaterExpanded;
+    subscribeReadLater();
+  });
 
-  userRef.collection('storyBox').orderBy('addedAt', 'desc').onSnapshot(snap => {
-    renderStoryList('storyBoxList', snap.docs, 'storyBox');
-  }, err => console.error('연성 보관함 로드 실패:', err));
+  let storyBoxExpanded = false;
+  let storyBoxUnsub = null;
+  function subscribeStoryBox() {
+    if (storyBoxUnsub) storyBoxUnsub();
+    let q = userRef.collection('storyBox').orderBy('addedAt', 'desc');
+    if (!storyBoxExpanded) q = q.limit(4);
+    storyBoxUnsub = q.onSnapshot(snap => {
+      renderStoryList('storyBoxList', 'storyBoxToggleBtn', snap.docs, 'storyBox', storyBoxExpanded);
+    }, err => console.error('연성 보관함 로드 실패:', err));
+  }
+  subscribeStoryBox();
+  document.getElementById('storyBoxToggleBtn').addEventListener('click', () => {
+    storyBoxExpanded = !storyBoxExpanded;
+    subscribeStoryBox();
+  });
 </script>
 </body>
 </html>
