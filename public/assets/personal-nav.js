@@ -16,11 +16,11 @@
   style.textContent = `
     .pn-btn {
       position: fixed;
-      bottom: calc(3% + 80px);
+      bottom: calc(3% + 60px);
       left: 1.2rem;
       z-index: 51;
-      width: 80px;
-      height: 80px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       border: 1px solid var(--border, #d4c9b8);
       background: var(--surface, #faf7f2);
@@ -34,11 +34,11 @@
       overflow: hidden;
     }
     .pn-btn:hover { border-color: var(--violet, #a89ec4); transform: translateY(-1px); }
-    .pn-btn img { width: 40px; height: 40px; object-fit: contain; }
+    .pn-btn img { width: 36px; height: 36px; object-fit: contain; }
 
     .pn-popup {
       position: fixed;
-      bottom: calc(3% + 98px);
+      bottom: calc(3% + 136px);
       left: 1.2rem;
       z-index: 51;
       display: flex;
