@@ -16,11 +16,11 @@
   style.textContent = `
     .pn-btn {
       position: fixed;
-      bottom: calc(3% + 60px);
+      bottom: calc(3% + 45px);
       left: 1.2rem;
       z-index: 51;
-      width: 60px;
-      height: 60px;
+      width: 45px;
+      height: 45px;
       border-radius: 50%;
       border: 1px solid var(--border, #d4c9b8);
       background: var(--surface, #faf7f2);
@@ -34,18 +34,18 @@
       overflow: hidden;
     }
     .pn-btn:hover { border-color: var(--violet, #a89ec4); transform: translateY(-1px); }
-    .pn-btn img { width: 36px; height: 36px; object-fit: contain; }
+    .pn-btn img { width: 27px; height: 27px; object-fit: contain; }
 
     .pn-popup {
       position: fixed;
-      bottom: calc(3% + 136px);
+      bottom: calc(3% + 98px);
       left: 1.2rem;
       z-index: 51;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      padding: 12px;
-      border-radius: 28px;
+      gap: 2px;
+      padding: 6px;
+      border-radius: 14px;
       border: 1px solid var(--border, #d4c9b8);
       background: var(--surface-glass-strong, rgba(250,247,242,0.92));
       backdrop-filter: blur(10px);
@@ -54,17 +54,17 @@
       visibility: hidden;
       transform: translateY(8px);
       transition: all 0.2s ease;
-      min-width: 220px;
+      min-width: 110px;
     }
     .pn-popup.show { opacity: 1; visibility: visible; transform: translateY(0); }
     .pn-popup a {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 0.9rem 1.4rem;
-      border-radius: 20px;
+      gap: 8px;
+      padding: 0.45rem 0.7rem;
+      border-radius: 10px;
       font-family: var(--font-title, 'ko-font', sans-serif);
-      font-size: 1.6rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-dim, #8a7e6b);
       text-decoration: none;
@@ -75,8 +75,8 @@
       color: var(--text, #3a3530);
     }
     .pn-popup a img {
-      width: 36px;
-      height: 36px;
+      width: 18px;
+      height: 18px;
       object-fit: contain;
       border-radius: 50%;
     }
