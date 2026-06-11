@@ -93,7 +93,7 @@
   gap: 0.5rem;
 }
 
-/* 실시간 연결 상태 표시 — 우하단 코너에 스크롤과 무관하게 고정 */
+/* 실시간 연결 상태 표시 — 좌하단 코너에 스크롤과 무관하게 고정 */
 .sync-badge {
   display: inline-flex;
   align-items: center;
@@ -104,7 +104,7 @@
   border: 1px solid var(--border);
   font-size: 0.6rem;
   color: var(--text-muted);
-  position: absolute;
+  position: fixed;
   bottom: 3%;
   left: 1.2rem;
   z-index: 50;
