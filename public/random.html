@@ -237,21 +237,6 @@
   }
   .modal-close:hover { background: var(--border); }
 
-  /* Sync indicator */
-  .sync-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 100px;
-    background: var(--surface); border: 1px solid var(--border);
-    font-size: 0.6rem; color: var(--text-muted);
-    position: fixed; top: 12px; right: 12px; z-index: 50;
-    transition: all 0.3s;
-  }
-  .sync-badge .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--mint); transition: background 0.3s;
-  }
-  .sync-badge.offline .dot { background: var(--rose); }
-
   .ptcl { position: fixed; width: 5px; height: 5px; border-radius: 50%; pointer-events: none; z-index: 200; animation: fly 0.7s ease-out forwards; }
   @keyframes fly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
 
@@ -286,11 +271,14 @@
 <div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
 <a class="nav-link nav-corner" href="./">← 홈</a>
+<div class="nav-corner-right">
+  <a class="action-pill" href="story/story-list.html">📖 글 목록</a>
+  <a class="action-pill" href="random-admin.html">🔧 관리자 모드</a>
+</div>
 
 <div class="app">
   <header class="page-hero">
     <h1>랜덤 뽑기</h1>
-    <a class="action-pill" href="random-admin.html">🔧 관리자 모드</a>
   </header>
 
   <!-- Loading state -->

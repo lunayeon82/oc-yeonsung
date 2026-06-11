@@ -81,6 +81,44 @@
   z-index: 10;
 }
 
+/* 페이지 우상단 고정 위치 — 다른 페이지로 이동하는 보조 버튼들을 모아두는 자리 */
+.nav-corner-right {
+  position: absolute;
+  top: 3.4rem;
+  right: 1.2rem;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* 실시간 연결 상태 표시 — 우상단 코너, 보조 내비게이션 버튼보다 위쪽에 고정 */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 50;
+  transition: all 0.3s;
+}
+.sync-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mint);
+  transition: background 0.3s;
+}
+.sync-badge.offline .dot { background: var(--rose); }
+
 /* 공용 페이지 타이틀 — 큰 헤더형 페이지(랜덤 뽑기/관리자/글 목록 등)의 제목 영역을 통일 */
 .page-hero {
   text-align: center;
@@ -96,5 +134,7 @@
 .page-hero .action-pill { margin-top: 10px; }
 @media (max-width: 420px) {
   .page-hero h1 { font-size: 1.4rem; }
+  .nav-corner-right { gap: 0.35rem; }
+  .nav-corner-right .action-pill { padding: 0.32rem 0.6rem; font-size: 0.7rem; }
 }
 </content>

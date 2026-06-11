@@ -491,6 +491,8 @@
 </head>
 <body>
 
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
 <a href="../index.html" class="nav-link nav-corner">← 홈</a>
 
 <header class="page-hero">
@@ -602,6 +604,21 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+  db.collection('data').doc('characters').onSnapshot(
+    () => setSyncStatus(true),
+    () => setSyncStatus(false)
+  );
 
   // ── 상태 ──
   const STORY_PAGE_SIZE = 5;

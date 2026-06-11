@@ -476,6 +476,8 @@
 </head>
 <body>
 
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
 <button class="nav-link nav-corner" id="backBtn">← 홈</button>
 
 <header class="page-hero">
@@ -532,6 +534,21 @@ function esc(s) {
   d.textContent = String(s ?? '');
   return d.innerHTML;
 }
+
+function setSyncStatus(online) {
+  const badge = document.getElementById('syncBadge');
+  if (online) {
+    badge.classList.remove('offline');
+    badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+  } else {
+    badge.classList.add('offline');
+    badge.innerHTML = '<span class="dot"></span>오프라인';
+  }
+}
+db.collection('data').doc('characters').onSnapshot(
+  () => setSyncStatus(true),
+  () => setSyncStatus(false)
+);
 
 // ============ ROUTING ============
 document.addEventListener('DOMContentLoaded', () => {

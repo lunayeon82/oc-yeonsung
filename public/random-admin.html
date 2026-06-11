@@ -16,18 +16,6 @@
 
   .app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 20px 16px 120px; }
 
-
-  /* Sync */
-  .sync-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 100px;
-    background: var(--surface); border: 1px solid var(--border);
-    font-size: 0.6rem; color: var(--text-muted);
-    position: fixed; top: 12px; right: 12px; z-index: 50;
-  }
-  .sync-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); }
-  .sync-badge.offline .dot { background: var(--rose); }
-
   /* Loading */
   .loading { text-align: center; padding: 60px 0; color: var(--text-dim); }
   .spinner { display: inline-block; width: 24px; height: 24px; border: 2.5px solid var(--border); border-top-color: var(--violet); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
@@ -270,11 +258,13 @@
 <div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
 <a class="nav-link nav-corner" href="./">← 홈</a>
+<div class="nav-corner-right">
+  <a class="action-pill" href="random.html">🎲 랜덤 뽑기</a>
+</div>
 
 <div class="app">
   <header class="page-hero">
     <h1>관리자 페이지</h1>
-    <a class="action-pill" href="random.html">🎲 랜덤 뽑기</a>
   </header>
 
   <div class="loading" id="loadingState" style="display: none;">
