@@ -1,4 +1,4 @@
-// 화면 좌하단 고정 — 실시간 연결 배지 위에 떠 있는 개인 저장소 바로가기 동그라미
+0// 화면 좌하단 고정 — 실시간 연결 배지 위에 떠 있는 개인 저장소 바로가기 동그라미
 (function () {
   if (window.__personalNavMounted) return;
   window.__personalNavMounted = true;
@@ -19,8 +19,8 @@
       bottom: calc(3% + 45px);
       left: 1.2rem;
       z-index: 51;
-      width: 45px;
-      height: 45px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       border: 1px solid var(--border, #d4c9b8);
       background: var(--surface, #faf7f2);
@@ -34,7 +34,7 @@
       overflow: hidden;
     }
     .pn-btn:hover { border-color: var(--violet, #a89ec4); transform: translateY(-1px); }
-    .pn-btn img { width: 27px; height: 27px; object-fit: contain; }
+    .pn-btn img { width: 40px; height: 40px; object-fit: contain; }
 
     .pn-popup {
       position: fixed;
