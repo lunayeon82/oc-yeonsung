@@ -417,6 +417,9 @@
 </head>
 <body>
 
+<!-- 실시간 연결 표시 -->
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
 <!-- 상단 바 -->
 <div class="top-bar">
   <button class="nav-link" id="backBtn">← 목록</button>
@@ -514,6 +517,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="../assets/personal-nav.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="../assets/confirm-modal.js"></script>
@@ -568,6 +572,18 @@
     setTimeout(() => t.classList.remove('show'), 2000);
   }
 
+  // ── 동기화 상태 표시 ──
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
   // ── 캐릭터 로드 ──
   async function loadCharacters() {
     try {
@@ -586,8 +602,10 @@
 
       allCharacters = groups;
       renderTagPicker();
+      setSyncStatus(true);
     } catch (e) {
       console.error('캐릭터 로드 실패:', e);
+      setSyncStatus(false);
     }
   }
 

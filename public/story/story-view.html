@@ -745,6 +745,9 @@
 </head>
 <body>
 
+<!-- 실시간 연결 표시 -->
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
 <!-- 상단 바 -->
 <div class="top-bar">
   <a href="story-list.html" class="nav-link">← 목록</a>
@@ -801,6 +804,7 @@
   </div>
 </div>
 
+<script src="../assets/personal-nav.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="../assets/confirm-modal.js"></script>
@@ -834,6 +838,17 @@
   let currentChapterIndex = 0;
   let comments = [];
   let USER_NAMES = ['김굥', '하지', '예밍'];
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
 
   // ── 로드 ──
   async function loadStory() {
@@ -878,11 +893,13 @@
       }
 
       renderStory();
+      setSyncStatus(true);
 
     } catch (e) {
       console.error('로드 실패:', e);
       document.getElementById('mainContainer').innerHTML =
         '<div class="error-state"><div class="icon">⚠</div><p>글을 불러오지 못했어요</p><a href="story-list.html">목록으로 돌아가기</a></div>';
+      setSyncStatus(false);
     }
   }
 
