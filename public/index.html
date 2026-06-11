@@ -176,6 +176,28 @@
     object-fit: contain;
     pointer-events: none;
   }
+  .modal-card-icon-emoji {
+    width: 110px; height: 110px;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.2rem;
+    pointer-events: none;
+  }
+  .modal-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 18px;
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .modal-back-btn:hover { color: var(--text); }
 </style>
 </head>
 <body>
@@ -189,8 +211,8 @@
 <div class="enter-overlay" id="enterOverlay">
   <div class="enter-modal">
     <button class="enter-modal-close" id="enterModalClose" aria-label="닫기">✕</button>
-    <h2>어디로 가시겠어요?</h2>
-    <div class="enter-modal-links">
+    <h2 id="enterModalTitle">어디로 가시겠어요?</h2>
+    <div class="enter-modal-links" id="mainLinks">
       <a class="modal-card" href="random.html">
         <img src="assets/icon/chick-v0.png" alt="" class="modal-card-icon">
         <span>랜덤 뽑기 실행</span>
@@ -203,7 +225,26 @@
         <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
         <span>캐릭터 목록</span>
       </a>
+      <div class="modal-card" id="myStorageCard">
+        <span class="modal-card-icon-emoji">📦</span>
+        <span>나만의 저장소</span>
+      </div>
     </div>
+    <div class="enter-modal-links" id="userLinks" style="display:none">
+      <div class="modal-card" data-user="김굥">
+        <span class="modal-card-icon-emoji">👤</span>
+        <span>김굥</span>
+      </div>
+      <div class="modal-card" data-user="하지">
+        <span class="modal-card-icon-emoji">👤</span>
+        <span>하지</span>
+      </div>
+      <div class="modal-card" data-user="예밍">
+        <span class="modal-card-icon-emoji">👤</span>
+        <span>예밍</span>
+      </div>
+    </div>
+    <button class="modal-back-btn" id="modalBackBtn" style="display:none">← 뒤로</button>
   </div>
 </div>
 
@@ -212,11 +253,32 @@
   const enterOverlay = document.getElementById('enterOverlay');
   const enterModalClose = document.getElementById('enterModalClose');
 
-  enterBtn.addEventListener('click', () => enterOverlay.classList.add('show'));
+  const enterModalTitle = document.getElementById('enterModalTitle');
+  const mainLinks = document.getElementById('mainLinks');
+  const userLinks = document.getElementById('userLinks');
+  const myStorageCard = document.getElementById('myStorageCard');
+  const modalBackBtn = document.getElementById('modalBackBtn');
+
+  function showMainLinks() {
+    enterModalTitle.textContent = '어디로 가시겠어요?';
+    mainLinks.style.display = '';
+    userLinks.style.display = 'none';
+    modalBackBtn.style.display = 'none';
+  }
+  function showUserLinks() {
+    enterModalTitle.textContent = '누구의 저장소로 가시겠어요?';
+    mainLinks.style.display = 'none';
+    userLinks.style.display = '';
+    modalBackBtn.style.display = '';
+  }
+
+  enterBtn.addEventListener('click', () => { showMainLinks(); enterOverlay.classList.add('show'); });
   enterModalClose.addEventListener('click', () => enterOverlay.classList.remove('show'));
   enterOverlay.addEventListener('click', (e) => {
     if (e.target === enterOverlay) enterOverlay.classList.remove('show');
   });
+  myStorageCard.addEventListener('click', showUserLinks);
+  modalBackBtn.addEventListener('click', showMainLinks);
 
   // 물 속을 떠다니는 입자 — 적은 개수, 느린 속도로 은은하게
   const particleBox = document.getElementById('particles');
