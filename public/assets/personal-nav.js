@@ -16,7 +16,7 @@
   style.textContent = `
     .pn-btn {
       position: fixed;
-      bottom: calc(3% + 45px);
+      bottom: calc(3% + 60px);
       left: 1.2rem;
       z-index: 51;
       width: 80px;
