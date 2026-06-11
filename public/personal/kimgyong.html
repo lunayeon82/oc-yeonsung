@@ -1,1 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 김굥의 저장소</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('../assets/ko-font.ttf') format('truetype');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.2rem 3rem;
+  }
+
+  .page-hero h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .user-icon {
+    width: 36px; height: 36px;
+    object-fit: contain;
+  }
+
+  /* ── 보관함 섹션 공통 ── */
+  .storage-section { margin-bottom: 2rem; }
+  .section-title {
+    font-family: 'ko-font', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #5a4a6b;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(184,169,201,0.2);
+  }
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #a99ab8;
+    font-size: 0.82rem;
+    background: rgba(255,255,255,0.4);
+    border: 1px dashed rgba(184,169,201,0.3);
+    border-radius: 10px;
+  }
+
+  /* ── 뽑기 보관함 ── */
+  .draw-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .draw-item {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+  }
+  .draw-result {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    font-size: 0.92rem;
+    color: #4a3a5b;
+  }
+  .draw-name { font-weight: 700; }
+  .draw-role { font-size: 0.78rem; color: #9a80b5; }
+  .draw-x { color: #c8b8d8; font-weight: 800; margin: 0 0.1rem; }
+  .draw-au { font-size: 0.8rem; color: #6a9a7a; margin-left: 0.3rem; }
+  .draw-memo {
+    font-size: 0.8rem;
+    color: #8a7a9a;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed rgba(184,169,201,0.2);
+  }
+  .draw-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+  .icon-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; border-radius: 6px;
+    background: rgba(184,169,201,0.12);
+    color: #8a7a9a;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .icon-btn:hover { background: rgba(184,169,201,0.25); color: #4a3a5b; }
+  .icon-btn.delete-btn:hover { background: rgba(194,114,127,0.18); color: #b06070; }
+
+  /* ── 뽑기 결과 수정 폼 ── */
+  .draw-edit-form { display: flex; flex-direction: column; gap: 0.5rem; }
+  .draw-edit-row { display: flex; align-items: center; gap: 0.4rem; }
+  .draw-edit-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 6px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.82rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
+    outline: none;
+  }
+  .draw-edit-input:focus { border-color: #b8a9c9; }
+  .draw-edit-sep {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #c8b8d8;
+    font-weight: 800;
+  }
+  .draw-edit-memo {
+    width: 100%;
+    resize: vertical;
+    min-height: 50px;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 6px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
+    outline: none;
+  }
+  .draw-edit-memo:focus { border-color: #b8a9c9; }
+  .draw-edit-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
+  .draw-edit-btn {
+    padding: 0.35rem 0.9rem;
+    border: none;
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .draw-edit-save { background: #b8a9c9; color: white; }
+  .draw-edit-save:hover { background: #a594b8; }
+  .draw-edit-cancel { background: #f0ebe0; color: #8a7e6b; }
+  .draw-edit-cancel:hover { background: #e6dccb; }
+
+  /* ── 글 목록 (나중에 볼 연성 / 연성 보관함) ── */
+  .story-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .story-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 0.8rem 1.1rem;
+    transition: all 0.2s;
+  }
+  .story-row:hover {
+    border-color: rgba(184,169,201,0.4);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.08);
+  }
+  .story-row-link {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #4a3a5b;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .story-row-link:hover { color: #8a6a9a; }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<a href="../index.html" class="nav-link nav-corner">← 홈</a>
+
+<header class="page-hero">
+  <h1><img src="../assets/icon/hedgehog-v0.png" alt="" class="user-icon">김굥의 저장소</h1>
+</header>
+
+<div class="container">
+
+  <!-- 🎲 뽑기 보관함 -->
+  <section class="storage-section">
+    <h2 class="section-title">🎲 뽑기 보관함</h2>
+    <div class="draw-list" id="drawList">
+      <div class="empty-state">불러오는 중...</div>
+    </div>
+  </section>
+
+  <!-- 📌 나중에 볼 연성 -->
+  <section class="storage-section">
+    <h2 class="section-title">📌 나중에 볼 연성</h2>
+    <div class="story-list" id="readLaterList">
+      <div class="empty-state">불러오는 중...</div>
+    </div>
+  </section>
+
+  <!-- 📚 연성 보관함 -->
+  <section class="storage-section">
+    <h2 class="section-title">📚 연성 보관함</h2>
+    <div class="story-list" id="storyBoxList">
+      <div class="empty-state">불러오는 중...</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.firebasestorage.app",
+    messagingSenderId: "145543545184",
+    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const USER_NAME = '김굥';
+  const userRef = db.collection('users').doc(USER_NAME);
+
+  // ── 유틸 ──
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : s;
+    return d.innerHTML;
+  }
+
+  async function deleteItem(coll, id) {
+    if (!(await customConfirm('삭제할까요?'))) return;
+    try {
+      await userRef.collection(coll).doc(id).delete();
+      showToast('삭제했어요');
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
+  }
+
+  // ============ 🎲 뽑기 보관함 ============
+  let lastDrawDocs = [];
+  let editingId = null;
+
+  userRef.collection('drawBox').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    lastDrawDocs = snap.docs;
+    renderDrawList();
+    setSyncStatus(true);
+  }, err => {
+    console.error('뽑기 보관함 로드 실패:', err);
+    setSyncStatus(false);
+  });
+
+  function renderDrawList() {
+    const el = document.getElementById('drawList');
+    if (!lastDrawDocs.length) {
+      el.innerHTML = '<div class="empty-state">아직 저장된 뽑기 결과가 없어요</div>';
+      return;
+    }
+    el.innerHTML = lastDrawDocs.map(doc => {
+      const d = doc.data();
+      if (doc.id === editingId) return renderDrawEditForm(doc.id, d);
+      return `
+        <div class="draw-item" data-id="${doc.id}">
+          <div class="draw-result">
+            <span class="draw-name">${esc(d.left)}</span>
+            <span class="draw-role">(${esc(d.roleL)})</span>
+            <span class="draw-x">✕</span>
+            <span class="draw-name">${esc(d.right)}</span>
+            <span class="draw-role">(${esc(d.roleR)})</span>
+            <span class="draw-au">/ ${esc(d.au)}</span>
+          </div>
+          ${d.memo ? `<div class="draw-memo">${esc(d.memo)}</div>` : ''}
+          <div class="draw-actions">
+            <button class="icon-btn edit-btn" data-id="${doc.id}" title="수정">✎</button>
+            <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="drawBox" title="삭제">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    bindDrawEvents();
+  }
+
+  function renderDrawEditForm(id, d) {
+    return `
+      <div class="draw-item" data-id="${id}">
+        <div class="draw-edit-form">
+          <div class="draw-edit-row">
+            <input class="draw-edit-input" data-field="left" value="${esc(d.left)}" placeholder="캐릭터 1">
+            <input class="draw-edit-input" data-field="roleL" value="${esc(d.roleL)}" placeholder="설정 1">
+          </div>
+          <span class="draw-edit-sep">✕</span>
+          <div class="draw-edit-row">
+            <input class="draw-edit-input" data-field="right" value="${esc(d.right)}" placeholder="캐릭터 2">
+            <input class="draw-edit-input" data-field="roleR" value="${esc(d.roleR)}" placeholder="설정 2">
+          </div>
+          <div class="draw-edit-row">
+            <input class="draw-edit-input" data-field="au" value="${esc(d.au)}" placeholder="관계성">
+          </div>
+          <textarea class="draw-edit-memo" data-field="memo" placeholder="메모">${esc(d.memo || '')}</textarea>
+          <div class="draw-edit-actions">
+            <button class="draw-edit-btn draw-edit-cancel" data-id="${id}">취소</button>
+            <button class="draw-edit-btn draw-edit-save" data-id="${id}">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindDrawEvents() {
+    document.querySelectorAll('#drawList .edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.id;
+        renderDrawList();
+      });
+    });
+    document.querySelectorAll('#drawList .delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteItem(btn.dataset.coll, btn.dataset.id));
+    });
+    document.querySelectorAll('#drawList .draw-edit-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        renderDrawList();
+      });
+    });
+    document.querySelectorAll('#drawList .draw-edit-save').forEach(btn => {
+      btn.addEventListener('click', () => saveDrawEdit(btn.dataset.id));
+    });
+  }
+
+  async function saveDrawEdit(id) {
+    const item = document.querySelector(`#drawList .draw-item[data-id="${id}"]`);
+    const fields = {};
+    item.querySelectorAll('[data-field]').forEach(input => {
+      fields[input.dataset.field] = input.value.trim();
+    });
+    try {
+      await userRef.collection('drawBox').doc(id).update(fields);
+      editingId = null;
+      showToast('수정했어요');
+    } catch (e) {
+      console.error('수정 실패:', e);
+      showToast('수정에 실패했어요');
+    }
+  }
+
+  // ============ 📌📚 글 목록 (나중에 볼 연성 / 연성 보관함) ============
+  function renderStoryList(elId, docs, coll) {
+    const el = document.getElementById(elId);
+    if (!docs.length) {
+      el.innerHTML = '<div class="empty-state">아직 저장된 글이 없어요</div>';
+      return;
+    }
+    el.innerHTML = docs.map(doc => {
+      const d = doc.data();
+      return `
+        <div class="story-row" data-id="${doc.id}">
+          <a class="story-row-link" href="../story/story-view.html?pid=${esc(d.storyId)}">${esc(d.title)}</a>
+          <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="${coll}" title="삭제">✕</button>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteItem(btn.dataset.coll, btn.dataset.id));
+    });
+  }
+
+  userRef.collection('readLater').orderBy('addedAt', 'desc').onSnapshot(snap => {
+    renderStoryList('readLaterList', snap.docs, 'readLater');
+  }, err => console.error('나중에 볼 연성 로드 실패:', err));
+
+  userRef.collection('storyBox').orderBy('addedAt', 'desc').onSnapshot(snap => {
+    renderStoryList('storyBoxList', snap.docs, 'storyBox');
+  }, err => console.error('연성 보관함 로드 실패:', err));
+</script>
+</body>
+</html>

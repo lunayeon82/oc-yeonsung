@@ -79,8 +79,11 @@
   .reroll-btn:hover { border-color: var(--text-dim); color: var(--text); }
   .reroll-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+  .result-actions {
+    display: flex; gap: 8px; justify-content: center; margin-bottom: 14px;
+  }
   .copy-result-btn {
-    display: block; margin: 0 auto 14px; padding: 5px 14px;
+    padding: 5px 14px;
     border-radius: 100px; border: 1px solid var(--border);
     background: var(--surface2); color: var(--text-dim);
     font-size: 0.7rem; font-weight: 600; cursor: pointer;
@@ -310,7 +313,10 @@
           <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
         </div>
       </div>
-      <button class="copy-result-btn" id="copyResultBtn" onclick="copyCurrentResult()" style="display:none">📋 결과 복사</button>
+      <div class="result-actions" id="resultActions" style="display:none">
+        <button class="copy-result-btn" id="copyResultBtn" onclick="copyCurrentResult()">📋 결과 복사</button>
+        <button class="copy-result-btn" id="saveResultBtn" onclick="saveCurrentResult()">💾 저장소에 저장</button>
+      </div>
       <button class="pick-btn" id="pickBtn" onclick="doPick()" disabled="">뽑기!</button>
       <div class="history" id="hist"></div>
     </div>
@@ -386,6 +392,7 @@
 <!-- Firebase SDK (compat for simplicity) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/storage-modal.js"></script>
 
 <script>
 // ============ FIREBASE INIT ============
@@ -433,6 +440,7 @@ const DEFAULT_AUS = {
 let CHARS = { groups: [] };
 let ROLES = { groups: [] };
 let AUS = { groups: [] };
+let USER_NAMES = ['김굥', '하지', '예밍'];
 let charMap = {};
 
 const selL = new Set(), selR = new Set();
@@ -450,6 +458,11 @@ async function initData() {
     const charDoc = await db.collection('data').doc('characters').get();
     const roleDoc = await db.collection('data').doc('roles').get();
     const auDoc = await db.collection('data').doc('aus').get();
+    const usersDoc = await db.collection('data').doc('users').get();
+
+    if (usersDoc.exists && Array.isArray(usersDoc.data().names) && usersDoc.data().names.length) {
+      USER_NAMES = usersDoc.data().names;
+    }
 
     if (!charDoc.exists) {
       // First time: seed Firestore with defaults
@@ -733,7 +746,7 @@ function doPick() {
       currentRoleR = roles.roleR;
       currentAU = pickAUFromTag();
       hasResult = true;
-      document.getElementById('copyResultBtn').style.display = 'block';
+      document.getElementById('resultActions').style.display = 'flex';
 
       couplingEl.innerHTML = `
         <span class="result-side result-left result-pop">${esc(fL)}</span>
@@ -821,6 +834,31 @@ function copyCurrentResult() {
     document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     toast('복사되었습니다');
   });
+}
+
+async function saveCurrentResult() {
+  if(!hasResult) return;
+  const result = await openStoragePicker({
+    title: '저장소에 저장',
+    users: USER_NAMES,
+    targets: null
+  });
+  if(!result) return;
+  try {
+    await db.collection('users').doc(result.user).collection('drawBox').add({
+      left: currentLeft,
+      right: currentRight,
+      roleL: currentRoleL,
+      roleR: currentRoleR,
+      au: currentAU,
+      memo: '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`${result.user}님의 뽑기 보관함에 저장했어요`);
+  } catch (e) {
+    console.error('저장 실패:', e);
+    toast('저장에 실패했어요');
+  }
 }
 
 // ============ LIST MODAL ============
