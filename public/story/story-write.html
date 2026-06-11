@@ -171,6 +171,11 @@
     border-color: #b8a9c9;
   }
 
+  #ratingPicker .pick-tag.selected {
+    background: #c2727f;
+    border-color: #c2727f;
+  }
+
   .selected-tags {
     display: flex;
     flex-wrap: wrap;
@@ -464,6 +469,17 @@
     <div class="tag-picker collapsed" id="auPicker"></div>
   </div>
 
+  <!-- 수위 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">수위</span>
+    </div>
+    <div class="tag-picker-tags" id="ratingPicker">
+      <span class="pick-tag" data-rating="17">17</span>
+      <span class="pick-tag" data-rating="19">19</span>
+    </div>
+  </div>
+
   <!-- 챕터 탭 -->
   <div class="chapter-tabs" id="chapterTabs">
     <div class="chapter-tab active" data-index="0">
@@ -534,6 +550,7 @@
   let allRoles = [];
   let selectedAus = [];
   let allAus = [];
+  let selectedRating = '';
 
   // ── PID 생성 ──
   function generatePid() {
@@ -750,6 +767,21 @@
     btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
   });
 
+  // ── 수위 태그 ──
+  function renderRatingPicker() {
+    document.querySelectorAll('#ratingPicker .pick-tag').forEach(tag => {
+      tag.classList.toggle('selected', tag.dataset.rating === selectedRating);
+    });
+  }
+
+  document.querySelectorAll('#ratingPicker .pick-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const val = tag.dataset.rating;
+      selectedRating = selectedRating === val ? '' : val;
+      renderRatingPicker();
+    });
+  });
+
   // ── 챕터 관리 ──
   function saveCurrentChapter() {
     chapters[currentChapterIndex].title = document.getElementById('chapterTitle').value;
@@ -868,6 +900,7 @@
         characters: selectedCharacters,
         roles: selectedRoles,
         aus: selectedAus,
+        rating: selectedRating,
         chapterCount: chapters.length,
         theme: 'default',
         ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
@@ -928,9 +961,11 @@
       selectedCharacters = data.characters || [];
       selectedRoles = data.roles || [];
       selectedAus = data.aus || [];
+      selectedRating = data.rating || '';
       renderSelectedTags();
       renderSelectedRoleTags();
       renderSelectedAuTags();
+      renderRatingPicker();
 
       // 챕터 로드 (복합 인덱스 없이 JS 정렬)
       const chapSnap = await db.collection('chapters')

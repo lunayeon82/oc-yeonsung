@@ -367,6 +367,12 @@
     border-radius: 10px;
   }
 
+  .story-tag.rating-tag {
+    background: rgba(194,114,127,0.18);
+    color: #b06070;
+    font-weight: 700;
+  }
+
   .tag-sep {
     font-size: 0.65rem;
     color: #c8b8d8;
@@ -544,6 +550,27 @@
       <div class="filter-section-body collapsed" id="auFilter"></div>
     </div>
 
+    <!-- 수위 필터 -->
+    <div class="filter-section">
+      <div class="filter-section-header">
+        <span class="filter-label">수위</span>
+        <div class="filter-section-right">
+          <span class="filter-count" id="ratingCount"></span>
+          <button class="filter-toggle-btn" id="ratingToggle">선택 ▾</button>
+        </div>
+      </div>
+      <div class="filter-section-body collapsed" id="ratingFilter">
+        <div class="char-mode-toggle">
+          <button class="mode-btn active" id="ratingModeInclude">포함</button>
+          <button class="mode-btn" id="ratingModeExclude">제외</button>
+        </div>
+        <div class="filter-tag-group">
+          <span class="char-tag" data-rating="17">17</span>
+          <span class="char-tag" data-rating="19">19</span>
+        </div>
+      </div>
+    </div>
+
     <div class="filter-actions">
       <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
       <button class="apply-filter-btn" id="applyFilterBtn">필터 적용</button>
@@ -590,6 +617,8 @@
   let selectedRoles = new Set();
   let selectedAus = new Set();
   let charFilterMode = 'or'; // 'or' | 'and'
+  let selectedRatings = new Set();
+  let ratingFilterMode = 'include'; // 'include' | 'exclude'
   let searchTerm = '';
 
   // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
@@ -625,6 +654,7 @@
   makeFilterToggle('charToggle', 'charFilterBody', 'charCount');
   makeFilterToggle('roleToggle', 'roleFilter',     'roleCount');
   makeFilterToggle('auToggle',   'auFilter',       'auCount');
+  makeFilterToggle('ratingToggle', 'ratingFilter', 'ratingCount');
 
   // ── 캐릭터 AND/OR 모드 버튼 ──
   document.getElementById('charModeOr').addEventListener('click', () => {
@@ -638,11 +668,33 @@
     document.getElementById('charModeOr').classList.remove('active');
   });
 
+  // ── 수위 포함/제외 모드 토글 ──
+  document.getElementById('ratingModeInclude').addEventListener('click', () => {
+    ratingFilterMode = 'include';
+    document.getElementById('ratingModeInclude').classList.add('active');
+    document.getElementById('ratingModeExclude').classList.remove('active');
+  });
+  document.getElementById('ratingModeExclude').addEventListener('click', () => {
+    ratingFilterMode = 'exclude';
+    document.getElementById('ratingModeExclude').classList.add('active');
+    document.getElementById('ratingModeInclude').classList.remove('active');
+  });
+
+  // ── 수위 필터 태그 ──
+  document.querySelectorAll('#ratingFilter .char-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const val = tag.dataset.rating;
+      if (selectedRatings.has(val)) { selectedRatings.delete(val); tag.classList.remove('active'); }
+      else                            { selectedRatings.add(val);    tag.classList.add('active'); }
+      updateAllCounts();
+    });
+  });
+
   // countId 뱃지: 접혀있고 선택 있을 때만 표시
   function updateFilterCount(countId, bodyId) {
     const countEl   = document.getElementById(countId);
     const collapsed = document.getElementById(bodyId).classList.contains('collapsed');
-    const sets = { charCount: selectedChars, roleCount: selectedRoles, auCount: selectedAus };
+    const sets = { charCount: selectedChars, roleCount: selectedRoles, auCount: selectedAus, ratingCount: selectedRatings };
     const size = sets[countId]?.size ?? 0;
     countEl.textContent = `${size}개 선택`;
     countEl.style.display = (collapsed && size > 0) ? 'inline' : 'none';
@@ -652,8 +704,9 @@
     updateFilterCount('charCount', 'charFilterBody');
     updateFilterCount('roleCount', 'roleFilter');
     updateFilterCount('auCount',   'auFilter');
+    updateFilterCount('ratingCount', 'ratingFilter');
     document.getElementById('clearFilter').style.display =
-      (selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0) ? 'block' : 'none';
+      (selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0 || selectedRatings.size > 0) ? 'block' : 'none';
   }
 
   // ── 캐릭터 필터 렌더 ──
@@ -761,6 +814,7 @@
           characters: data.characters || [],
           roles: data.roles || [],
           aus: data.aus || [],
+          rating: data.rating || '',
           theme: data.theme || 'default',
           createdAt: data.createdAt?.toDate?.() || new Date(),
           chapterCount,
@@ -793,6 +847,7 @@
       const tagsHtml = tagGroups
         .map(g => g.map(t => `<span class="story-tag">${escapeHtml(t)}</span>`).join(''))
         .join('<span class="tag-sep">|</span>');
+      const ratingHtml = s.rating ? `<span class="story-tag rating-tag">${escapeHtml(s.rating)}</span>` : '';
       return `
         <a class="story-card" href="story-view.html?pid=${s.pid}">
           <div class="story-title">${escapeHtml(s.title)}</div>
@@ -800,6 +855,7 @@
             <span class="story-date">${dateStr}</span>
             <span class="story-chapter-count">📄 ${s.chapterCount}챕터</span>
             <span class="story-comment-count">💬 ${s.commentCount}개</span>
+            ${ratingHtml}
           </div>
           ${tagsHtml ? `<div class="story-tags">${tagsHtml}</div>` : ''}
         </a>`;
@@ -863,11 +919,16 @@
       if (!matchGroups) return false;
     }
 
+    if (selectedRatings.size > 0) {
+      const hasRating = selectedRatings.has(s.rating);
+      if (ratingFilterMode === 'exclude' ? hasRating : !hasRating) return false;
+    }
+
     return true;
   }
 
   function hasAnyFilterCriteria() {
-    return !!searchTerm || selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0;
+    return !!searchTerm || selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0 || selectedRatings.size > 0;
   }
 
   // ── 필터 모드 렌더 (캐싱된 전체 목록에서 필터링, 캐시 내에서 더보기) ──
@@ -896,6 +957,7 @@
         characters: data.characters || [],
         roles: data.roles || [],
         aus: data.aus || [],
+        rating: data.rating || '',
         theme: data.theme || 'default',
         createdAt: data.createdAt?.toDate?.() || new Date(),
         chapterCount: data.chapterCount || 0,
@@ -961,6 +1023,10 @@
     selectedChars.clear();
     selectedRoles.clear();
     selectedAus.clear();
+    selectedRatings.clear();
+    ratingFilterMode = 'include';
+    document.getElementById('ratingModeInclude').classList.add('active');
+    document.getElementById('ratingModeExclude').classList.remove('active');
     document.querySelectorAll('.char-tag.active').forEach(t => t.classList.remove('active'));
     document.getElementById('searchInput').value = '';
     searchTerm = '';

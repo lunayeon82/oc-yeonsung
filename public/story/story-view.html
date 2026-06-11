@@ -260,6 +260,12 @@
     font-size: 0.7rem;
   }
 
+  .char-tag-view.rating-tag-view {
+    background: rgba(194,114,127,0.18);
+    color: #b06070;
+    font-weight: 700;
+  }
+
   .tag-sep {
     font-size: 0.7rem;
     color: #c8b8d8;
@@ -876,6 +882,7 @@
         <div class="story-meta-info">
           ${dateStr ? `<span class="meta-date">${dateStr}</span>` : ''}
           ${chapters.length > 1 ? `<span class="meta-chapters">${chapters.length}챕터</span>` : ''}
+          ${storyData.rating ? `<span class="char-tag-view rating-tag-view">${escapeHtml(storyData.rating)}</span>` : ''}
         </div>
         ${charTagsHtml ? `<div class="story-char-tags">${charTagsHtml}</div>` : ''}
         <div class="header-divider"></div>
