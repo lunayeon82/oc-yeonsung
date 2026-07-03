@@ -86,46 +86,84 @@
     border-color: rgba(194,114,127,0.5);
   }
 
-  /* ── 챕터 탭 스트립 ── */
-  .ch-tab-strip {
-    display: flex;
-    gap: 0.4rem;
-    overflow-x: auto;
-    padding-bottom: 1.2rem;
-    margin-bottom: 0.4rem;
-    scrollbar-width: none;
-  }
-  .ch-tab-strip::-webkit-scrollbar { display: none; }
-
-  .ch-tab {
-    flex-shrink: 0;
-    padding: 0.42rem 1.05rem;
-    background: rgba(255,255,255,0.45);
-    border: 1px solid rgba(184,169,201,0.2);
-    border-radius: 999px;
-    color: #9a8aaa;
-    font-family: 'ko-font', sans-serif;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    max-width: 130px;
+  /* ── 챕터 카루셀 ── */
+  .ch-carousel-wrap {
+    position: relative;
+    margin-bottom: 1.4rem;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
-  .ch-tab:hover {
-    background: rgba(184,169,201,0.12);
-    border-color: rgba(184,169,201,0.38);
-    color: #6a5a7a;
-    transform: translateY(-1px);
+  .ch-carousel-wrap::before,
+  .ch-carousel-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; width: 3rem; z-index: 2; pointer-events: none;
   }
-  .ch-tab.active {
-    background: rgba(184,169,201,0.2);
-    border-color: #b8a9c9;
-    color: #5a4a6b;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(90,74,107,0.1);
+  .ch-carousel-wrap::before {
+    left: 0;
+    background: linear-gradient(90deg, rgba(243,237,229,0.96) 0%, transparent 100%);
   }
+  .ch-carousel-wrap::after {
+    right: 0;
+    background: linear-gradient(270deg, rgba(243,237,229,0.96) 0%, transparent 100%);
+  }
+
+  .ch-carousel {
+    display: flex;
+    gap: 0.7rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0.5rem 0 1rem;
+    cursor: grab;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  .ch-carousel::-webkit-scrollbar { display: none; }
+  .ch-carousel.is-grabbing { cursor: grabbing; scroll-behavior: auto; }
+
+  .ch-card {
+    flex-shrink: 0;
+    width: min(210px, 62vw);
+    min-height: 68px;
+    padding: 0.85rem 1.05rem;
+    background: rgba(255,255,255,0.38);
+    border: 1px solid rgba(184,169,201,0.18);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.28s ease, transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease;
+    opacity: 0.45;
+    transform: scale(0.94) translateY(2px);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ch-card.active {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    background: rgba(255,255,255,0.65);
+    border-color: rgba(184,169,201,0.45);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
+  }
+  .ch-card:not(.active):hover { opacity: 0.72; }
+
+  .ch-card-num {
+    font-size: 0.6rem;
+    color: #c4b4d4;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.28rem;
+    font-family: 'ko-font', sans-serif;
+  }
+  .ch-card.active .ch-card-num { color: #9a86b5; }
+
+  .ch-card-title {
+    font-size: 0.84rem;
+    color: #8a7a9a;
+    line-height: 1.45;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-family: 'ko-font', sans-serif;
+  }
+  .ch-card.active .ch-card-title { color: #5a4a6b; font-weight: 500; }
 
   /* ── 챕터 본문 트랜지션 ── */
   .ch-body {
@@ -889,15 +927,94 @@
   function renderTabStrip() {
     const strip = document.getElementById('chTabStrip');
     if (!strip) return;
-    strip.innerHTML = chapters.map((ch, i) => {
-      const label = ch.title || `챕터 ${i + 1}`;
-      return `<button class="ch-tab${i === currentChapterIndex ? ' active' : ''}" data-index="${i}">${escapeHtml(label)}</button>`;
-    }).join('');
-    strip.querySelectorAll('.ch-tab').forEach(tab => {
-      tab.addEventListener('click', () => switchChapter(parseInt(tab.dataset.index)));
-    });
-    scrollTabIntoView(currentChapterIndex);
+    strip.innerHTML = `
+      <div class="ch-carousel-wrap">
+        <div class="ch-carousel" id="chCarousel">
+          <div id="chSpacerL" style="flex-shrink:0"></div>
+          ${chapters.map((ch, i) => `
+            <div class="ch-card${i === currentChapterIndex ? ' active' : ''}" data-index="${i}">
+              <div class="ch-card-num">Chapter ${i + 1}.</div>
+              ${ch.title ? `<div class="ch-card-title">${escapeHtml(ch.title)}</div>` : ''}
+            </div>
+          `).join('')}
+          <div id="chSpacerR" style="flex-shrink:0"></div>
+        </div>
+      </div>
+    `;
+    initCarousel();
+    requestAnimationFrame(() => scrollCarouselTo(currentChapterIndex, false));
   }
+
+  function initCarousel() {
+    const carousel = document.getElementById('chCarousel');
+    if (!carousel) return;
+    updateCarouselSpacers(carousel);
+
+    let startX = 0, startLeft = 0, moved = false;
+
+    carousel.addEventListener('pointerdown', e => {
+      startX = e.clientX;
+      startLeft = carousel.scrollLeft;
+      moved = false;
+      carousel.setPointerCapture(e.pointerId);
+      carousel.classList.add('is-grabbing');
+    });
+
+    carousel.addEventListener('pointermove', e => {
+      if (!carousel.hasPointerCapture(e.pointerId)) return;
+      const dx = startX - e.clientX;
+      if (Math.abs(dx) > 5) moved = true;
+      carousel.scrollLeft = startLeft + dx;
+    });
+
+    const onRelease = () => {
+      carousel.classList.remove('is-grabbing');
+      if (moved) snapCarouselToNearest(carousel);
+    };
+    carousel.addEventListener('pointerup', onRelease);
+    carousel.addEventListener('pointercancel', onRelease);
+
+    carousel.querySelectorAll('.ch-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (moved) return;
+        switchChapter(parseInt(card.dataset.index));
+      });
+    });
+  }
+
+  function updateCarouselSpacers(carousel) {
+    const firstCard = carousel.querySelector('.ch-card');
+    const cardW = firstCard ? firstCard.offsetWidth : 210;
+    const spacerW = Math.max(0, (carousel.offsetWidth - cardW) / 2);
+    const L = document.getElementById('chSpacerL');
+    const R = document.getElementById('chSpacerR');
+    if (L) L.style.minWidth = spacerW + 'px';
+    if (R) R.style.minWidth = spacerW + 'px';
+  }
+
+  function snapCarouselToNearest(carousel) {
+    const wrapCenter = carousel.scrollLeft + carousel.offsetWidth / 2;
+    const cards = [...carousel.querySelectorAll('.ch-card')];
+    let nearest = 0, minDist = Infinity;
+    cards.forEach((c, i) => {
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - wrapCenter);
+      if (d < minDist) { minDist = d; nearest = i; }
+    });
+    scrollCarouselTo(nearest, true);
+    cards.forEach((c, i) => c.classList.toggle('active', i === nearest));
+  }
+
+  function scrollCarouselTo(index, smooth = true) {
+    const carousel = document.getElementById('chCarousel');
+    if (!carousel) return;
+    const cards = carousel.querySelectorAll('.ch-card');
+    const card = cards[index];
+    if (!card) return;
+    const target = card.offsetLeft + card.offsetWidth / 2 - carousel.offsetWidth / 2;
+    carousel.scrollTo({ left: Math.max(0, target), behavior: smooth ? 'smooth' : 'instant' });
+  }
+
+  function scrollTabIntoView(index) { scrollCarouselTo(index); }
 
   function renderChapterBody(index) {
     const ch = chapters[index];
@@ -957,10 +1074,10 @@
       body.classList.remove('fading');
       renderChapterNav();
       // 탭 활성화 업데이트
-      document.querySelectorAll('.ch-tab').forEach((tab, i) => {
-        tab.classList.toggle('active', i === index);
+      document.querySelectorAll('.ch-card').forEach((c, i) => {
+        c.classList.toggle('active', i === index);
       });
-      scrollTabIntoView(index);
+      scrollCarouselTo(index);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 180);
   }
