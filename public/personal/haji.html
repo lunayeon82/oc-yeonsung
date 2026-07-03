@@ -389,6 +389,7 @@
           </div>
           ${d.memo ? `<div class="draw-memo">${esc(d.memo)}</div>` : ''}
           <div class="draw-actions">
+            <button class="icon-btn copy-btn" data-id="${doc.id}" title="복사">📋</button>
             <button class="icon-btn edit-btn" data-id="${doc.id}" title="수정">✎</button>
             <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="drawBox" title="삭제">✕</button>
           </div>
@@ -432,6 +433,9 @@
   }
 
   function bindDrawEvents() {
+    document.querySelectorAll('#drawList .copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => copyDrawItem(btn.dataset.id));
+    });
     document.querySelectorAll('#drawList .edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         editingId = btn.dataset.id;
@@ -449,6 +453,21 @@
     });
     document.querySelectorAll('#drawList .draw-edit-save').forEach(btn => {
       btn.addEventListener('click', () => saveDrawEdit(btn.dataset.id));
+    });
+  }
+
+  function copyDrawItem(id) {
+    const doc = lastDrawDocs.find(d => d.id === id);
+    if (!doc) return;
+    const d = doc.data();
+    let text = `${d.left}(${d.roleL}) ✕ ${d.right}(${d.roleR}) / ${d.au}`;
+    if (d.memo) text += `\n${d.memo}`;
+    navigator.clipboard.writeText(text).then(() => showToast('복사했어요')).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('복사했어요');
     });
   }
 
