@@ -138,9 +138,9 @@
   .ch-card.active {
     opacity: 1;
     transform: scale(1) translateY(0);
-    background: rgba(255,255,255,0.65);
-    border-color: rgba(184,169,201,0.45);
-    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
+    background: linear-gradient(145deg, rgba(184,169,201,0.22) 0%, rgba(255,255,255,0.6) 100%);
+    border-color: #b8a9c9;
+    box-shadow: 0 4px 18px rgba(90,74,107,0.14), inset 0 1px 0 rgba(255,255,255,0.6);
   }
   .ch-card:not(.active):hover { opacity: 0.72; }
 
@@ -151,7 +151,7 @@
     margin-bottom: 0.28rem;
     font-family: 'ko-font', sans-serif;
   }
-  .ch-card.active .ch-card-num { color: #9a86b5; }
+  .ch-card.active .ch-card-num { color: #9a7ab5; font-weight: 500; }
 
   .ch-card-title {
     font-size: 0.84rem;
@@ -163,7 +163,7 @@
     -webkit-box-orient: vertical;
     font-family: 'ko-font', sans-serif;
   }
-  .ch-card.active .ch-card-title { color: #5a4a6b; font-weight: 500; }
+  .ch-card.active .ch-card-title { color: #4a3a5b; font-weight: 500; }
 
   /* ── 챕터 본문 트랜지션 ── */
   .ch-body {
@@ -967,18 +967,21 @@
       carousel.scrollLeft = startLeft + dx;
     });
 
-    const onRelease = () => {
+    carousel.addEventListener('pointerup', e => {
       carousel.classList.remove('is-grabbing');
-      if (moved) snapCarouselToNearest(carousel);
-    };
-    carousel.addEventListener('pointerup', onRelease);
-    carousel.addEventListener('pointercancel', onRelease);
+      if (moved) {
+        snapCarouselToNearest(carousel);
+      } else {
+        // setPointerCapture로 인해 click이 카드에 안 오므로 직접 처리
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const card = el?.closest('.ch-card');
+        if (card) switchChapter(parseInt(card.dataset.index));
+      }
+    });
 
-    carousel.querySelectorAll('.ch-card').forEach(card => {
-      card.addEventListener('click', () => {
-        if (moved) return;
-        switchChapter(parseInt(card.dataset.index));
-      });
+    carousel.addEventListener('pointercancel', () => {
+      carousel.classList.remove('is-grabbing');
+      snapCarouselToNearest(carousel);
     });
   }
 
@@ -1001,7 +1004,9 @@
       if (d < minDist) { minDist = d; nearest = i; }
     });
     scrollCarouselTo(nearest, true);
-    cards.forEach((c, i) => c.classList.toggle('active', i === nearest));
+    if (nearest !== currentChapterIndex) {
+      switchChapter(nearest);
+    }
   }
 
   function scrollCarouselTo(index, smooth = true) {
