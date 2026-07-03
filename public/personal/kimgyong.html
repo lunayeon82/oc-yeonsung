@@ -461,7 +461,7 @@
     if (!doc) return;
     const d = doc.data();
     let text = `${d.left}(${d.roleL}) ✕ ${d.right}(${d.roleR}) / ${d.au}`;
-    if (d.memo) text += `\n${d.memo}`;
+    if (d.memo) text += ` / ${d.memo}`;
     navigator.clipboard.writeText(text).then(() => showToast('복사했어요')).catch(() => {
       const ta = document.createElement('textarea');
       ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
