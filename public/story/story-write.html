@@ -483,6 +483,18 @@
     </div>
   </div>
 
+  <!-- 로어 참조 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">로어 참조</span>
+      <button class="tag-toggle-btn" id="loreToggle">선택하기 ▾</button>
+    </div>
+    <div class="selected-tags" id="selectedLoreTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">참조할 로어를 선택하세요</span>
+    </div>
+    <div class="tag-picker collapsed" id="lorePicker"></div>
+  </div>
+
   <!-- 챕터 탭 -->
   <div class="chapter-tabs" id="chapterTabs">
     <div class="chapter-tab active" data-index="0">
@@ -919,6 +931,7 @@
         roles: selectedRoles,
         aus: selectedAus,
         rating: selectedRating,
+        loreRefs: selectedLoreRefs,
         chapterCount: chapters.length,
         theme: 'default',
         ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
@@ -980,10 +993,12 @@
       selectedRoles = data.roles || [];
       selectedAus = data.aus || [];
       selectedRating = data.rating || '';
+      selectedLoreRefs = data.loreRefs || [];
       renderSelectedTags();
       renderSelectedRoleTags();
       renderSelectedAuTags();
       renderRatingPicker();
+      renderSelectedLoreTags();
 
       // 챕터 로드 (복합 인덱스 없이 JS 정렬)
       const chapSnap = await db.collection('chapters')
@@ -1037,9 +1052,88 @@
     }
   });
 
+  // ── 로어 참조 ──
+  let selectedLoreRefs = [];
+  let allLores = [];
+
+  async function loadLores() {
+    try {
+      const snap = await db.collection('lores').orderBy('createdAt', 'desc').get();
+      allLores = snap.docs.map(doc => ({ id: doc.id, title: doc.data().title || '(제목 없음)' }));
+      renderLorePicker();
+    } catch (e) {
+      console.error('로어 로드 실패:', e);
+    }
+  }
+
+  function renderLorePicker() {
+    const picker = document.getElementById('lorePicker');
+    if (allLores.length === 0) {
+      picker.innerHTML = '<div class="tag-picker-group"><span style="font-size:0.75rem;color:#a99ab8;">등록된 로어가 없어요</span></div>';
+      return;
+    }
+    picker.innerHTML = `
+      <div class="tag-picker-group">
+        <div class="tag-picker-tags">
+          ${allLores.map(l => `
+            <span class="pick-tag${selectedLoreRefs.some(r => r.id === l.id) ? ' selected' : ''}"
+                  data-id="${escapeHtmlAttr(l.id)}" data-title="${escapeHtmlAttr(l.title)}">${escapeHtml(l.title)}</span>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    picker.querySelectorAll('.pick-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const id = tag.dataset.id;
+        const title = tag.dataset.title;
+        if (selectedLoreRefs.some(r => r.id === id)) {
+          selectedLoreRefs = selectedLoreRefs.filter(r => r.id !== id);
+          tag.classList.remove('selected');
+        } else {
+          selectedLoreRefs.push({ id, title });
+          tag.classList.add('selected');
+        }
+        renderSelectedLoreTags();
+      });
+    });
+  }
+
+  function renderSelectedLoreTags() {
+    const wrap = document.getElementById('selectedLoreTags');
+    if (selectedLoreRefs.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.72rem;color:#b8a9c9;">참조할 로어를 선택하세요</span>';
+      return;
+    }
+    wrap.innerHTML = selectedLoreRefs.map(ref => `
+      <span class="selected-tag">
+        ${escapeHtml(ref.title)}
+        <span class="remove-tag" data-id="${escapeHtmlAttr(ref.id)}">✕</span>
+      </span>
+    `).join('');
+    wrap.querySelectorAll('.remove-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedLoreRefs = selectedLoreRefs.filter(r => r.id !== btn.dataset.id);
+        renderSelectedLoreTags();
+        renderLorePicker();
+      });
+    });
+  }
+
+  function escapeHtmlAttr(str) {
+    return String(str ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  document.getElementById('loreToggle').addEventListener('click', () => {
+    const picker = document.getElementById('lorePicker');
+    const btn = document.getElementById('loreToggle');
+    picker.classList.toggle('collapsed');
+    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  });
+
   // ── 초기화 ──
   loadCharacters();
   loadRolesAndAus();
+  loadLores();
   loadExistingStory();
 </script>
 </body>

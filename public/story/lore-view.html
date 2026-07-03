@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 로어 읽기</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face { font-family: 'ko-font'; src: url('../assets/ko-font.ttf') format('truetype'); }
+  @font-face { font-family: 'ChosunCentennial'; src: url('../fonts/ChosunCentennial.otf') format('opentype'); }
+  @font-face { font-family: 'GowunDodum'; src: url('../fonts/GowunDodum.ttf') format('truetype'); }
+  @font-face { font-family: 'RIDIBatang'; src: url('../fonts/RIDI-Batang.otf') format('opentype'); }
+  :root { --story-font: 'Noto Sans KR', sans-serif; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    padding: 0.7rem 1.2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .top-bar-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+  .toc-toggle-btn, .font-picker-btn {
+    width: 34px; height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .toc-toggle-btn:hover, .font-picker-btn:hover { background: rgba(184,169,201,0.15); }
+  .toc-toggle-btn.active, .font-picker-btn.active { background: #b8a9c9; color: white; border-color: #b8a9c9; }
+  .font-picker-btn { font-size: 0.85rem; font-weight: 700; font-family: 'ko-font', sans-serif; }
+
+  .edit-btn {
+    padding: 0.4rem 0.9rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    color: #7a6a8a; font-size: 0.8rem; cursor: pointer;
+    font-family: 'ko-font', sans-serif; transition: all 0.2s;
+  }
+  .edit-btn:hover { background: rgba(184,169,201,0.15); border-color: rgba(184,169,201,0.5); }
+
+  .delete-btn {
+    padding: 0.4rem 0.9rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(194,114,127,0.3);
+    border-radius: 8px;
+    color: #b06070; font-size: 0.8rem; cursor: pointer;
+    font-family: 'ko-font', sans-serif; transition: all 0.2s;
+  }
+  .delete-btn:hover { background: rgba(194,114,127,0.1); border-color: rgba(194,114,127,0.5); }
+
+  /* 목차 */
+  .toc-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: 150;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+  }
+  .toc-overlay.open { opacity: 1; visibility: visible; }
+
+  .toc-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 80vw;
+    background: rgba(245,240,232,0.97); backdrop-filter: blur(16px);
+    z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease;
+    display: flex; flex-direction: column;
+    box-shadow: 4px 0 24px rgba(90,74,107,0.1);
+  }
+  .toc-sidebar.open { transform: translateX(0); }
+
+  .toc-header {
+    padding: 1.2rem 1rem; border-bottom: 1px solid rgba(184,169,201,0.15);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .toc-header h3 { font-family: 'ko-font', sans-serif; font-size: 0.95rem; color: #5a4a6b; font-weight: 700; }
+
+  .toc-close {
+    width: 28px; height: 28px; border: none; border-radius: 6px;
+    background: transparent; color: #8a7a9a; font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .toc-close:hover { background: rgba(184,169,201,0.15); }
+
+  .toc-list { flex: 1; overflow-y: auto; padding: 0.5rem 0; }
+
+  .toc-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.7rem 1rem; cursor: pointer; transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .toc-item:hover { background: rgba(184,169,201,0.08); }
+  .toc-item.active { background: rgba(184,169,201,0.12); border-left-color: #9ab5c8; }
+
+  .toc-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(154,181,200,0.2); color: #7a8a9a;
+    font-size: 0.65rem; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-weight: 500;
+  }
+  .toc-item.active .toc-num { background: #9ab5c8; color: white; }
+
+  .toc-item-title { font-size: 0.82rem; color: #5a4a6b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 메인 */
+  .container {
+    position: relative; z-index: 1; max-width: 720px;
+    margin: 0 auto; padding: 2rem 1.2rem 4rem;
+  }
+
+  .lore-header { text-align: center; margin-bottom: 2rem; animation: fadeIn 0.5s ease; }
+
+  .lore-title {
+    font-family: 'ko-font', sans-serif; font-size: 1.6rem; font-weight: 700;
+    color: #4a3a5b; line-height: 1.4; margin-bottom: 0.8rem;
+  }
+
+  .lore-meta-info { display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
+  .meta-date, .meta-chapters { font-size: 0.75rem; color: #a99ab8; }
+
+  .header-divider {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, #c8d8e0, transparent);
+    margin: 1.2rem auto 0;
+  }
+
+  .chapter-header { text-align: center; margin-bottom: 1.5rem; animation: fadeIn 0.4s ease; }
+  .chapter-indicator { font-size: 0.7rem; color: #9ab5c8; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.3rem; }
+  .chapter-title { font-family: 'ko-font', sans-serif; font-size: 1.15rem; color: #5a4a6b; font-weight: 700; }
+  .chapter-divider {
+    width: 40px; height: 1px;
+    background: linear-gradient(90deg, transparent, #c8d8e0, transparent);
+    margin: 0.8rem auto 0;
+  }
+
+  .story-body {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: var(--story-font);
+    font-size: 0.92rem; line-height: 1.9; color: #3a2a4b;
+    animation: fadeIn 0.5s ease 0.1s both; min-height: 200px;
+  }
+  .story-body h2 { font-family: 'Nanum Myeongjo', serif; font-size: 1.15rem; color: #5a4a6b; margin: 1.2rem 0 0.5rem; }
+  .story-body h3 { font-family: 'Nanum Myeongjo', serif; font-size: 1rem; color: #6a5a7a; margin: 1rem 0 0.4rem; }
+  .story-body blockquote { border-left: 3px solid #c8d8e0; padding-left: 0.8rem; margin: 0.6rem 0; color: #7a6a8a; font-style: italic; }
+  .story-body hr { border: none; height: 1px; background: linear-gradient(90deg, transparent 10%, #c8d8e0 50%, transparent 90%); margin: 1.5rem 0; }
+  .story-body p { margin-bottom: 0.6rem; }
+
+  .chapter-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 2rem; padding-top: 1.2rem;
+    border-top: 1px solid rgba(184,169,201,0.15);
+    animation: fadeIn 0.5s ease 0.2s both;
+  }
+
+  .nav-btn {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 8px; color: #7a6a8a; font-size: 0.8rem; cursor: pointer;
+    font-family: 'ko-font', sans-serif; transition: all 0.2s; text-decoration: none;
+  }
+  .nav-btn:hover { background: rgba(184,169,201,0.12); border-color: rgba(184,169,201,0.4); transform: translateY(-1px); }
+  .nav-btn:disabled, .nav-btn.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+  .nav-btn .arrow { font-size: 0.9rem; }
+  .nav-btn-label { display: flex; flex-direction: column; }
+  .nav-btn-sub { font-size: 0.65rem; color: #a99ab8; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chapter-position { font-size: 0.72rem; color: #a99ab8; }
+
+  .loading { text-align: center; padding: 4rem 1rem; color: #a99ab8; font-size: 0.85rem; }
+  .loading .dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+
+  .error-state { text-align: center; padding: 4rem 1rem; color: #a99ab8; }
+  .error-state .icon { font-size: 2rem; margin-bottom: 0.8rem; opacity: 0.5; }
+  .error-state p { font-size: 0.85rem; line-height: 1.6; }
+  .error-state a { color: #9ab5c8; text-decoration: underline; font-size: 0.8rem; }
+
+  /* 폰트 패널 */
+  .font-picker-wrap { position: relative; }
+  .font-panel {
+    position: absolute; top: calc(100% + 0.4rem); right: 0;
+    background: rgba(250,247,242,0.97); backdrop-filter: blur(16px);
+    border: 1px solid rgba(184,169,201,0.25); border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(90,74,107,0.14);
+    padding: 0.4rem; min-width: 170px; display: none; z-index: 300;
+  }
+  .font-panel.open { display: block; }
+  .font-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; transition: background 0.15s;
+    color: #4a3a5b; font-size: 0.92rem; line-height: 1;
+  }
+  .font-option:hover { background: rgba(184,169,201,0.12); }
+  .font-option.selected { background: rgba(184,169,201,0.2); }
+  .font-option .check { font-size: 0.7rem; color: #b8a9c9; opacity: 0; }
+  .font-option.selected .check { opacity: 1; }
+
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9); color: white;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.8rem;
+    opacity: 0; transition: all 0.3s ease; z-index: 400; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 480px) {
+    .container { padding: 1.2rem 0.8rem 3rem; }
+    .lore-title { font-size: 1.3rem; }
+    .story-body { padding: 1rem; font-size: 0.88rem; }
+    .nav-btn-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<div class="top-bar">
+  <a href="lore-list.html" class="nav-link">← 목록</a>
+  <div class="top-bar-actions">
+    <div class="font-picker-wrap">
+      <button class="font-picker-btn" id="fontPickerBtn" title="폰트 설정">가</button>
+      <div class="font-panel" id="fontPanel">
+        <div class="font-option" data-font="Noto Sans KR" style="font-family:'Noto Sans KR',sans-serif">Noto Sans KR <span class="check">✓</span></div>
+        <div class="font-option" data-font="Nanum Gothic" style="font-family:'Nanum Gothic',sans-serif">나눔고딕 <span class="check">✓</span></div>
+        <div class="font-option" data-font="Nanum Myeongjo" style="font-family:'Nanum Myeongjo',serif">나눔명조 <span class="check">✓</span></div>
+        <div class="font-option" data-font="RIDIBatang" style="font-family:'RIDIBatang',serif">RIDI바탕 <span class="check">✓</span></div>
+        <div class="font-option" data-font="ChosunCentennial" style="font-family:'ChosunCentennial',serif">조선센테니얼 <span class="check">✓</span></div>
+        <div class="font-option" data-font="GowunDodum" style="font-family:'GowunDodum',sans-serif">고운돋움 <span class="check">✓</span></div>
+      </div>
+    </div>
+    <button class="toc-toggle-btn" id="tocToggleBtn" title="목차" style="display:none;">☰</button>
+    <button class="delete-btn" id="deleteBtn" style="display:none;">삭제</button>
+    <button class="edit-btn" id="editBtn" style="display:none;">수정</button>
+  </div>
+</div>
+
+<div class="toc-overlay" id="tocOverlay"></div>
+<div class="toc-sidebar" id="tocSidebar">
+  <div class="toc-header">
+    <h3>목차</h3>
+    <button class="toc-close" id="tocClose">✕</button>
+  </div>
+  <div class="toc-list" id="tocList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container" id="mainContainer">
+  <div class="loading" id="loadingState">불러오는 중<span class="dots"></span></div>
+</div>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('pid');
+
+  if (!pid) {
+    document.getElementById('mainContainer').innerHTML =
+      '<div class="error-state"><div class="icon">⚠</div><p>잘못된 접근이에요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+  }
+
+  let loreData = null;
+  let chapters = [];
+  let currentChapterIndex = 0;
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
+  async function loadLore() {
+    try {
+      const loreDoc = await db.collection('lores').doc(pid).get();
+      if (!loreDoc.exists) {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="error-state"><div class="icon">📭</div><p>존재하지 않는 로어예요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+        return;
+      }
+
+      loreData = loreDoc.data();
+
+      const chapSnap = await db.collection('loreChapters')
+        .where('loreId', '==', pid).get();
+
+      chapters = chapSnap.docs.map(doc => ({
+        chapterPid: doc.id,
+        title: doc.data().title || '',
+        body: doc.data().body || '',
+        order: doc.data().order ?? 0
+      })).sort((a, b) => a.order - b.order);
+
+      document.getElementById('editBtn').style.display = 'block';
+      document.getElementById('deleteBtn').style.display = 'block';
+
+      if (chapters.length > 1) {
+        document.getElementById('tocToggleBtn').style.display = 'flex';
+        renderToc();
+      }
+
+      renderLore();
+      setSyncStatus(true);
+    } catch (e) {
+      console.error('로드 실패:', e);
+      document.getElementById('mainContainer').innerHTML =
+        '<div class="error-state"><div class="icon">⚠</div><p>로어를 불러오지 못했어요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+      setSyncStatus(false);
+    }
+  }
+
+  function renderLore() {
+    const container = document.getElementById('mainContainer');
+    const dateStr = loreData.createdAt?.toDate ? formatDate(loreData.createdAt.toDate()) : '';
+
+    let html = `
+      <div class="lore-header">
+        <div class="lore-title">${escapeHtml(loreData.title)}</div>
+        <div class="lore-meta-info">
+          ${dateStr ? `<span class="meta-date">${dateStr}</span>` : ''}
+          ${chapters.length > 1 ? `<span class="meta-chapters">${chapters.length}챕터</span>` : ''}
+        </div>
+        <div class="header-divider"></div>
+      </div>
+    `;
+
+    html += renderChapter(currentChapterIndex);
+
+    if (chapters.length > 1) html += renderChapterNav();
+
+    container.innerHTML = html;
+    bindNavEvents();
+    updateTocActive();
+  }
+
+  function renderChapter(index) {
+    const ch = chapters[index];
+    if (!ch) return '';
+    let html = '';
+    if (chapters.length > 1) {
+      html += `
+        <div class="chapter-header">
+          <div class="chapter-indicator">Chapter ${index + 1}</div>
+          ${ch.title ? `<div class="chapter-title">${escapeHtml(ch.title)}</div>` : ''}
+          <div class="chapter-divider"></div>
+        </div>
+      `;
+    }
+    html += `<div class="story-body">${ch.body || '<p style="color:#b8a9c9;">내용이 없어요</p>'}</div>`;
+    return html;
+  }
+
+  function renderChapterNav() {
+    const prev = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null;
+    const next = currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null;
+    return `
+      <div class="chapter-nav">
+        <button class="nav-btn ${!prev ? 'disabled' : ''}" id="prevBtn" ${!prev ? 'disabled' : ''}>
+          <span class="arrow">←</span>
+          <span class="nav-btn-label">
+            <span>이전</span>
+            ${prev ? `<span class="nav-btn-sub">${escapeHtml(prev.title || `챕터 ${currentChapterIndex}`)}</span>` : ''}
+          </span>
+        </button>
+        <span class="chapter-position">${currentChapterIndex + 1} / ${chapters.length}</span>
+        <button class="nav-btn ${!next ? 'disabled' : ''}" id="nextBtn" ${!next ? 'disabled' : ''}>
+          <span class="nav-btn-label">
+            <span>다음</span>
+            ${next ? `<span class="nav-btn-sub">${escapeHtml(next.title || `챕터 ${currentChapterIndex + 2}`)}</span>` : ''}
+          </span>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    `;
+  }
+
+  function bindNavEvents() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    if (prevBtn && !prevBtn.disabled) {
+      prevBtn.addEventListener('click', () => { currentChapterIndex--; renderLore(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    }
+    if (nextBtn && !nextBtn.disabled) {
+      nextBtn.addEventListener('click', () => { currentChapterIndex++; renderLore(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    }
+  }
+
+  function renderToc() {
+    const list = document.getElementById('tocList');
+    list.innerHTML = chapters.map((ch, i) => `
+      <div class="toc-item${i === currentChapterIndex ? ' active' : ''}" data-index="${i}">
+        <span class="toc-num">${i + 1}</span>
+        <span class="toc-item-title">${escapeHtml(ch.title || `챕터 ${i + 1}`)}</span>
+      </div>
+    `).join('');
+    list.querySelectorAll('.toc-item').forEach(item => {
+      item.addEventListener('click', () => {
+        currentChapterIndex = parseInt(item.dataset.index);
+        closeToc();
+        renderLore();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  function updateTocActive() {
+    document.querySelectorAll('.toc-item').forEach((item, i) => {
+      item.classList.toggle('active', i === currentChapterIndex);
+    });
+  }
+
+  function openToc() {
+    document.getElementById('tocSidebar').classList.add('open');
+    document.getElementById('tocOverlay').classList.add('open');
+    document.getElementById('tocToggleBtn').classList.add('active');
+    updateTocActive();
+  }
+  function closeToc() {
+    document.getElementById('tocSidebar').classList.remove('open');
+    document.getElementById('tocOverlay').classList.remove('open');
+    document.getElementById('tocToggleBtn').classList.remove('active');
+  }
+
+  document.getElementById('tocToggleBtn').addEventListener('click', () => {
+    document.getElementById('tocSidebar').classList.contains('open') ? closeToc() : openToc();
+  });
+  document.getElementById('tocClose').addEventListener('click', closeToc);
+  document.getElementById('tocOverlay').addEventListener('click', closeToc);
+
+  document.getElementById('editBtn').addEventListener('click', () => {
+    location.href = `lore-write.html?pid=${pid}`;
+  });
+
+  document.getElementById('deleteBtn').addEventListener('click', deleteLore);
+
+  async function deleteLore() {
+    if (!(await customConfirm(`"${loreData?.title || '이 로어'}"을(를) 삭제할까요?\n챕터도 모두 삭제돼요.`))) return;
+    try {
+      const batch = db.batch();
+      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
+      chapSnap.docs.forEach(doc => batch.delete(doc.ref));
+      batch.delete(db.collection('lores').doc(pid));
+      await batch.commit();
+      showToast('삭제했어요');
+      setTimeout(() => { location.href = 'lore-list.html'; }, 800);
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (chapters.length <= 1) return;
+    if (e.key === 'ArrowLeft' && currentChapterIndex > 0) { currentChapterIndex--; renderLore(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else if (e.key === 'ArrowRight' && currentChapterIndex < chapters.length - 1) { currentChapterIndex++; renderLore(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+
+  const FONT_MAP = {
+    'Noto Sans KR': "'Noto Sans KR', sans-serif",
+    'Nanum Gothic': "'Nanum Gothic', sans-serif",
+    'Nanum Myeongjo': "'Nanum Myeongjo', serif",
+    'RIDIBatang': "'RIDIBatang', serif",
+    'ChosunCentennial': "'ChosunCentennial', serif",
+    'GowunDodum': "'GowunDodum', sans-serif"
+  };
+
+  function applyFont(name) {
+    document.documentElement.style.setProperty('--story-font', FONT_MAP[name] || FONT_MAP['Noto Sans KR']);
+    document.querySelectorAll('.font-option').forEach(el => el.classList.toggle('selected', el.dataset.font === name));
+  }
+
+  const savedFont = localStorage.getItem('storyFont') || 'Noto Sans KR';
+  applyFont(savedFont);
+
+  document.querySelectorAll('.font-option').forEach(el => {
+    el.addEventListener('click', () => {
+      localStorage.setItem('storyFont', el.dataset.font);
+      applyFont(el.dataset.font);
+      document.getElementById('fontPanel').classList.remove('open');
+      document.getElementById('fontPickerBtn').classList.remove('active');
+    });
+  });
+
+  document.getElementById('fontPickerBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const panel = document.getElementById('fontPanel');
+    const isOpen = panel.classList.toggle('open');
+    document.getElementById('fontPickerBtn').classList.toggle('active', isOpen);
+  });
+
+  document.addEventListener('click', () => {
+    document.getElementById('fontPanel').classList.remove('open');
+    document.getElementById('fontPickerBtn').classList.remove('active');
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  if (pid) loadLore();
+</script>
+</body>
+</html>

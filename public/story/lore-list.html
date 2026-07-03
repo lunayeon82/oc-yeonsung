@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 로어 목록</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('../assets/ko-font.ttf') format('truetype');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.2rem 3rem;
+  }
+
+  .search-area {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(90,74,107,0.06);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: #b8a9c9; }
+  .search-input:focus { border-color: #b8a9c9; }
+
+  .search-btn {
+    padding: 0.45rem 0.9rem;
+    background: #b8a9c9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { background: #a090b5; }
+
+  .lore-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+  .lore-card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  .lore-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #9ab5c8, #c8dce8);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .lore-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
+    border-color: rgba(184,169,201,0.4);
+  }
+  .lore-card:hover::before { opacity: 1; }
+
+  .lore-title {
+    font-family: 'ko-font', sans-serif;
+    font-size: 1.05rem;
+    color: #4a3a5b;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+  }
+
+  .lore-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .lore-date { font-size: 0.7rem; color: #a99ab8; }
+  .lore-chapter-count { font-size: 0.7rem; color: #a99ab8; }
+
+  .new-lore-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #9ab5c8, #7a9ab5);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(74,90,107,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+  }
+  .new-lore-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(74,90,107,0.35);
+  }
+
+  .sync-badge { position: fixed; bottom: 3%; left: 1.2rem; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #a99ab8; }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.8rem; opacity: 0.5; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+  .load-more-wrap { display: flex; justify-content: center; margin-top: 1rem; }
+  .load-more-btn {
+    padding: 0.6rem 1.6rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 999px;
+    color: #7a6a8a;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .load-more-btn:hover { background: rgba(184,169,201,0.12); border-color: rgba(184,169,201,0.5); }
+  .load-more-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .loading { text-align: center; padding: 3rem; color: #a99ab8; font-size: 0.85rem; }
+  .loading .dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 480px) {
+    .container { padding: 0 0.8rem 4rem; }
+    .lore-card { padding: 0.8rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<a href="../index.html" class="nav-link nav-corner">← 홈</a>
+<div class="nav-corner-right">
+  <a class="action-pill" href="story-list.html">📝 연성 목록</a>
+</div>
+
+<header class="page-hero">
+  <h1>로어 목록</h1>
+</header>
+
+<div class="container">
+
+  <div class="search-area">
+    <input type="text" class="search-input" id="searchInput" placeholder="제목 검색...">
+    <button class="search-btn" id="searchBtn">검색</button>
+  </div>
+
+  <div class="lore-list" id="loreList">
+    <div class="loading">불러오는 중<span class="dots"></span></div>
+  </div>
+
+</div>
+
+<button class="new-lore-btn" id="newLoreBtn" title="새 로어 작성">✎</button>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
+  const PAGE_SIZE = 10;
+  let allLores = [];
+  let lastDoc = null;
+  let noMore = false;
+  let isLoading = false;
+  let searchTerm = '';
+  let allLoresFull = null;
+  let isFiltered = false;
+  let filteredVisible = PAGE_SIZE;
+
+  async function loadLores() {
+    allLores = [];
+    lastDoc = null;
+    noMore = false;
+    await loadMore();
+  }
+
+  async function loadMore() {
+    if (noMore || isLoading) return;
+    isLoading = true;
+    renderList();
+
+    try {
+      let query = db.collection('lores').orderBy('createdAt', 'desc').limit(PAGE_SIZE);
+      if (lastDoc) query = query.startAfter(lastDoc);
+
+      const snap = await query.get();
+      const page = snap.docs.map(doc => {
+        const d = doc.data();
+        return {
+          pid: doc.id,
+          title: d.title || '(제목 없음)',
+          createdAt: d.createdAt?.toDate?.() || new Date(),
+          chapterCount: d.chapterCount || 0
+        };
+      });
+
+      allLores = allLores.concat(page);
+      lastDoc = snap.docs[snap.docs.length - 1] || lastDoc;
+      if (snap.docs.length < PAGE_SIZE) noMore = true;
+      setSyncStatus(true);
+    } catch (e) {
+      console.error('로어 목록 로드 실패:', e);
+      setSyncStatus(false);
+    }
+
+    isLoading = false;
+    renderList();
+  }
+
+  function buildCardsHtml(lores) {
+    return lores.map(l => `
+      <a class="lore-card" href="lore-view.html?pid=${l.pid}">
+        <div class="lore-title">${escapeHtml(l.title)}</div>
+        <div class="lore-meta">
+          <span class="lore-date">${formatDate(l.createdAt)}</span>
+          ${l.chapterCount > 1 ? `<span class="lore-chapter-count">📄 ${l.chapterCount}챕터</span>` : ''}
+        </div>
+      </a>
+    `).join('');
+  }
+
+  function renderList() {
+    const el = document.getElementById('loreList');
+
+    if (isFiltered) {
+      const filtered = (allLoresFull || []).filter(l =>
+        l.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      const visible = filtered.slice(0, filteredVisible);
+      if (visible.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>검색 결과가 없어요</p></div>';
+        return;
+      }
+      let html = buildCardsHtml(visible);
+      if (filteredVisible < filtered.length) {
+        html += `<div class="load-more-wrap"><button class="load-more-btn" id="loadMoreBtn">더보기</button></div>`;
+      }
+      el.innerHTML = html;
+      document.getElementById('loadMoreBtn')?.addEventListener('click', () => {
+        filteredVisible += PAGE_SIZE;
+        renderList();
+      });
+      return;
+    }
+
+    if (allLores.length === 0 && isLoading) {
+      el.innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
+      return;
+    }
+    if (allLores.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📖</div><p>아직 작성된 로어가 없어요</p></div>';
+      return;
+    }
+
+    let html = buildCardsHtml(allLores);
+    if (!noMore) {
+      html += `<div class="load-more-wrap"><button class="load-more-btn" id="loadMoreBtn" ${isLoading ? 'disabled' : ''}>${isLoading ? '불러오는 중...' : '더보기'}</button></div>`;
+    }
+    el.innerHTML = html;
+    document.getElementById('loadMoreBtn')?.addEventListener('click', loadMore);
+  }
+
+  async function doSearch() {
+    searchTerm = document.getElementById('searchInput').value.trim();
+    if (!searchTerm) {
+      isFiltered = false;
+      renderList();
+      return;
+    }
+
+    if (!allLoresFull) {
+      try {
+        const snap = await db.collection('lores').orderBy('createdAt', 'desc').get();
+        allLoresFull = snap.docs.map(doc => {
+          const d = doc.data();
+          return {
+            pid: doc.id,
+            title: d.title || '(제목 없음)',
+            createdAt: d.createdAt?.toDate?.() || new Date(),
+            chapterCount: d.chapterCount || 0
+          };
+        });
+      } catch (e) {
+        console.error('로어 전체 로드 실패:', e);
+        return;
+      }
+    }
+
+    isFiltered = true;
+    filteredVisible = PAGE_SIZE;
+    renderList();
+  }
+
+  document.getElementById('searchBtn').addEventListener('click', doSearch);
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  document.getElementById('newLoreBtn').addEventListener('click', () => {
+    const pid = generatePid();
+    location.href = `lore-write.html?pid=${pid}&new=1`;
+  });
+
+  function generatePid() {
+    const c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let r = '';
+    for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
+    return r;
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  loadLores();
+</script>
+</body>
+</html>

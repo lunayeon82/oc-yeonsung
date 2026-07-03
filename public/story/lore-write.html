@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 로어 쓰기</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face { font-family: 'ko-font'; src: url('../assets/ko-font.ttf') format('truetype'); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface-glass-strong); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    padding: 0.7rem 1.2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .top-bar-actions { display: flex; gap: 0.5rem; }
+
+  .save-btn {
+    padding: 0.45rem 1.1rem;
+    background: linear-gradient(135deg, #9ab5c8, #7a9ab5);
+    color: white; border: none; border-radius: 8px;
+    font-family: 'ko-font', sans-serif; font-size: 0.8rem;
+    cursor: pointer; transition: all 0.2s; font-weight: 500;
+  }
+  .save-btn:hover { background: linear-gradient(135deg, #8aa5b8, #6a8aa5); }
+  .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .save-status { font-size: 0.7rem; color: #a99ab8; align-self: center; }
+
+  .container {
+    position: relative; z-index: 1; max-width: 760px;
+    margin: 0 auto; padding: 1.5rem 1.2rem 6rem;
+  }
+
+  .title-input {
+    width: 100%; border: none; background: transparent;
+    font-family: 'ko-font', sans-serif; font-size: 1.5rem; font-weight: 700;
+    color: #4a3a5b; padding: 0.5rem 0; outline: none;
+    border-bottom: 2px solid rgba(184,169,201,0.2);
+    transition: border-color 0.2s; margin-bottom: 1rem;
+  }
+  .title-input::placeholder { color: #c8b8d8; }
+  .title-input:focus { border-bottom-color: #9ab5c8; }
+
+  .chapter-tabs {
+    display: flex; align-items: center; gap: 0.4rem;
+    margin-bottom: 0.8rem; overflow-x: auto; padding-bottom: 0.3rem;
+    scrollbar-width: thin; scrollbar-color: rgba(184,169,201,0.3) transparent;
+  }
+
+  .chapter-tab {
+    flex-shrink: 0; padding: 0.4rem 0.9rem;
+    border: 1px solid rgba(184,169,201,0.25); border-radius: 8px 8px 0 0;
+    font-size: 0.78rem; color: #8a7a9a; background: rgba(255,255,255,0.3);
+    cursor: pointer; transition: all 0.2s; font-family: 'ko-font', sans-serif;
+    display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+  }
+  .chapter-tab:hover { background: rgba(255,255,255,0.5); }
+  .chapter-tab.active { background: rgba(255,255,255,0.7); color: #5a4a6b; border-bottom-color: transparent; font-weight: 500; }
+
+  .chapter-tab .del-ch { font-size: 0.6rem; opacity: 0; cursor: pointer; color: #c9a0a0; transition: opacity 0.2s; }
+  .chapter-tab:hover .del-ch { opacity: 0.7; }
+  .chapter-tab .del-ch:hover { opacity: 1; }
+
+  .add-chapter-btn {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px;
+    border: 1px dashed rgba(184,169,201,0.4); background: transparent;
+    color: #b8a9c9; font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .add-chapter-btn:hover { border-color: #b8a9c9; background: rgba(184,169,201,0.1); }
+
+  .chapter-title-input {
+    width: 100%; border: none; background: transparent;
+    font-family: 'ko-font', sans-serif; font-size: 0.95rem; font-weight: 500;
+    color: #5a4a6b; padding: 0.4rem 0; outline: none;
+    border-bottom: 1px solid rgba(184,169,201,0.15); margin-bottom: 0.8rem;
+  }
+  .chapter-title-input::placeholder { color: #c8b8d8; }
+
+  .editor-toolbar {
+    display: flex; gap: 0.2rem; padding: 0.4rem 0.5rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.2); border-bottom: none;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .toolbar-btn {
+    width: 32px; height: 30px; border: none; border-radius: 4px;
+    background: transparent; color: #7a6a8a; font-size: 0.85rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    font-family: serif;
+  }
+  .toolbar-btn:hover { background: rgba(184,169,201,0.15); }
+  .toolbar-btn.active { background: rgba(184,169,201,0.25); color: #5a4a6b; }
+
+  .toolbar-sep { width: 1px; margin: 0.3rem 0.3rem; background: rgba(184,169,201,0.2); }
+
+  .editor-body {
+    min-height: 400px; background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(184,169,201,0.2); border-radius: 0 0 8px 8px;
+    padding: 1rem 1.2rem; outline: none;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem;
+    line-height: 1.8; color: #3a2a4b;
+  }
+  .editor-body:empty::before { content: attr(data-placeholder); color: #c8b8d8; pointer-events: none; }
+  .editor-body:focus { border-color: rgba(184,169,201,0.4); }
+  .editor-body h2 { font-family: 'Nanum Myeongjo', serif; font-size: 1.15rem; color: #5a4a6b; margin: 1rem 0 0.5rem; }
+  .editor-body h3 { font-family: 'Nanum Myeongjo', serif; font-size: 1rem; color: #6a5a7a; margin: 0.8rem 0 0.4rem; }
+  .editor-body blockquote { border-left: 3px solid #c8d8e0; padding-left: 0.8rem; margin: 0.5rem 0; color: #7a6a8a; font-style: italic; }
+
+  .bottom-actions {
+    margin-top: 2rem; padding-top: 1rem;
+    border-top: 1px solid rgba(184,169,201,0.15);
+    display: flex; justify-content: flex-end;
+  }
+
+  .delete-lore-btn {
+    padding: 0.4rem 0.9rem; background: none;
+    border: 1px solid rgba(200,140,140,0.3); border-radius: 6px;
+    color: #b88a8a; font-size: 0.75rem; cursor: pointer;
+    font-family: 'ko-font', sans-serif; transition: all 0.2s;
+  }
+  .delete-lore-btn:hover { background: rgba(200,140,140,0.08); border-color: rgba(200,140,140,0.5); }
+
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9); color: white;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.8rem;
+    opacity: 0; transition: all 0.3s ease; z-index: 200; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 480px) {
+    .container { padding: 1rem 0.8rem 5rem; }
+    .title-input { font-size: 1.25rem; }
+    .editor-body { min-height: 300px; padding: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<div class="top-bar">
+  <button class="nav-link" id="backBtn">← 목록</button>
+  <div class="top-bar-actions">
+    <span class="save-status" id="saveStatus"></span>
+    <button class="save-btn" id="saveBtn">저장</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <input type="text" class="title-input" id="loreTitle" placeholder="로어 제목을 입력하세요">
+
+  <div class="chapter-tabs" id="chapterTabs">
+    <div class="chapter-tab active" data-index="0">
+      <span class="ch-label">챕터 1</span>
+    </div>
+    <button class="add-chapter-btn" id="addChapterBtn" title="챕터 추가">+</button>
+  </div>
+
+  <input type="text" class="chapter-title-input" id="chapterTitle" placeholder="챕터 제목 (선택)">
+
+  <div class="editor-toolbar">
+    <button class="toolbar-btn" data-cmd="bold" title="굵게"><b>B</b></button>
+    <button class="toolbar-btn" data-cmd="italic" title="기울임"><i>I</i></button>
+    <button class="toolbar-btn" data-cmd="underline" title="밑줄"><u>U</u></button>
+    <div class="toolbar-sep"></div>
+    <button class="toolbar-btn" data-cmd="h2" title="제목">H2</button>
+    <button class="toolbar-btn" data-cmd="h3" title="소제목">H3</button>
+    <div class="toolbar-sep"></div>
+    <button class="toolbar-btn" data-cmd="quote" title="인용">❝</button>
+    <button class="toolbar-btn" data-cmd="hr" title="구분선">─</button>
+  </div>
+  <div class="editor-body" id="editorBody" contenteditable="true" data-placeholder="내용을 입력하세요..."></div>
+
+  <div class="bottom-actions" id="bottomActions" style="display:none;">
+    <button class="delete-lore-btn" id="deleteBtn">이 로어 삭제</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('pid');
+  const isNew = params.get('new') === '1';
+
+  if (!pid) {
+    alert('잘못된 접근입니다.');
+    location.href = 'lore-list.html';
+  }
+
+  let chapters = [{ title: '', body: '', chapterPid: generatePid() }];
+  let currentChapterIndex = 0;
+
+  function generatePid() {
+    const c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let r = '';
+    for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
+    return r;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
+  function saveCurrentChapter() {
+    chapters[currentChapterIndex].title = document.getElementById('chapterTitle').value;
+    chapters[currentChapterIndex].body = document.getElementById('editorBody').innerHTML;
+  }
+
+  function switchChapter(index, skipSave = false) {
+    if (!skipSave) saveCurrentChapter();
+    currentChapterIndex = index;
+    document.getElementById('chapterTitle').value = chapters[index].title || '';
+    document.getElementById('editorBody').innerHTML = chapters[index].body || '';
+    renderChapterTabs();
+  }
+
+  function renderChapterTabs() {
+    const wrap = document.getElementById('chapterTabs');
+    const addBtn = document.getElementById('addChapterBtn');
+    wrap.querySelectorAll('.chapter-tab').forEach(t => t.remove());
+
+    chapters.forEach((ch, i) => {
+      const tab = document.createElement('div');
+      tab.className = `chapter-tab${i === currentChapterIndex ? ' active' : ''}`;
+      tab.dataset.index = i;
+
+      const label = document.createElement('span');
+      label.className = 'ch-label';
+      label.textContent = ch.title || `챕터 ${i + 1}`;
+      tab.appendChild(label);
+
+      if (chapters.length > 1) {
+        const del = document.createElement('span');
+        del.className = 'del-ch';
+        del.textContent = '✕';
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (await customConfirm(`"${ch.title || `챕터 ${i + 1}`}" 챕터를 삭제할까요?`)) {
+            deleteChapter(i);
+          }
+        });
+        tab.appendChild(del);
+      }
+
+      tab.addEventListener('click', () => switchChapter(i));
+      wrap.insertBefore(tab, addBtn);
+    });
+  }
+
+  document.getElementById('addChapterBtn').addEventListener('click', () => {
+    saveCurrentChapter();
+    chapters.push({ title: '', body: '', chapterPid: generatePid() });
+    switchChapter(chapters.length - 1);
+    showToast('새 챕터가 추가되었어요');
+  });
+
+  function deleteChapter(index) {
+    chapters.splice(index, 1);
+    if (currentChapterIndex >= chapters.length) currentChapterIndex = chapters.length - 1;
+    switchChapter(currentChapterIndex);
+    showToast('챕터가 삭제되었어요');
+  }
+
+  document.querySelectorAll('.toolbar-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      document.getElementById('editorBody').focus();
+      switch (cmd) {
+        case 'bold': document.execCommand('bold'); break;
+        case 'italic': document.execCommand('italic'); break;
+        case 'underline': document.execCommand('underline'); break;
+        case 'h2': document.execCommand('formatBlock', false, '<h2>'); break;
+        case 'h3': document.execCommand('formatBlock', false, '<h3>'); break;
+        case 'quote': document.execCommand('formatBlock', false, '<blockquote>'); break;
+        case 'hr': document.execCommand('insertHTML', false, '<hr>'); break;
+      }
+    });
+  });
+
+  document.getElementById('editorBody').addEventListener('keyup', updateToolbarState);
+  document.getElementById('editorBody').addEventListener('mouseup', updateToolbarState);
+
+  function updateToolbarState() {
+    document.querySelectorAll('.toolbar-btn').forEach(btn => {
+      const cmd = btn.dataset.cmd;
+      if (['bold', 'italic', 'underline'].includes(cmd)) {
+        btn.classList.toggle('active', document.queryCommandState(cmd));
+      }
+    });
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    saveCurrentChapter();
+    const title = document.getElementById('loreTitle').value.trim();
+
+    if (!title) { showToast('제목을 입력해주세요'); return; }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    document.getElementById('saveStatus').textContent = '저장 중...';
+
+    try {
+      await db.collection('lores').doc(pid).set({
+        title,
+        chapterCount: chapters.length,
+        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      const existing = await db.collection('loreChapters').where('loreId', '==', pid).get();
+      const batch = db.batch();
+      existing.forEach(doc => batch.delete(doc.ref));
+
+      chapters.forEach((ch, i) => {
+        const ref = db.collection('loreChapters').doc(ch.chapterPid);
+        batch.set(ref, {
+          loreId: pid,
+          order: i,
+          title: ch.title || '',
+          body: ch.body || '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+
+      await batch.commit();
+      document.getElementById('saveStatus').textContent = '저장됨';
+      showToast('저장되었어요!');
+      setSyncStatus(true);
+
+      if (isNew) history.replaceState(null, '', `lore-write.html?pid=${pid}`);
+    } catch (e) {
+      console.error('저장 실패:', e);
+      showToast('저장에 실패했어요');
+      document.getElementById('saveStatus').textContent = '';
+      setSyncStatus(false);
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  async function loadExistingLore() {
+    if (isNew) { document.getElementById('bottomActions').style.display = 'none'; return; }
+
+    try {
+      const loreDoc = await db.collection('lores').doc(pid).get();
+      if (!loreDoc.exists) { showToast('존재하지 않는 로어예요'); return; }
+
+      const data = loreDoc.data();
+      document.getElementById('loreTitle').value = data.title || '';
+
+      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
+      if (!chapSnap.empty) {
+        chapters = chapSnap.docs.map(doc => ({
+          chapterPid: doc.id,
+          title: doc.data().title || '',
+          body: doc.data().body || '',
+          order: doc.data().order ?? 0
+        })).sort((a, b) => a.order - b.order);
+      }
+
+      switchChapter(0, true);
+      document.getElementById('bottomActions').style.display = 'flex';
+    } catch (e) {
+      console.error('로드 실패:', e);
+    }
+  }
+
+  document.getElementById('deleteBtn').addEventListener('click', async () => {
+    if (!(await customConfirm('이 로어를 삭제할까요? 모든 챕터가 함께 삭제됩니다.'))) return;
+    try {
+      const batch = db.batch();
+      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
+      chapSnap.forEach(doc => batch.delete(doc.ref));
+      batch.delete(db.collection('lores').doc(pid));
+      await batch.commit();
+      showToast('삭제되었어요');
+      setTimeout(() => location.href = 'lore-list.html', 1000);
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
+  });
+
+  document.getElementById('backBtn').addEventListener('click', async () => {
+    if (await customConfirm('저장하지 않은 내용은 사라져요. 돌아갈까요?')) {
+      location.href = 'lore-list.html';
+    }
+  });
+
+  loadExistingLore();
+</script>
+</body>
+</html>
