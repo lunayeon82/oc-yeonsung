@@ -361,6 +361,62 @@
     font-style: italic;
   }
 
+  /* ── 로어 검색 드롭다운 ── */
+  .lore-picker-wrap { position: relative; margin-top: 0.4rem; }
+
+  .lore-search-input {
+    width: 100%;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.6);
+    color: #4a3a5b;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .lore-search-input::placeholder { color: #b8a9c9; }
+  .lore-search-input:focus { border-color: #b8a9c9; }
+
+  .lore-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: rgba(250,247,242,0.97);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(90,74,107,0.12);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 50;
+    display: none;
+  }
+  .lore-dropdown.open { display: block; }
+
+  .lore-dropdown-item {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.82rem;
+    color: #4a3a5b;
+    cursor: pointer;
+    transition: background 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .lore-dropdown-item:hover { background: rgba(184,169,201,0.1); }
+  .lore-dropdown-item.selected { color: #7a5a8a; font-weight: 500; }
+  .lore-dropdown-check { font-size: 0.7rem; color: #b8a9c9; flex-shrink: 0; }
+
+  .lore-dropdown-empty {
+    padding: 0.9rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #a99ab8;
+  }
+
   /* ── 하단 액션 (삭제) ── */
   .bottom-actions {
     margin-top: 2rem;
@@ -487,12 +543,14 @@
   <div class="tag-section">
     <div class="tag-section-header">
       <span class="tag-section-label">로어 참조</span>
-      <button class="tag-toggle-btn" id="loreToggle">선택하기 ▾</button>
     </div>
     <div class="selected-tags" id="selectedLoreTags">
       <span style="font-size:0.72rem;color:#b8a9c9;">참조할 로어를 선택하세요</span>
     </div>
-    <div class="tag-picker collapsed" id="lorePicker"></div>
+    <div class="lore-picker-wrap">
+      <input class="lore-search-input" id="loreSearchInput" placeholder="로어 검색 후 선택..." autocomplete="off">
+      <div class="lore-dropdown" id="loreDropdown"></div>
+    </div>
   </div>
 
   <!-- 챕터 탭 -->
@@ -536,12 +594,12 @@
 <script>
   // ★ firebaseConfig는 기존 프로젝트 파일에서 복사
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
     authDomain: "oc-yeonsung.firebaseapp.com",
     projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    storageBucket: "oc-yeonsung.firebasestorage.app",
+    messagingSenderId: "145543545184",
+    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -1060,40 +1118,45 @@
     try {
       const snap = await db.collection('lores').orderBy('createdAt', 'desc').get();
       allLores = snap.docs.map(doc => ({ id: doc.id, title: doc.data().title || '(제목 없음)' }));
-      renderLorePicker();
     } catch (e) {
       console.error('로어 로드 실패:', e);
     }
   }
 
-  function renderLorePicker() {
-    const picker = document.getElementById('lorePicker');
-    if (allLores.length === 0) {
-      picker.innerHTML = '<div class="tag-picker-group"><span style="font-size:0.75rem;color:#a99ab8;">등록된 로어가 없어요</span></div>';
+  function renderLoreDropdown(query) {
+    const dropdown = document.getElementById('loreDropdown');
+    const filtered = query
+      ? allLores.filter(l => l.title.toLowerCase().includes(query.toLowerCase()))
+      : allLores;
+
+    if (filtered.length === 0) {
+      dropdown.innerHTML = `<div class="lore-dropdown-empty">${query ? '검색 결과가 없어요' : '등록된 로어가 없어요'}</div>`;
       return;
     }
-    picker.innerHTML = `
-      <div class="tag-picker-group">
-        <div class="tag-picker-tags">
-          ${allLores.map(l => `
-            <span class="pick-tag${selectedLoreRefs.some(r => r.id === l.id) ? ' selected' : ''}"
-                  data-id="${escapeHtmlAttr(l.id)}" data-title="${escapeHtmlAttr(l.title)}">${escapeHtml(l.title)}</span>
-          `).join('')}
+
+    dropdown.innerHTML = filtered.map(l => {
+      const isSelected = selectedLoreRefs.some(r => r.id === l.id);
+      return `
+        <div class="lore-dropdown-item${isSelected ? ' selected' : ''}" data-id="${l.id}">
+          <span>${escapeHtml(l.title)}</span>
+          ${isSelected ? '<span class="lore-dropdown-check">✓</span>' : ''}
         </div>
-      </div>
-    `;
-    picker.querySelectorAll('.pick-tag').forEach(tag => {
-      tag.addEventListener('click', () => {
-        const id = tag.dataset.id;
-        const title = tag.dataset.title;
+      `;
+    }).join('');
+
+    dropdown.querySelectorAll('.lore-dropdown-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const id = item.dataset.id;
+        const lore = allLores.find(l => l.id === id);
+        if (!lore) return;
         if (selectedLoreRefs.some(r => r.id === id)) {
           selectedLoreRefs = selectedLoreRefs.filter(r => r.id !== id);
-          tag.classList.remove('selected');
         } else {
-          selectedLoreRefs.push({ id, title });
-          tag.classList.add('selected');
+          selectedLoreRefs.push({ id, title: lore.title });
         }
         renderSelectedLoreTags();
+        renderLoreDropdown(document.getElementById('loreSearchInput').value);
       });
     });
   }
@@ -1107,27 +1170,31 @@
     wrap.innerHTML = selectedLoreRefs.map(ref => `
       <span class="selected-tag">
         ${escapeHtml(ref.title)}
-        <span class="remove-tag" data-id="${escapeHtmlAttr(ref.id)}">✕</span>
+        <span class="remove-tag" data-id="${ref.id.replace(/"/g, '&quot;')}">✕</span>
       </span>
     `).join('');
     wrap.querySelectorAll('.remove-tag').forEach(btn => {
       btn.addEventListener('click', () => {
         selectedLoreRefs = selectedLoreRefs.filter(r => r.id !== btn.dataset.id);
         renderSelectedLoreTags();
-        renderLorePicker();
+        renderLoreDropdown(document.getElementById('loreSearchInput').value);
       });
     });
   }
 
-  function escapeHtmlAttr(str) {
-    return String(str ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  const loreSearchInput = document.getElementById('loreSearchInput');
+  const loreDropdown = document.getElementById('loreDropdown');
 
-  document.getElementById('loreToggle').addEventListener('click', () => {
-    const picker = document.getElementById('lorePicker');
-    const btn = document.getElementById('loreToggle');
-    picker.classList.toggle('collapsed');
-    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  loreSearchInput.addEventListener('focus', () => {
+    renderLoreDropdown(loreSearchInput.value);
+    loreDropdown.classList.add('open');
+  });
+  loreSearchInput.addEventListener('input', () => {
+    renderLoreDropdown(loreSearchInput.value);
+    loreDropdown.classList.add('open');
+  });
+  loreSearchInput.addEventListener('blur', () => {
+    loreDropdown.classList.remove('open');
   });
 
   // ── 초기화 ──
