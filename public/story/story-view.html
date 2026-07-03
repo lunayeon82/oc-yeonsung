@@ -54,27 +54,6 @@
     align-items: center;
   }
 
-  .toc-toggle-btn {
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(184,169,201,0.3);
-    border-radius: 8px;
-    background: rgba(255,255,255,0.5);
-    color: #8a7a9a;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-  .toc-toggle-btn:hover { background: rgba(184,169,201,0.15); }
-  .toc-toggle-btn.active {
-    background: #b8a9c9;
-    color: white;
-    border-color: #b8a9c9;
-  }
-
   .edit-btn {
     padding: 0.4rem 0.9rem;
     background: rgba(255,255,255,0.5);
@@ -107,113 +86,55 @@
     border-color: rgba(194,114,127,0.5);
   }
 
-  /* ── 좌측 목차 사이드바 ── */
-  .toc-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.15);
-    z-index: 150;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-  }
-  .toc-overlay.open { opacity: 1; visibility: visible; }
-
-  .toc-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 280px;
-    max-width: 80vw;
-    background: rgba(245,240,232,0.97);
-    backdrop-filter: blur(16px);
-    z-index: 200;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+  /* ── 챕터 탭 스트립 ── */
+  .ch-tab-strip {
     display: flex;
-    flex-direction: column;
-    box-shadow: 4px 0 24px rgba(90,74,107,0.1);
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding-bottom: 1.2rem;
+    margin-bottom: 0.4rem;
+    scrollbar-width: none;
   }
-  .toc-sidebar.open { transform: translateX(0); }
+  .ch-tab-strip::-webkit-scrollbar { display: none; }
 
-  .toc-header {
-    padding: 1.2rem 1rem;
-    border-bottom: 1px solid rgba(184,169,201,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .toc-header h3 {
-    font-family: 'ko-font', sans-serif;
-    font-size: 0.95rem;
-    color: #5a4a6b;
-    font-weight: 700;
-  }
-
-  .toc-close {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: #8a7a9a;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .toc-close:hover { background: rgba(184,169,201,0.15); }
-
-  .toc-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.5rem 0;
-  }
-
-  .toc-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.7rem 1rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    border-left: 3px solid transparent;
-  }
-  .toc-item:hover {
-    background: rgba(184,169,201,0.08);
-  }
-  .toc-item.active {
-    background: rgba(184,169,201,0.12);
-    border-left-color: #b8a9c9;
-  }
-
-  .toc-num {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(184,169,201,0.2);
-    color: #7a6a8a;
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .ch-tab {
     flex-shrink: 0;
-    font-weight: 500;
-  }
-  .toc-item.active .toc-num {
-    background: #b8a9c9;
-    color: white;
-  }
-
-  .toc-item-title {
-    font-size: 0.82rem;
-    color: #5a4a6b;
+    padding: 0.42rem 1.05rem;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 999px;
+    color: #9a8aaa;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    max-width: 130px;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+  .ch-tab:hover {
+    background: rgba(184,169,201,0.12);
+    border-color: rgba(184,169,201,0.38);
+    color: #6a5a7a;
+    transform: translateY(-1px);
+  }
+  .ch-tab.active {
+    background: rgba(184,169,201,0.2);
+    border-color: #b8a9c9;
+    color: #5a4a6b;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(90,74,107,0.1);
+  }
+
+  /* ── 챕터 본문 트랜지션 ── */
+  .ch-body {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .ch-body.fading {
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
   }
 
   /* ── 메인 콘텐츠 ── */
@@ -773,7 +694,7 @@
     .story-title { font-size: 1.3rem; }
     .story-body { padding: 1rem; font-size: 0.88rem; }
     .nav-btn-sub { display: none; }
-    .toc-sidebar { width: 260px; }
+
     .comment-panel { width: 300px; }
   }
 </style>
@@ -800,21 +721,12 @@
     </div>
     <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
     <button class="comment-toggle-btn" id="commentToggleBtn" title="댓글" style="display:none;">💬</button>
-    <button class="toc-toggle-btn" id="tocToggleBtn" title="목차" style="display:none;">☰</button>
+
     <button class="delete-btn" id="deleteBtn" style="display:none;">삭제</button>
     <button class="edit-btn" id="editBtn" style="display:none;">수정</button>
   </div>
 </div>
 
-<!-- 좌측 목차 사이드바 -->
-<div class="toc-overlay" id="tocOverlay"></div>
-<div class="toc-sidebar" id="tocSidebar">
-  <div class="toc-header">
-    <h3>목차</h3>
-    <button class="toc-close" id="tocClose">✕</button>
-  </div>
-  <div class="toc-list" id="tocList"></div>
-</div>
 
 <!-- 댓글 패널 -->
 <div class="comment-overlay" id="commentOverlay"></div>
@@ -923,12 +835,6 @@
       document.getElementById('commentToggleBtn').style.display = 'flex';
       loadComments();
 
-      // 목차 버튼 (챕터 2개 이상일 때)
-      if (chapters.length > 1) {
-        document.getElementById('tocToggleBtn').style.display = 'flex';
-        renderToc();
-      }
-
       renderStory();
       setSyncStatus(true);
 
@@ -953,7 +859,7 @@
       .map(g => g.map(c => `<span class="char-tag-view">${escapeHtml(c)}</span>`).join(''))
       .join('<span class="tag-sep">|</span>');
 
-    let html = `
+    container.innerHTML = `
       <div class="story-header">
         <div class="story-title">${escapeHtml(storyData.title)}</div>
         <div class="story-meta-info">
@@ -964,140 +870,106 @@
         ${charTagsHtml ? `<div class="story-char-tags">${charTagsHtml}</div>` : ''}
         ${(storyData.loreRefs || []).length > 0 ? `
           <div class="story-lore-refs">
-            ${(storyData.loreRefs).map(ref =>
+            ${storyData.loreRefs.map(ref =>
               `<a class="lore-ref-tag" href="lore-view.html?pid=${ref.id}">📖 ${escapeHtml(ref.title)}</a>`
             ).join('')}
           </div>` : ''}
         <div class="header-divider"></div>
       </div>
+      ${chapters.length > 1 ? `<div class="ch-tab-strip" id="chTabStrip"></div>` : ''}
+      <div class="ch-body" id="chBody"></div>
+      ${chapters.length > 1 ? `<div id="chNav"></div>` : ''}
     `;
 
-    html += renderChapter(currentChapterIndex);
-
-    // 챕터 네비게이션 (다중 챕터일 때)
-    if (chapters.length > 1) {
-      html += renderChapterNav();
-    }
-
-    container.innerHTML = html;
-    bindNavEvents();
-    updateTocActive();
+    if (chapters.length > 1) renderTabStrip();
+    renderChapterBody(currentChapterIndex);
+    if (chapters.length > 1) renderChapterNav();
   }
 
-  function renderChapter(index) {
+  function renderTabStrip() {
+    const strip = document.getElementById('chTabStrip');
+    if (!strip) return;
+    strip.innerHTML = chapters.map((ch, i) => {
+      const label = ch.title || `챕터 ${i + 1}`;
+      return `<button class="ch-tab${i === currentChapterIndex ? ' active' : ''}" data-index="${i}">${escapeHtml(label)}</button>`;
+    }).join('');
+    strip.querySelectorAll('.ch-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchChapter(parseInt(tab.dataset.index)));
+    });
+    scrollTabIntoView(currentChapterIndex);
+  }
+
+  function renderChapterBody(index) {
     const ch = chapters[index];
-    if (!ch) return '';
-
-    let html = '';
-
-    // 챕터 헤더 (다중 챕터일 때)
-    if (chapters.length > 1) {
-      html += `
+    const body = document.getElementById('chBody');
+    if (!ch || !body) return;
+    body.innerHTML = `
+      ${ch.title ? `
         <div class="chapter-header">
-          <div class="chapter-indicator">Chapter ${index + 1}</div>
-          ${ch.title ? `<div class="chapter-title">${escapeHtml(ch.title)}</div>` : ''}
+          <div class="chapter-title">${escapeHtml(ch.title)}</div>
           <div class="chapter-divider"></div>
-        </div>
-      `;
-    }
-
-    // 본문
-    html += `<div class="story-body">${ch.body || '<p style="color:#b8a9c9;">내용이 없어요</p>'}</div>`;
-
-    return html;
+        </div>` : ''}
+      <div class="story-body">${ch.body || '<p style="color:#b8a9c9;">내용이 없어요</p>'}</div>
+    `;
   }
 
   function renderChapterNav() {
-    const prev = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null;
-    const next = currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null;
-
-    return `
+    const nav = document.getElementById('chNav');
+    if (!nav) return;
+    const prev = currentChapterIndex > 0;
+    const next = currentChapterIndex < chapters.length - 1;
+    const prevCh = prev ? chapters[currentChapterIndex - 1] : null;
+    const nextCh = next ? chapters[currentChapterIndex + 1] : null;
+    nav.innerHTML = `
       <div class="chapter-nav">
-        <button class="nav-btn ${!prev ? 'disabled' : ''}" id="prevBtn" ${!prev ? 'disabled' : ''}>
+        <button class="nav-btn${!prev ? ' disabled' : ''}" id="prevBtn"${!prev ? ' disabled' : ''}>
           <span class="arrow">←</span>
           <span class="nav-btn-label">
             <span>이전</span>
-            ${prev ? `<span class="nav-btn-sub">${escapeHtml(prev.title || `챕터 ${currentChapterIndex}`)}</span>` : ''}
+            ${prevCh ? `<span class="nav-btn-sub">${escapeHtml(prevCh.title || `챕터 ${currentChapterIndex}`)}</span>` : ''}
           </span>
         </button>
         <span class="chapter-position">${currentChapterIndex + 1} / ${chapters.length}</span>
-        <button class="nav-btn ${!next ? 'disabled' : ''}" id="nextBtn" ${!next ? 'disabled' : ''}>
+        <button class="nav-btn${!next ? ' disabled' : ''}" id="nextBtn"${!next ? ' disabled' : ''}>
           <span class="nav-btn-label">
             <span>다음</span>
-            ${next ? `<span class="nav-btn-sub">${escapeHtml(next.title || `챕터 ${currentChapterIndex + 2}`)}</span>` : ''}
+            ${nextCh ? `<span class="nav-btn-sub">${escapeHtml(nextCh.title || `챕터 ${currentChapterIndex + 2}`)}</span>` : ''}
           </span>
           <span class="arrow">→</span>
         </button>
       </div>
     `;
-  }
-
-  function bindNavEvents() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    if (prevBtn && !prevBtn.disabled) {
-      prevBtn.addEventListener('click', () => {
-        currentChapterIndex--;
-        renderStory();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-    if (nextBtn && !nextBtn.disabled) {
-      nextBtn.addEventListener('click', () => {
-        currentChapterIndex++;
-        renderStory();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-  }
-
-  // ── 목차 사이드바 ──
-  function renderToc() {
-    const list = document.getElementById('tocList');
-    list.innerHTML = chapters.map((ch, i) => `
-      <div class="toc-item${i === currentChapterIndex ? ' active' : ''}" data-index="${i}">
-        <span class="toc-num">${i + 1}</span>
-        <span class="toc-item-title">${escapeHtml(ch.title || `챕터 ${i + 1}`)}</span>
-      </div>
-    `).join('');
-
-    list.querySelectorAll('.toc-item').forEach(item => {
-      item.addEventListener('click', () => {
-        currentChapterIndex = parseInt(item.dataset.index);
-        closeToc();
-        renderStory();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+    document.getElementById('prevBtn')?.addEventListener('click', () => {
+      if (currentChapterIndex > 0) switchChapter(currentChapterIndex - 1);
+    });
+    document.getElementById('nextBtn')?.addEventListener('click', () => {
+      if (currentChapterIndex < chapters.length - 1) switchChapter(currentChapterIndex + 1);
     });
   }
 
-  function updateTocActive() {
-    document.querySelectorAll('.toc-item').forEach((item, i) => {
-      item.classList.toggle('active', i === currentChapterIndex);
-    });
+  function switchChapter(index) {
+    if (index === currentChapterIndex) return;
+    const body = document.getElementById('chBody');
+    body.classList.add('fading');
+    setTimeout(() => {
+      currentChapterIndex = index;
+      renderChapterBody(index);
+      body.classList.remove('fading');
+      renderChapterNav();
+      // 탭 활성화 업데이트
+      document.querySelectorAll('.ch-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+      });
+      scrollTabIntoView(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 180);
   }
 
-  function openToc() {
-    document.getElementById('tocSidebar').classList.add('open');
-    document.getElementById('tocOverlay').classList.add('open');
-    document.getElementById('tocToggleBtn').classList.add('active');
-    updateTocActive();
+  function scrollTabIntoView(index) {
+    const strip = document.getElementById('chTabStrip');
+    const tab = strip?.querySelectorAll('.ch-tab')[index];
+    tab?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }
-
-  function closeToc() {
-    document.getElementById('tocSidebar').classList.remove('open');
-    document.getElementById('tocOverlay').classList.remove('open');
-    document.getElementById('tocToggleBtn').classList.remove('active');
-  }
-
-  document.getElementById('tocToggleBtn').addEventListener('click', () => {
-    const isOpen = document.getElementById('tocSidebar').classList.contains('open');
-    isOpen ? closeToc() : openToc();
-  });
-
-  document.getElementById('tocClose').addEventListener('click', closeToc);
-  document.getElementById('tocOverlay').addEventListener('click', closeToc);
 
   // ── 수정 버튼 ──
   document.getElementById('editBtn').addEventListener('click', () => {
