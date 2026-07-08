@@ -365,6 +365,21 @@
     subscribeDraw();
   });
 
+  function drawResultInnerHtml(d) {
+    if (Array.isArray(d.names)) {
+      const roles = d.roles || [];
+      return d.names.map((n, i) => `<span class="draw-name">${esc(n)}</span><span class="draw-role">(${esc(roles[i] || '')})</span>`).join('<span class="draw-x">✕</span>')
+        + `<span class="draw-au">/ ${esc(d.au)}</span>`;
+    }
+    return `
+            <span class="draw-name">${esc(d.left)}</span>
+            <span class="draw-role">(${esc(d.roleL)})</span>
+            <span class="draw-x">✕</span>
+            <span class="draw-name">${esc(d.right)}</span>
+            <span class="draw-role">(${esc(d.roleR)})</span>
+            <span class="draw-au">/ ${esc(d.au)}</span>`;
+  }
+
   function renderDrawList() {
     const el = document.getElementById('drawList');
     const toggleBtn = document.getElementById('drawToggleBtn');
@@ -380,12 +395,7 @@
       return `
         <div class="draw-item" data-id="${doc.id}">
           <div class="draw-result">
-            <span class="draw-name">${esc(d.left)}</span>
-            <span class="draw-role">(${esc(d.roleL)})</span>
-            <span class="draw-x">✕</span>
-            <span class="draw-name">${esc(d.right)}</span>
-            <span class="draw-role">(${esc(d.roleR)})</span>
-            <span class="draw-au">/ ${esc(d.au)}</span>
+            ${drawResultInnerHtml(d)}
           </div>
           ${d.memo ? `<div class="draw-memo">${esc(d.memo)}</div>` : ''}
           <div class="draw-actions">
@@ -407,6 +417,29 @@
   }
 
   function renderDrawEditForm(id, d) {
+    if (Array.isArray(d.names)) {
+      const roles = d.roles || [];
+      const rows = d.names.map((n, i) => `
+          <div class="draw-edit-row">
+            <input class="draw-edit-input" data-field="name${i}" value="${esc(n)}" placeholder="캐릭터 ${i+1}">
+            <input class="draw-edit-input" data-field="role${i}" value="${esc(roles[i] || '')}" placeholder="설정 ${i+1}">
+          </div>`).join('<span class="draw-edit-sep">✕</span>');
+      return `
+      <div class="draw-item" data-id="${id}" data-count="${d.names.length}">
+        <div class="draw-edit-form">
+          ${rows}
+          <div class="draw-edit-row">
+            <input class="draw-edit-input" data-field="au" value="${esc(d.au)}" placeholder="관계성">
+          </div>
+          <textarea class="draw-edit-memo" data-field="memo" placeholder="메모">${esc(d.memo || '')}</textarea>
+          <div class="draw-edit-actions">
+            <button class="draw-edit-btn draw-edit-cancel" data-id="${id}">취소</button>
+            <button class="draw-edit-btn draw-edit-save" data-id="${id}">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
     return `
       <div class="draw-item" data-id="${id}">
         <div class="draw-edit-form">
@@ -460,7 +493,13 @@
     const doc = lastDrawDocs.find(d => d.id === id);
     if (!doc) return;
     const d = doc.data();
-    let text = `${d.left}(${d.roleL}) ✕ ${d.right}(${d.roleR}) / ${d.au}`;
+    let text;
+    if (Array.isArray(d.names)) {
+      const roles = d.roles || [];
+      text = d.names.map((n, i) => `${n}(${roles[i] || ''})`).join(' ✕ ') + ` / ${d.au}`;
+    } else {
+      text = `${d.left}(${d.roleL}) ✕ ${d.right}(${d.roleR}) / ${d.au}`;
+    }
     if (d.memo) text += ` / ${d.memo}`;
     navigator.clipboard.writeText(text).then(() => showToast('복사했어요')).catch(() => {
       const ta = document.createElement('textarea');
@@ -473,10 +512,24 @@
 
   async function saveDrawEdit(id) {
     const item = document.querySelector(`#drawList .draw-item[data-id="${id}"]`);
+    const count = item.dataset.count;
     const fields = {};
-    item.querySelectorAll('[data-field]').forEach(input => {
-      fields[input.dataset.field] = input.value.trim();
-    });
+    if (count) {
+      const n = Number(count);
+      const names = [], roles = [];
+      for (let i = 0; i < n; i++) {
+        names.push(item.querySelector(`[data-field="name${i}"]`).value.trim());
+        roles.push(item.querySelector(`[data-field="role${i}"]`).value.trim());
+      }
+      fields.names = names;
+      fields.roles = roles;
+      fields.au = item.querySelector('[data-field="au"]').value.trim();
+      fields.memo = item.querySelector('[data-field="memo"]').value.trim();
+    } else {
+      item.querySelectorAll('[data-field]').forEach(input => {
+        fields[input.dataset.field] = input.value.trim();
+      });
+    }
     try {
       await userRef.collection('drawBox').doc(id).update(fields);
       editingId = null;

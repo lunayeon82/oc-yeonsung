@@ -42,41 +42,51 @@
     transform: translateX(-50%); width: 60%; height: 1px;
     background: linear-gradient(90deg, transparent, var(--pink), var(--violet), transparent);
   }
+
+  .count-select { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  .count-label { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
+  .count-btns { display: flex; gap: 6px; }
+  .count-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-family: var(--font-title); font-weight: 700;
+    font-size: 0.85rem; cursor: pointer; transition: all 0.18s;
+  }
+  .count-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .count-btn.active { border-color: var(--violet); background: var(--violet-dim); color: var(--violet); box-shadow: 0 0 10px rgba(167,139,250,0.2); }
+
   .pick-counts {
-    display: flex; justify-content: center; gap: 16px;
+    display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
     font-size: 0.75rem; color: var(--text-dim); margin-bottom: 16px;
   }
-  .pick-counts b.l { color: var(--pink); }
-  .pick-counts b.r { color: var(--blue); }
 
   .result-coupling {
     display: flex; align-items: center; justify-content: center;
-    gap: 12px; min-height: 48px; margin-bottom: 12px; flex-wrap: wrap;
+    gap: 10px; min-height: 48px; margin-bottom: 12px; flex-wrap: wrap;
   }
   .result-side { font-family: var(--font-title); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; min-width: 50px; }
   .result-side .ph { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
-  .result-left { background: linear-gradient(135deg, var(--pink), #a04060); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .result-right { background: linear-gradient(135deg, var(--blue), #3d6d96); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .result-x { font-family: var(--font-title); font-weight: 800; font-size: 1.1rem; color: var(--violet); opacity: 0.7; }
   .result-pop { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes pop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
 
   .result-subs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-  .result-sub-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .result-sub-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 44px; text-align: right; }
-  .result-sub-value { font-family: var(--font-title); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; min-width: 60px; }
+  .result-sub-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .result-sub-label { flex-shrink: 0; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 44px; text-align: right; }
+  .result-role-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
+  .result-sub-value { font-family: var(--font-title); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; min-width: 40px; }
   .result-sub-value .ph { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
-  .result-role-sep { color: var(--violet); opacity: 0.7; font-weight: 800; font-size: 0.9rem; margin: 0 4px; }
+  .result-role-sep { color: var(--violet); opacity: 0.7; font-weight: 800; font-size: 0.9rem; margin: 0 2px; }
   .result-role-text { color: var(--amber); }
   .result-au-text { color: var(--mint); }
 
   .reroll-btn {
     padding: 3px 10px; border-radius: 100px;
-    border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text-dim); font-size: 0.65rem; font-weight: 600;
+    border: 1px solid var(--violet); background: var(--violet-dim);
+    color: var(--violet); font-size: 0.65rem; font-weight: 600;
     cursor: pointer; font-family: var(--font-body); transition: all 0.18s;
   }
-  .reroll-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .reroll-btn:hover { background: var(--violet); color: #fff; }
   .reroll-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   .result-actions {
@@ -84,12 +94,12 @@
   }
   .copy-result-btn {
     padding: 5px 14px;
-    border-radius: 100px; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text-dim);
+    border-radius: 100px; border: 1px solid var(--violet);
+    background: var(--violet-dim); color: var(--violet);
     font-size: 0.7rem; font-weight: 600; cursor: pointer;
     font-family: var(--font-body); transition: all 0.18s;
   }
-  .copy-result-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .copy-result-btn:hover { background: var(--violet); color: #fff; }
 
   .pick-btn {
     padding: 12px 44px; border: none; border-radius: 100px;
@@ -120,28 +130,47 @@
   }
   .list-btn:hover { border-color: var(--text-dim); color: var(--text); }
 
-  .side-tabs {
-    display: flex; gap: 0; background: var(--surface);
-    border-radius: var(--radius); border: 1px solid var(--border);
-    overflow: hidden; margin-bottom: 12px;
+  .pool-card {
+    background: var(--surface-glass); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 16px 4px; margin-bottom: 20px;
   }
-  .side-tab {
-    flex: 1; padding: 12px 0; text-align: center;
+
+  .pool-tabs {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+  }
+  .pool-tab {
+    flex: 1 1 auto; min-width: 86px;
+    padding: 10px 6px; text-align: center;
     font-family: var(--font-title); font-weight: 700;
-    font-size: 0.9rem; cursor: pointer;
-    border: none; background: none; color: var(--text-dim);
-    transition: all 0.2s; position: relative;
+    font-size: 0.85rem; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); color: var(--text-dim);
+    transition: all 0.2s;
   }
-  .side-tab::after {
-    content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
-    height: 2px; border-radius: 2px; background: transparent; transition: background 0.2s;
+  .pool-tab:hover { border-color: var(--text-dim); color: var(--text); }
+  .pool-tab.active { border-color: var(--violet); color: var(--violet); background: var(--violet-dim); }
+  .pool-tab .tc { font-size: 0.65rem; font-weight: 400; margin-left: 4px; opacity: 0.6; }
+
+  .override-bar {
+    display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px; padding: 8px 12px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    font-size: 0.78rem;
   }
-  .side-tab:first-child { border-right: 1px solid var(--border); }
-  .side-tab.active-l { color: var(--pink); }
-  .side-tab.active-l::after { background: var(--pink); }
-  .side-tab.active-r { color: var(--blue); }
-  .side-tab.active-r::after { background: var(--blue); }
-  .side-tab .tc { font-size: 0.65rem; font-weight: 400; margin-left: 4px; opacity: 0.6; }
+  .ov-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-dim); user-select: none; }
+  .ov-toggle input { accent-color: var(--violet); width: 15px; height: 15px; }
+  .ov-copy { display: flex; align-items: center; gap: 6px; }
+  .ov-copy select {
+    padding: 4px 8px; border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 0.75rem; font-family: var(--font-body);
+  }
+  .ov-copy-btn {
+    padding: 4px 10px; border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); font-size: 0.72rem;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.18s;
+  }
+  .ov-copy-btn:hover { border-color: var(--violet); color: var(--violet); }
 
   .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; padding: 0 4px; }
   .fbtn {
@@ -153,8 +182,10 @@
   .fbtn:hover { border-color: var(--text-dim); color: var(--text); }
   .fbtn.active { border-color: var(--violet); background: var(--violet-dim); color: var(--violet); }
 
-  .section { display: none; }
-  .section.visible { display: block; }
+  .pool-readonly-note {
+    font-size: 0.75rem; color: var(--text-muted); background: var(--surface2);
+    border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 14px;
+  }
 
   .category { margin-bottom: 24px; }
   .cat-header {
@@ -183,13 +214,12 @@
     transition: all 0.18s; user-select: none;
   }
   .ch:hover { border-color: var(--text-dim); color: var(--text); }
-  .ch.on { border-color: var(--sc); background: var(--sb); color: var(--sc); box-shadow: 0 0 12px var(--sg); }
-  .ch.on::before { content: '✓ '; font-size: 0.65rem; }
+  .ch.on { border-color: var(--violet); background: var(--violet-dim); color: var(--text); font-weight: 700; box-shadow: 0 0 12px var(--violet-dim); }
+  .ch.on::before { content: '✓ '; font-size: 0.65rem; color: var(--violet); }
   .ch.filtered-out { opacity: 0.25; pointer-events: none; }
   .ch .tag { display: inline-block; font-size: 0.55rem; margin-left: 3px; vertical-align: middle; opacity: 0.6; }
-
-  .side-left .ch.on  { --sc:var(--pink); --sb:var(--pink-dim); --sg:rgba(244,114,182,0.15); }
-  .side-right .ch.on { --sc:var(--blue); --sb:var(--blue-dim); --sg:rgba(96,165,250,0.15); }
+  .ch-readonly { cursor: default; opacity: 0.75; }
+  .ch-readonly:hover { border-color: var(--border); color: var(--text-dim); }
 
   .empty { color: var(--text-muted); font-size: 0.8rem; padding: 8px 0 0 4px; }
 
@@ -263,8 +293,9 @@
     .result-x { font-size: 0.95rem; }
     .result-sub-value { font-size: 0.9rem; }
     .pick-btn { padding: 11px 36px; font-size: 0.95rem; }
-    .side-tab { font-size: 0.82rem; }
+    .pool-tab { font-size: 0.78rem; min-width: 74px; padding: 8px 4px; }
     .fbtn { padding: 4px 10px; font-size: 0.68rem; }
+    .count-btn { width: 28px; height: 28px; }
   }
 </style>
 </head>
@@ -293,26 +324,12 @@
   <!-- Main content (hidden until loaded) -->
   <div id="mainContent" style="display: none;">
     <div class="pick-zone">
-      <div class="pick-counts" id="counts">❤️ <b class="l">0</b>개 · 💙 <b class="r">0</b>개</div>
-      <div class="result-coupling" id="resultCoupling">
-        <span class="result-side"><span class="ph">???</span></span>
-        <span class="result-x">✕</span>
-        <span class="result-side"><span class="ph">???</span></span>
+      <div class="count-select">
+        <span class="count-label">인원</span>
+        <div class="count-btns" id="countBtns"></div>
       </div>
-      <div class="result-subs" id="resultSubs">
-        <div class="result-sub-row">
-          <span class="result-sub-label">캐릭터 설정</span>
-          <span class="result-sub-value" id="resRoleL"><span class="ph">—</span></span>
-          <span class="result-role-sep">✕</span>
-          <span class="result-sub-value" id="resRoleR"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
-        </div>
-        <div class="result-sub-row">
-          <span class="result-sub-label">관계성</span>
-          <span class="result-sub-value" id="resAU"><span class="ph">—</span></span>
-          <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
-        </div>
-      </div>
+      <div class="pick-counts" id="counts"></div>
+      <div id="resultArea"></div>
       <div class="result-actions" id="resultActions" style="display:none">
         <button class="copy-result-btn" id="copyResultBtn" onclick="copyCurrentResult()">📋 결과 복사</button>
         <button class="copy-result-btn" id="saveResultBtn" onclick="saveCurrentResult()">💾 저장소에 저장</button>
@@ -326,20 +343,19 @@
       <button class="list-btn" onclick="showListModal('au')">🌀 관계성 전체 확인</button>
     </div>
 
-    <div class="side-tabs">
-      <button class="side-tab active-l" id="tabL" onclick="switchSide('left')">❤️ 첫 번째 캐릭터<span class="tc" id="tabLCnt">(0)</span></button>
-      <button class="side-tab" id="tabR" onclick="switchSide('right')">💙 두 번째 캐릭터<span class="tc" id="tabRCnt">(0)</span></button>
-    </div>
+    <div class="pool-card">
+      <div class="pool-tabs" id="poolTabs"></div>
+      <div class="override-bar" id="overrideBar" style="display:none"></div>
 
-    <div class="filters" id="filters">
-      <button class="fbtn" data-filter="male" onclick="toggleFilter(this)">♂ 남성만</button>
-      <button class="fbtn" data-filter="female" onclick="toggleFilter(this)">♀ 여성만</button>
-      <button class="fbtn" data-filter="solo" onclick="toggleFilter(this)">솔로만</button>
-      <button class="fbtn" data-filter="couple" onclick="toggleFilter(this)">커플만</button>
-    </div>
+      <div class="filters" id="filters">
+        <button class="fbtn" data-filter="male" onclick="toggleFilter(this)">♂ 남성만</button>
+        <button class="fbtn" data-filter="female" onclick="toggleFilter(this)">♀ 여성만</button>
+        <button class="fbtn" data-filter="solo" onclick="toggleFilter(this)">솔로만</button>
+        <button class="fbtn" data-filter="couple" onclick="toggleFilter(this)">커플만</button>
+      </div>
 
-    <div id="sectionLeft" class="section side-left visible"></div>
-    <div id="sectionRight" class="section side-right"></div>
+      <div id="poolSection"></div>
+    </div>
   </div>
 </div>
 
@@ -410,12 +426,17 @@ let AUS = { groups: [] };
 let USER_NAMES = ['김굥', '하지', '예밍'];
 let charMap = {};
 
-const selL = new Set(), selR = new Set();
-let activeSide = 'left';
+const MAX_PARTICIPANTS = 5;
+
+let participantCount = 2;
+const commonSel = new Set();
+let overrides = [null, null, null, null, null]; // Set|null per position (0-indexed)
+let activeTab = 'common'; // 'common' or position index (number)
+const filtersByTab = {}; // key -> Set
+
 let spinning = false;
 const hist = [];
-const filtersL = new Set(), filtersR = new Set();
-let currentRoleL = null, currentRoleR = null, currentAU = null, currentLeft = null, currentRight = null;
+let currentNames = [], currentRoles = [], currentRolesShared = false, currentAU = null;
 let hasResult = false;
 
 // ============ FIREBASE LOAD / SEED ============
@@ -455,7 +476,7 @@ async function initData() {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     setSyncStatus(true);
-    renderBoth();
+    renderAll();
 
     // Listen for real-time updates
     startListeners();
@@ -469,7 +490,7 @@ async function initData() {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     setSyncStatus(false);
-    renderBoth();
+    renderAll();
     toast('오프라인 모드 (로컬 데이터)');
   }
 }
@@ -486,7 +507,9 @@ function startListeners() {
     if (doc.exists) {
       CHARS = doc.data();
       buildCharMap();
-      renderBoth();
+      renderPoolTabs();
+      renderPoolSection();
+      updCounts();
       setSyncStatus(true);
     }
   }, err => { console.warn('Char listener error:', err); setSyncStatus(false); });
@@ -519,30 +542,60 @@ function setSyncStatus(online) {
   }
 }
 
-// ============ RENDER ============
-function switchSide(side) {
-  activeSide = side;
-  document.getElementById('tabL').className = 'side-tab' + (side==='left'?' active-l':'');
-  document.getElementById('tabR').className = 'side-tab' + (side==='right'?' active-r':'');
-  document.getElementById('sectionLeft').className = 'section side-left' + (side==='left'?' visible':'');
-  document.getElementById('sectionRight').className = 'section side-right' + (side==='right'?' visible':'');
-  syncFilterBtns();
+// ============ RENDER: OVERALL ============
+function renderAll() {
+  renderCountBtns();
+  renderResultPlaceholder();
+  renderPoolTabs();
+  renderOverrideBar();
+  renderPoolSection();
+  renderHist();
+  updCounts();
 }
 
+// ============ PARTICIPANT COUNT ============
+function renderCountBtns() {
+  const el = document.getElementById('countBtns');
+  el.innerHTML = [1,2,3,4,5].map(n =>
+    `<button class="count-btn${n===participantCount?' active':''}" onclick="setParticipantCount(${n})">${n}</button>`
+  ).join('');
+}
+
+function setParticipantCount(n) {
+  if (n === participantCount) return;
+  participantCount = n;
+  for (let i = n; i < MAX_PARTICIPANTS; i++) overrides[i] = null;
+  if (activeTab !== 'common' && activeTab >= n) activeTab = 'common';
+  renderCountBtns();
+  renderResultPlaceholder();
+  renderPoolTabs();
+  renderOverrideBar();
+  renderPoolSection();
+  updCounts();
+}
+
+// ============ FILTERS ============
+function getFilters(key) {
+  if (!filtersByTab[key]) filtersByTab[key] = new Set();
+  return filtersByTab[key];
+}
+
+function activeFilterKey() { return activeTab === 'common' ? 'common' : activeTab; }
+
 function syncFilterBtns() {
-  const f = activeSide==='left' ? filtersL : filtersR;
+  const f = getFilters(activeFilterKey());
   document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', f.has(b.dataset.filter)));
 }
 
 function toggleFilter(btn) {
-  const f = activeSide==='left' ? filtersL : filtersR;
+  const f = getFilters(activeFilterKey());
   const k = btn.dataset.filter;
   if(k==='male'&&f.has('female')) f.delete('female');
   if(k==='female'&&f.has('male')) f.delete('male');
   if(k==='solo'&&f.has('couple')) f.delete('couple');
   if(k==='couple'&&f.has('solo')) f.delete('solo');
   if(f.has(k)) f.delete(k); else f.add(k);
-  syncFilterBtns(); applyFilters();
+  syncFilterBtns(); applyFiltersToSection();
 }
 
 function passesFilter(name, fs) {
@@ -554,101 +607,213 @@ function passesFilter(name, fs) {
   return true;
 }
 
-function applyFilters() {
-  const side = activeSide;
-  const f = side==='left'?filtersL:filtersR;
-  const cid = side==='left'?'sectionLeft':'sectionRight';
-  document.getElementById(cid).querySelectorAll('.ch').forEach(b => {
-    b.classList.toggle('filtered-out', !passesFilter(b.dataset.name, f));
+function applyFiltersToSection() {
+  const f = getFilters(activeFilterKey());
+  document.querySelectorAll('#poolSection .ch').forEach(b => {
+    b.classList.toggle('filtered-out', f.size>0 && !passesFilter(b.dataset.name, f));
   });
 }
 
-function renderBoth() {
-  renderSection('sectionLeft', selL, 'left');
-  renderSection('sectionRight', selR, 'right');
+// ============ POOL TABS ============
+function renderPoolTabs() {
+  const el = document.getElementById('poolTabs');
+  let html = `<button class="pool-tab${activeTab==='common'?' active':''}" onclick="switchTab('common')">🎯 공통 후보<span class="tc">(${commonSel.size})</span></button>`;
+  for (let i=0;i<participantCount;i++) {
+    const ov = overrides[i];
+    const cnt = ov ? ov.size : commonSel.size;
+    const label = ov ? `위치${i+1} *` : `위치${i+1}`;
+    html += `<button class="pool-tab${activeTab===i?' active':''}" onclick="switchTab(${i})">${label}<span class="tc">(${cnt})</span></button>`;
+  }
+  el.innerHTML = html;
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  renderPoolTabs();
+  renderOverrideBar();
+  renderPoolSection();
+}
+
+// ============ OVERRIDE BAR ============
+function renderOverrideBar() {
+  const el = document.getElementById('overrideBar');
+  if (activeTab === 'common') { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  const i = activeTab;
+  const isOv = !!overrides[i];
+  let sourcesHtml = `<option value="common">공통 후보</option>`;
+  for (let k=0;k<participantCount;k++) { if (k===i) continue; sourcesHtml += `<option value="${k}">위치${k+1}</option>`; }
+  el.innerHTML = `
+    <label class="ov-toggle">
+      <input type="checkbox" ${isOv?'checked':''} onchange="toggleOverride(this.checked)">
+      이 위치만 다르게 설정
+    </label>
+    ${isOv ? `<span class="ov-copy">
+      <select id="copySrc">${sourcesHtml}</select>
+      <button class="ov-copy-btn" onclick="copyIntoActive()">이대로 가져오기</button>
+    </span>` : ''}
+  `;
+}
+
+function toggleOverride(checked) {
+  const i = activeTab;
+  if (checked) { if (!overrides[i]) overrides[i] = new Set(commonSel); }
+  else { overrides[i] = null; }
+  renderOverrideBar();
+  renderPoolSection();
+  renderPoolTabs();
   updCounts();
 }
 
-function renderSection(cid, selSet, side) {
-  const c = document.getElementById(cid);
+function copyIntoActive() {
+  const src = document.getElementById('copySrc').value;
+  const srcSet = src === 'common' ? commonSel : (overrides[Number(src)] || commonSel);
+  overrides[activeTab] = new Set(srcSet);
+  renderPoolSection();
+  renderPoolTabs();
+  updCounts();
+  toast('선택을 복사했어요');
+}
+
+// ============ POOL SECTION (character grid) ============
+function activeEditableSet() {
+  if (activeTab === 'common') return commonSel;
+  return overrides[activeTab] || null;
+}
+
+function renderPoolSection() {
+  const container = document.getElementById('poolSection');
+  let displaySet, editable;
+  if (activeTab === 'common') {
+    displaySet = commonSel; editable = true;
+  } else {
+    const ov = overrides[activeTab];
+    if (ov) { displaySet = ov; editable = true; }
+    else { displaySet = commonSel; editable = false; }
+  }
+
   const gHtml = CHARS.groups.map(g => {
     const sHtml = g.subs.filter(s=>s.items.length).map(s => {
       const btns = s.items.map(it => {
         const name = it.n, gender = it.g, couple = it.c;
-        const on = selSet.has(name)?' on':'';
+        const on = displaySet.has(name) ? ' on' : '';
         const gT = gender===0?'♂':'♀';
         const cT = couple===1?'💕':'';
-        return `<button class="ch${on}" data-side="${side}" data-name="${esc(name)}" onclick="tog(this,'${side}','${esc(name)}')">${esc(name)}<span class="tag">${gT}${cT}</span></button>`;
+        const cls = 'ch' + on + (editable ? '' : ' ch-readonly');
+        const click = editable ? ` onclick="togPool(this,'${esc(name)}')"` : '';
+        return `<button class="${cls}" data-name="${esc(name)}"${click}>${esc(name)}<span class="tag">${gT}${cT}</span></button>`;
       }).join('');
       return `<div class="sub-row"><div class="sub-label">${esc(s.label)}</div><div class="sub-items">${btns}</div></div>`;
     }).join('');
 
     if(!sHtml) return `<div class="owner-block"><div class="owner-header"><span class="owner-name">${esc(g.owner)}</span></div><div class="empty">항목 없음</div></div>`;
 
+    const toggleBtn = editable ? `<button class="cat-toggle" onclick="togOwnerPool('${esc(g.owner)}')">전체 선택</button>` : '';
     return `<div class="owner-block">
       <div class="owner-header">
         <span class="owner-name">${esc(g.owner)}</span>
-        <button class="cat-toggle" onclick="togOwner('${side}','${esc(g.owner)}')">전체 선택</button>
+        ${toggleBtn}
       </div>${sHtml}</div>`;
   }).join('');
 
-  c.innerHTML = `<div class="category">
+  const title = activeTab === 'common' ? '공통 후보' : `위치 ${activeTab+1} 후보`;
+  const icon = activeTab === 'common' ? '🎯' : '📍';
+  const allToggle = editable ? `<button class="cat-toggle" onclick="togAllPool()">전체 선택</button>` : '';
+  const notice = editable ? '' : `<div class="pool-readonly-note">이 위치는 공통 후보를 그대로 사용 중이에요. 이 위치만 다르게 설정하려면 위의 토글을 켜세요.</div>`;
+
+  container.innerHTML = `<div class="category">
     <div class="cat-header">
-      <div class="cat-icon" style="background:${side==='left'?'var(--pink-dim)':'var(--blue-dim)'}">${side==='left'?'❤️':'💙'}</div>
-      <div class="cat-title">${side==='left'?'첫 번째':'두 번째'} 캐릭터</div>
-      <button class="cat-toggle" onclick="togAll('${side}')">전체 선택</button>
-    </div>${gHtml}</div>`;
+      <div class="cat-icon" style="background:var(--violet-dim)">${icon}</div>
+      <div class="cat-title">${title}</div>
+      ${allToggle}
+    </div>${notice}${gHtml}</div>`;
 
-  const f = side==='left'?filtersL:filtersR;
-  if(f.size) c.querySelectorAll('.ch').forEach(b => b.classList.toggle('filtered-out', !passesFilter(b.dataset.name, f)));
+  syncFilterBtns();
+  applyFiltersToSection();
 }
 
-function tog(btn, side, name) {
-  const s = side==='left'?selL:selR;
-  if(s.has(name)){s.delete(name);btn.classList.remove('on');}
-  else{s.add(name);btn.classList.add('on');}
+function togPool(btn, name) {
+  const set = activeEditableSet();
+  if (!set) return;
+  if (set.has(name)) { set.delete(name); btn.classList.remove('on'); }
+  else { set.add(name); btn.classList.add('on'); }
   updCounts();
+  renderPoolTabs();
 }
 
-function getVisibleNames(side, owner) {
-  const f = side==='left'?filtersL:filtersR;
+function getVisibleNamesForActive(owner) {
+  const f = getFilters(activeFilterKey());
   let groups = CHARS.groups;
-  if(owner) groups = groups.filter(g=>g.owner===owner);
+  if (owner) groups = groups.filter(g=>g.owner===owner);
   return groups.flatMap(g=>g.subs.flatMap(s=>s.items)).map(it=>it.n).filter(n=>passesFilter(n,f));
 }
 
-function togOwner(side, owner) {
-  const s = side==='left'?selL:selR;
-  const names = getVisibleNames(side, owner);
-  if(!names.length) return;
-  const allOn = names.every(n=>s.has(n));
-  names.forEach(n=>{if(allOn)s.delete(n);else s.add(n);});
-  updBtns(side); updCounts();
+function togOwnerPool(owner) {
+  const set = activeEditableSet();
+  if (!set) return;
+  const names = getVisibleNamesForActive(owner);
+  if (!names.length) return;
+  const allOn = names.every(n=>set.has(n));
+  names.forEach(n=>{ if(allOn) set.delete(n); else set.add(n); });
+  renderPoolSection(); updCounts(); renderPoolTabs();
   toast(allOn?`${owner} 전체 해제`:`${owner} 전체 선택`);
 }
 
-function togAll(side) {
-  const s = side==='left'?selL:selR;
-  const names = getVisibleNames(side);
-  if(!names.length) return;
-  const allOn = names.every(n=>s.has(n));
-  names.forEach(n=>{if(allOn)s.delete(n);else s.add(n);});
-  updBtns(side); updCounts();
+function togAllPool() {
+  const set = activeEditableSet();
+  if (!set) return;
+  const names = getVisibleNamesForActive();
+  if (!names.length) return;
+  const allOn = names.every(n=>set.has(n));
+  names.forEach(n=>{ if(allOn) set.delete(n); else set.add(n); });
+  renderPoolSection(); updCounts(); renderPoolTabs();
   toast(allOn?'전체 해제':'전체 선택');
 }
 
-function updBtns(side) {
-  const s = side==='left'?selL:selR;
-  const cid = side==='left'?'sectionLeft':'sectionRight';
-  document.getElementById(cid).querySelectorAll('.ch').forEach(b => b.classList.toggle('on', s.has(b.dataset.name)));
+// ============ COUNTS ============
+function effectivePool(i) {
+  return overrides[i] ? [...overrides[i]] : [...commonSel];
+}
+
+function canPick() {
+  for (let i=0;i<participantCount;i++) if (effectivePool(i).length===0) return false;
+  return true;
 }
 
 function updCounts() {
-  const nl=selL.size, nr=selR.size;
-  document.getElementById('counts').innerHTML = `❤️ <b class="l">${nl}</b>개 · 💙 <b class="r">${nr}</b>개`;
-  document.getElementById('tabLCnt').textContent = `(${nl})`;
-  document.getElementById('tabRCnt').textContent = `(${nr})`;
-  document.getElementById('pickBtn').disabled = nl===0||nr===0;
+  const parts = [`공통 <b style="color:var(--violet)">${commonSel.size}</b>개`];
+  for (let i=0;i<participantCount;i++) {
+    if (overrides[i]) parts.push(`위치${i+1} <b style="color:var(--violet)">${overrides[i].size}</b>개(커스텀)`);
+  }
+  document.getElementById('counts').innerHTML = parts.join(' · ');
+  document.getElementById('pickBtn').disabled = !canPick();
+}
+
+// ============ RESULT DISPLAY ============
+function nameGradStyle() {
+  return `background:linear-gradient(135deg, var(--violet), #7c5cbf); -webkit-background-clip:text; -webkit-text-fill-color:transparent;`;
+}
+
+function renderResultPlaceholder() {
+  const el = document.getElementById('resultArea');
+  const nameSpans = Array.from({length:participantCount}, () => `<span class="result-side"><span class="ph">???</span></span>`).join(`<span class="result-x">✕</span>`);
+  const roleSpans = Array.from({length:participantCount}, () => `<span class="result-sub-value"><span class="ph">—</span></span>`).join(`<span class="result-role-sep">✕</span>`);
+  el.innerHTML = `
+    <div class="result-coupling">${nameSpans}</div>
+    <div class="result-subs">
+      <div class="result-sub-row">
+        <span class="result-sub-label">캐릭터 설정</span>
+        <span class="result-role-group" id="roleGroup">${roleSpans}</span>
+        <button class="reroll-btn" id="rerollRole" onclick="rerollRole()" disabled="">🔄 리롤</button>
+      </div>
+      <div class="result-sub-row">
+        <span class="result-sub-label">관계성</span>
+        <span class="result-sub-value" id="resAU"><span class="ph">—</span></span>
+        <button class="reroll-btn" id="rerollAU" onclick="rerollAU()" disabled="">🔄 리롤</button>
+      </div>
+    </div>`;
+  hasResult = false;
+  document.getElementById('resultActions').style.display = 'none';
 }
 
 // ============ PICK ============
@@ -661,17 +826,35 @@ function randTagFrom(data) {
   return gs.length ? randFrom(gs) : null;
 }
 
-function pickRolesFromTag() {
+function pickRolesForN(n) {
   const g = randTagFrom(ROLES);
-  if (!g) return { roleL: '?', roleR: '?' };
+  if (!g) return { roles: Array(n).fill('?'), shared: false };
   if (g.label === '세계관') {
     const role = randFrom(g.items);
-    return { roleL: role, roleR: role };
+    return { roles: Array(n).fill(role), shared: true };
   }
-  const roleL = randFrom(g.items);
-  const others = g.items.filter(r => r !== roleL);
-  const roleR = others.length > 0 ? randFrom(others) : randFrom(g.items);
-  return { roleL, roleR };
+  const pool = [...g.items];
+  if (pool.length >= n) {
+    const shuffled = [...pool].sort(()=>Math.random()-0.5);
+    return { roles: shuffled.slice(0, n), shared: false };
+  }
+  return { roles: Array.from({length:n}, ()=>randFrom(pool)), shared: false };
+}
+
+function renderFinalRoles(rolesResult) {
+  const el = document.getElementById('roleGroup');
+  if (rolesResult.shared) {
+    el.innerHTML = `<span class="result-role-text result-pop">${esc(rolesResult.roles[0])}</span>`;
+  } else {
+    el.innerHTML = rolesResult.roles.map((r,i)=>`<span class="result-role-text result-pop" style="animation-delay:${(i*0.05).toFixed(2)}s">${esc(r)}</span>`).join('<span class="result-role-sep">✕</span>');
+  }
+}
+
+function resultEntryText() {
+  if (currentRolesShared) {
+    return `${currentNames.join(' ✕ ')} (${currentRoles[0]}) / ${currentAU}`;
+  }
+  return currentNames.map((n,i)=>`${n}(${currentRoles[i]})`).join(' ✕ ') + ` / ${currentAU}`;
 }
 
 function pickAUFromTag() {
@@ -679,93 +862,108 @@ function pickAUFromTag() {
   return g ? randFrom(g.items) : '?';
 }
 
+function drawAssignment(pools) {
+  const n = pools.length;
+  const order = pools.map((p,i)=>i).sort((a,b)=>pools[a].length-pools[b].length);
+  const result = new Array(n);
+  const used = new Set();
+  function bt(idx) {
+    if (idx >= n) return true;
+    const posi = order[idx];
+    const candidates = pools[posi].filter(x=>!used.has(x));
+    for (let i=candidates.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [candidates[i],candidates[j]]=[candidates[j],candidates[i]]; }
+    for (const cand of candidates) {
+      result[posi]=cand; used.add(cand);
+      if (bt(idx+1)) return true;
+      used.delete(cand);
+    }
+    return false;
+  }
+  if (bt(0)) return { names: result, duplicated: false };
+  return { names: pools.map(p=>randFrom(p)), duplicated: true };
+}
+
 function doPick() {
-  if(!selL.size||!selR.size||spinning) return;
+  if (!canPick() || spinning) return;
   spinning = true;
   const btn = document.getElementById('pickBtn');
-  const couplingEl = document.getElementById('resultCoupling');
-  const roleLEl = document.getElementById('resRoleL');
-  const roleREl = document.getElementById('resRoleR');
-  const auEl = document.getElementById('resAU');
   btn.disabled = true;
   document.getElementById('rerollRole').disabled = true;
   document.getElementById('rerollAU').disabled = true;
 
-  const poolL=[...selL], poolR=[...selR];
+  const nameEls = document.querySelectorAll('#resultArea .result-coupling .result-side');
+  document.getElementById('roleGroup').innerHTML = Array.from({length:participantCount}, () => `<span class="result-sub-value"><span class="ph">—</span></span>`).join('<span class="result-role-sep">✕</span>');
+  const roleEls = document.querySelectorAll('#resultArea #roleGroup .result-sub-value');
+  const auEl = document.getElementById('resAU');
+  const pools = Array.from({length:participantCount}, (_,i)=>effectivePool(i));
+
   let count = 0;
   const total = 16 + Math.floor(Math.random()*10);
 
   const iv = setInterval(()=>{
-    couplingEl.innerHTML = `
-      <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolL))}</span>
-      <span class="result-x">✕</span>
-      <span class="result-side" style="color:var(--text-dim)">${esc(randFrom(poolR))}</span>`;
-    roleLEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
-    roleREl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    nameEls.forEach((el,i)=>{ el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(pools[i]))}</span>`; });
+    roleEls.forEach(el=>{ el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`; });
     auEl.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     count++;
-    if(count>=total) {
+    if (count>=total) {
       clearInterval(iv);
-      const fL = randFrom(poolL), fR = randFrom(poolR);
-      currentLeft = fL; currentRight = fR;
-      const roles = pickRolesFromTag();
-      currentRoleL = roles.roleL;
-      currentRoleR = roles.roleR;
+      const draw = drawAssignment(pools);
+      currentNames = draw.names;
+      const rolesResult = pickRolesForN(participantCount);
+      currentRoles = rolesResult.roles;
+      currentRolesShared = rolesResult.shared;
       currentAU = pickAUFromTag();
       hasResult = true;
       document.getElementById('resultActions').style.display = 'flex';
 
-      couplingEl.innerHTML = `
-        <span class="result-side result-left result-pop">${esc(fL)}</span>
-        <span class="result-x result-pop" style="animation-delay:0.05s">✕</span>
-        <span class="result-side result-right result-pop" style="animation-delay:0.1s">${esc(fR)}</span>`;
-      roleLEl.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
-      roleREl.innerHTML = `<span class="result-role-text result-pop" style="animation-delay:0.05s">${esc(currentRoleR)}</span>`;
-      auEl.innerHTML = `<span class="result-au-text result-pop" style="animation-delay:0.1s">${esc(currentAU)}</span>`;
+      nameEls.forEach((el,i)=>{
+        el.innerHTML = `<span class="result-pop" style="animation-delay:${(i*0.05).toFixed(2)}s;${nameGradStyle()}">${esc(currentNames[i])}</span>`;
+      });
+      renderFinalRoles(rolesResult);
+      auEl.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
 
-      const entry = `${fL}(${currentRoleL}) ✕ ${fR}(${currentRoleR}) / ${currentAU}`;
+      const entry = resultEntryText();
       hist.unshift(entry);
-      if(hist.length>20) hist.pop();
+      if (hist.length>20) hist.pop();
       renderHist();
       particles(btn);
       spinning = false;
       btn.disabled = false;
       document.getElementById('rerollRole').disabled = false;
       document.getElementById('rerollAU').disabled = false;
+      if (draw.duplicated) toast('후보가 부족해서 일부 캐릭터가 중복됐어요');
     }
   }, 55+count*4);
 }
 
 function rerollRole() {
-  if(!hasResult||spinning) return;
-  const elL = document.getElementById('resRoleL');
-  const elR = document.getElementById('resRoleR');
+  if (!hasResult || spinning) return;
+  document.getElementById('roleGroup').innerHTML = Array.from({length:participantCount}, () => `<span class="result-sub-value"></span>`).join('<span class="result-role-sep">✕</span>');
+  const roleEls = document.querySelectorAll('#resultArea #roleGroup .result-sub-value');
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
-    elL.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
-    elR.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`;
+    roleEls.forEach(el=>{ el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allRoles()))}</span>`; });
     c++;
-    if(c>=total) {
+    if (c>=total) {
       clearInterval(iv);
-      const roles = pickRolesFromTag();
-      currentRoleL = roles.roleL;
-      currentRoleR = roles.roleR;
-      elL.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleL)}</span>`;
-      elR.innerHTML = `<span class="result-role-text result-pop">${esc(currentRoleR)}</span>`;
+      const rolesResult = pickRolesForN(participantCount);
+      currentRoles = rolesResult.roles;
+      currentRolesShared = rolesResult.shared;
+      renderFinalRoles(rolesResult);
     }
   }, 50);
 }
 
 function rerollAU() {
-  if(!hasResult||spinning) return;
+  if (!hasResult || spinning) return;
   const el = document.getElementById('resAU');
   let c = 0;
   const total = 8 + Math.floor(Math.random()*5);
   const iv = setInterval(()=>{
     el.innerHTML = `<span style="color:var(--text-dim)">${esc(randFrom(allAUs()))}</span>`;
     c++;
-    if(c>=total) {
+    if (c>=total) {
       clearInterval(iv);
       currentAU = pickAUFromTag();
       el.innerHTML = `<span class="result-au-text result-pop">${esc(currentAU)}</span>`;
@@ -776,7 +974,7 @@ function rerollAU() {
 function renderHist() {
   const el = document.getElementById('hist');
   el.innerHTML = hist.map(x=>`<span class="history-chip" onclick="copyText('${esc(x).replace(/'/g,"\\&#39;")}')">${esc(x)}</span>`).join('');
-  if(hist.length) el.innerHTML += `<button class="history-clear" onclick="hist.length=0;renderHist()">초기화</button>`;
+  if (hist.length) el.innerHTML += `<button class="history-clear" onclick="hist.length=0;renderHist()">초기화</button>`;
 }
 
 function copyText(text) {
@@ -794,8 +992,8 @@ function copyText(text) {
 }
 
 function copyCurrentResult() {
-  if(!hasResult) return;
-  const text = `${currentLeft}(${currentRoleL}) ✕ ${currentRight}(${currentRoleR}) / ${currentAU}`;
+  if (!hasResult) return;
+  const text = resultEntryText();
   navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
     document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
@@ -804,23 +1002,27 @@ function copyCurrentResult() {
 }
 
 async function saveCurrentResult() {
-  if(!hasResult) return;
+  if (!hasResult) return;
   const result = await openStoragePicker({
     title: '저장소에 저장',
     users: USER_NAMES,
     targets: null
   });
-  if(!result) return;
+  if (!result) return;
   try {
-    await db.collection('users').doc(result.user).collection('drawBox').add({
-      left: currentLeft,
-      right: currentRight,
-      roleL: currentRoleL,
-      roleR: currentRoleR,
-      au: currentAU,
-      memo: '',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    const payload = participantCount === 2
+      ? {
+          left: currentNames[0], right: currentNames[1],
+          roleL: currentRoles[0], roleR: currentRoles[1],
+          au: currentAU, memo: '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }
+      : {
+          names: currentNames, roles: currentRoles,
+          au: currentAU, memo: '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+    await db.collection('users').doc(result.user).collection('drawBox').add(payload);
     toast(`${result.user}님의 뽑기 보관함에 저장했어요`);
   } catch (e) {
     console.error('저장 실패:', e);
