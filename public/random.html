@@ -114,8 +114,8 @@
   .pick-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
   .history { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 14px; min-height: 24px; }
-  .history-chip { padding: 3px 10px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); font-size: 0.67rem; color: var(--text-dim); animation: chipIn 0.25s ease; cursor: pointer; transition: all 0.18s; }
-  .history-chip:hover { border-color: var(--text-dim); color: var(--text); }
+  .history-chip { padding: 3px 10px; border-radius: 100px; background: var(--violet-dim); border: 1px solid var(--violet); font-size: 0.67rem; color: var(--violet); animation: chipIn 0.25s ease; cursor: pointer; transition: all 0.18s; }
+  .history-chip:hover { background: var(--violet); color: #fff; }
   .history-chip:active { transform: scale(0.95); }
   .history-clear { background: none; border: 1px dashed var(--border); color: var(--text-muted); font-size: 0.65rem; padding: 3px 8px; border-radius: 100px; cursor: pointer; font-family: var(--font-body); }
   .history-clear:hover { border-color: var(--rose); color: var(--rose); }
@@ -155,7 +155,7 @@
   .override-bar {
     display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
     margin-bottom: 12px; padding: 8px 12px;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    background: none; border: 1px solid var(--border); border-radius: 10px;
     font-size: 0.78rem;
   }
   .ov-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-dim); user-select: none; }
