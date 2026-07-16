@@ -373,19 +373,26 @@
     subscribeDraw();
   });
 
+  // 두 스키마(2인/N인)를 하나로 통일하고, 캐릭터 설정이 전부 같으면 하나로 합쳐서 보여준다
+  function drawParts(d) {
+    const names = Array.isArray(d.names) ? d.names : [d.left, d.right];
+    const roles = Array.isArray(d.names) ? (d.roles || []) : [d.roleL, d.roleR];
+    const shared = roles.length > 0 && roles[0] && roles.every(r => r === roles[0]) ? roles[0] : null;
+    return { names, roles, shared };
+  }
+
   function drawResultInnerHtml(d) {
-    if (Array.isArray(d.names)) {
-      const roles = d.roles || [];
-      return d.names.map((n, i) => `<span class="draw-name">${esc(n)}</span><span class="draw-role">(${esc(roles[i] || '')})</span>`).join('<span class="draw-x">✕</span>')
+    const { names, roles, shared } = drawParts(d);
+    const namesHtml = names.map(n => `<span class="draw-name">${esc(n)}</span>`).join('<span class="draw-x">✕</span>');
+
+    if (shared) {
+      return namesHtml
+        + `<span class="draw-role">/ ${esc(shared)}</span>`
         + `<span class="draw-au">/ ${esc(d.au)}</span>`;
     }
-    return `
-            <span class="draw-name">${esc(d.left)}</span>
-            <span class="draw-role">(${esc(d.roleL)})</span>
-            <span class="draw-x">✕</span>
-            <span class="draw-name">${esc(d.right)}</span>
-            <span class="draw-role">(${esc(d.roleR)})</span>
-            <span class="draw-au">/ ${esc(d.au)}</span>`;
+
+    return names.map((n, i) => `<span class="draw-name">${esc(n)}</span><span class="draw-role">(${esc(roles[i] || '')})</span>`).join('<span class="draw-x">✕</span>')
+      + `<span class="draw-au">/ ${esc(d.au)}</span>`;
   }
 
   function renderDrawList() {
@@ -501,13 +508,10 @@
     const doc = lastDrawDocs.find(d => d.id === id);
     if (!doc) return;
     const d = doc.data();
-    let text;
-    if (Array.isArray(d.names)) {
-      const roles = d.roles || [];
-      text = d.names.map((n, i) => `${n}(${roles[i] || ''})`).join(' ✕ ') + ` / ${d.au}`;
-    } else {
-      text = `${d.left}(${d.roleL}) ✕ ${d.right}(${d.roleR}) / ${d.au}`;
-    }
+    const { names, roles, shared } = drawParts(d);
+    let text = shared
+      ? `${names.join(' ✕ ')} / ${shared} / ${d.au}`
+      : names.map((n, i) => `${n}(${roles[i] || ''})`).join(' ✕ ') + ` / ${d.au}`;
     if (d.memo) text += ` / ${d.memo}`;
     navigator.clipboard.writeText(text).then(() => showToast('복사했어요')).catch(() => {
       const ta = document.createElement('textarea');
