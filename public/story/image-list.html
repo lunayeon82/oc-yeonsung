@@ -67,6 +67,28 @@
     font-family: 'ko-font', sans-serif;
   }
   .clear-filter:hover { color: #5a4a6b; }
+  .char-mode-toggle {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.2rem 0.65rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.68rem;
+    color: #8a7a9a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover { border-color: #b8a9c9; }
+  .mode-btn.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
   .char-filter-wrap {
     display: flex;
     flex-direction: column;
@@ -275,6 +297,10 @@
         <span class="filter-label">캐릭터로 보기</span>
         <button class="clear-filter" id="clearCharFilter" style="display:none;">초기화</button>
       </div>
+      <div class="char-mode-toggle">
+        <button class="mode-btn active" id="charModeOr">하나라도 포함</button>
+        <button class="mode-btn" id="charModeAnd">전부 포함</button>
+      </div>
       <div class="char-filter-wrap" id="charFilter"></div>
     </div>
     <div class="filter-section">
@@ -343,6 +369,20 @@
   // ── 캐릭터 필터 ──
   let allCharacters = [];
   let selectedChars = new Set();
+  let charFilterMode = 'or'; // 'or' | 'and'
+
+  document.getElementById('charModeOr').addEventListener('click', () => {
+    charFilterMode = 'or';
+    document.getElementById('charModeOr').classList.add('active');
+    document.getElementById('charModeAnd').classList.remove('active');
+    renderList();
+  });
+  document.getElementById('charModeAnd').addEventListener('click', () => {
+    charFilterMode = 'and';
+    document.getElementById('charModeAnd').classList.add('active');
+    document.getElementById('charModeOr').classList.remove('active');
+    renderList();
+  });
 
   async function loadCharacters() {
     try {
@@ -392,6 +432,9 @@
 
   document.getElementById('clearCharFilter').addEventListener('click', () => {
     selectedChars.clear();
+    charFilterMode = 'or';
+    document.getElementById('charModeOr').classList.add('active');
+    document.getElementById('charModeAnd').classList.remove('active');
     document.getElementById('clearCharFilter').style.display = 'none';
     document.querySelectorAll('#charFilter .char-tag.active').forEach(t => t.classList.remove('active'));
     renderList();
@@ -461,7 +504,9 @@
   function renderList() {
     const list = document.getElementById('imageList');
     const images = allImages.filter(img => {
-      const matchChar = selectedChars.size === 0 || img.characters.some(c => selectedChars.has(c));
+      const matchChar = selectedChars.size === 0 || (charFilterMode === 'and'
+        ? [...selectedChars].every(name => img.characters.includes(name))
+        : [...selectedChars].some(name => img.characters.includes(name)));
       const matchTag = selectedTags.size === 0 || img.tags.some(t => selectedTags.has(t));
       return matchChar && matchTag;
     });
