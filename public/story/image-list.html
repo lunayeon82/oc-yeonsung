@@ -34,6 +34,80 @@
     padding: 0 1.2rem 3rem;
   }
 
+  /* ── 캐릭터 필터 ── */
+  .filter-area {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(90,74,107,0.06);
+  }
+  .filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+  .filter-label {
+    font-size: 0.75rem;
+    color: #8a7a9a;
+    font-weight: 500;
+  }
+  .clear-filter {
+    font-size: 0.7rem;
+    color: #9a8aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'ko-font', sans-serif;
+  }
+  .clear-filter:hover { color: #5a4a6b; }
+  .char-filter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .char-filter-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .char-owner-label {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    white-space: nowrap;
+    padding-top: 0.25rem;
+    min-width: 3.5rem;
+  }
+  .char-tag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .char-tag {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .char-tag:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.1);
+  }
+  .char-tag.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
   /* ── 그림 그리드 ── */
   .image-grid {
     display: grid;
@@ -80,12 +154,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .image-card-owner {
-    font-size: 0.62rem;
-    opacity: 0.85;
-    margin-top: 0.1rem;
-  }
-
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
@@ -191,11 +259,6 @@
     font-size: 0.95rem;
     font-weight: 700;
   }
-  .viewer-owner {
-    font-size: 0.75rem;
-    opacity: 0.75;
-    margin-top: 0.2rem;
-  }
   .viewer-close {
     position: absolute;
     top: -44px; right: 0;
@@ -234,6 +297,14 @@
 </header>
 
 <div class="container">
+  <div class="filter-area">
+    <div class="filter-header">
+      <span class="filter-label">캐릭터로 보기</span>
+      <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
+    </div>
+    <div class="char-filter-wrap" id="charFilter"></div>
+  </div>
+
   <div class="image-grid" id="imageGrid">
     <div class="loading">불러오는 중<span class="dots"></span></div>
   </div>
@@ -249,7 +320,6 @@
     <img class="viewer-img" id="viewerImg" alt="">
     <div class="viewer-caption">
       <div class="viewer-title" id="viewerTitle"></div>
-      <div class="viewer-owner" id="viewerOwner"></div>
     </div>
   </div>
 </div>
@@ -291,56 +361,123 @@
     return div.innerHTML;
   }
 
+  // ── 캐릭터 필터 ──
+  let allCharacters = [];
+  let selectedChars = new Set();
+
+  async function loadCharacters() {
+    try {
+      const charDoc = await db.collection('data').doc('characters').get();
+      if (!charDoc.exists) return;
+
+      allCharacters = (charDoc.data().groups || []).map(owner => ({
+        owner: owner.owner,
+        names: (owner.subs || []).flatMap(sub =>
+          (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n)
+        )
+      })).filter(g => g.names.length > 0);
+
+      renderCharFilter();
+    } catch (e) {
+      console.error('캐릭터 로드 실패:', e);
+    }
+  }
+
+  function renderCharFilter() {
+    const wrap = document.getElementById('charFilter');
+    if (allCharacters.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">캐릭터 없음</span>';
+      return;
+    }
+    wrap.innerHTML = allCharacters.map(g => `
+      <div class="char-filter-row">
+        <span class="char-owner-label">${g.owner}</span>
+        <div class="char-tag-group">
+          ${g.names.map(name =>
+            `<span class="char-tag${selectedChars.has(name) ? ' active' : ''}" data-name="${name}">${name}</span>`
+          ).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    wrap.querySelectorAll('.char-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.name;
+        if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
+        else { selectedChars.add(name); tag.classList.add('active'); }
+        document.getElementById('clearFilter').style.display = selectedChars.size > 0 ? 'block' : 'none';
+        renderGrid();
+      });
+    });
+  }
+
+  document.getElementById('clearFilter').addEventListener('click', () => {
+    selectedChars.clear();
+    document.getElementById('clearFilter').style.display = 'none';
+    document.querySelectorAll('#charFilter .char-tag.active').forEach(t => t.classList.remove('active'));
+    renderGrid();
+  });
+
   // ── 그림 목록 로드 ──
+  let allImages = [];
+
   async function loadImages() {
     const grid = document.getElementById('imageGrid');
     try {
       const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
-      if (snapshot.empty) {
-        grid.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!</p></div>';
-        return;
-      }
-
-      const images = snapshot.docs.map(doc => {
+      allImages = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           pid: doc.id,
           title: data.title || '(제목 없음)',
-          owner: data.owner || '',
+          characters: data.characters || [],
           fullUrl: data.fullUrl || '',
           thumbUrl: data.thumbUrl || ''
         };
       });
-
-      grid.innerHTML = images.map(img => `
-        <div class="image-card" data-pid="${img.pid}">
-          <img src="${escapeHtml(img.thumbUrl)}" alt="${escapeHtml(img.title)}" loading="lazy">
-          <div class="image-card-scrim">
-            <div class="image-card-title">${escapeHtml(img.title)}</div>
-            ${img.owner ? `<div class="image-card-owner">${escapeHtml(img.owner)}</div>` : ''}
-          </div>
-        </div>
-      `).join('');
-
-      grid.querySelectorAll('.image-card').forEach((card, i) => {
-        card.addEventListener('click', () => openViewer(images[i]));
-      });
+      renderGrid();
     } catch (e) {
       console.error('그림 목록 로드 실패:', e);
       grid.innerHTML = '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
     }
   }
 
+  // ── 그리드 렌더 (캐릭터 필터 적용) ──
+  function renderGrid() {
+    const grid = document.getElementById('imageGrid');
+    const images = selectedChars.size === 0
+      ? allImages
+      : allImages.filter(img => img.characters.some(c => selectedChars.has(c)));
+
+    if (images.length === 0) {
+      grid.innerHTML = allImages.length === 0
+        ? '<div class="empty-state"><div class="icon">🖼</div><p>아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!</p></div>'
+        : '<div class="empty-state"><div class="icon">🖼</div><p>해당 캐릭터의 그림이 없어요</p></div>';
+      return;
+    }
+
+    grid.innerHTML = images.map(img => `
+      <div class="image-card" data-pid="${img.pid}">
+        <img src="${escapeHtml(img.thumbUrl)}" alt="${escapeHtml(img.title)}" loading="lazy">
+        <div class="image-card-scrim">
+          <div class="image-card-title">${escapeHtml(img.title)}</div>
+        </div>
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.image-card').forEach((card, i) => {
+      card.addEventListener('click', () => openViewer(images[i]));
+    });
+  }
+
   // ── 이미지 뷰어 ──
   const viewerOverlay = document.getElementById('viewerOverlay');
   const viewerImg = document.getElementById('viewerImg');
   const viewerTitle = document.getElementById('viewerTitle');
-  const viewerOwner = document.getElementById('viewerOwner');
 
   function openViewer(img) {
     viewerImg.src = img.fullUrl;
     viewerTitle.textContent = img.title;
-    viewerOwner.textContent = img.owner;
     viewerOverlay.classList.add('show');
   }
   function closeViewer() {
@@ -351,6 +488,7 @@
     if (e.target === viewerOverlay) closeViewer();
   });
 
+  loadCharacters();
   loadImages();
 </script>
 </body>

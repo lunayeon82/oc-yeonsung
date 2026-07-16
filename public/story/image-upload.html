@@ -87,6 +87,114 @@
   .title-input::placeholder { color: #c8b8d8; }
   .title-input:focus { border-bottom-color: #b8a9c9; }
 
+  /* ── 캐릭터 태그 선택 ── */
+  .tag-section {
+    margin-bottom: 1.2rem;
+  }
+
+  .tag-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag-section-label {
+    font-size: 0.75rem;
+    color: #8a7a9a;
+    font-weight: 500;
+  }
+
+  .tag-toggle-btn {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    text-decoration: underline;
+  }
+
+  .tag-picker {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 0.8rem;
+    transition: all 0.3s ease;
+  }
+
+  .tag-picker.collapsed {
+    max-height: 0;
+    padding: 0 0.8rem;
+    overflow: hidden;
+    border-color: transparent;
+  }
+
+  .tag-picker-group {
+    margin-bottom: 0.5rem;
+  }
+  .tag-picker-group:last-child { margin-bottom: 0; }
+
+  .tag-group-label {
+    font-size: 0.65rem;
+    color: #a99ab8;
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  .tag-picker-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .pick-tag {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 16px;
+    font-size: 0.72rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'ko-font', sans-serif;
+  }
+  .pick-tag:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.1);
+  }
+  .pick-tag.selected {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  .selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    min-height: 1.5rem;
+  }
+
+  .selected-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    background: rgba(184,169,201,0.18);
+    color: #6a5a7a;
+    border-radius: 12px;
+    font-size: 0.72rem;
+  }
+
+  .selected-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 0.65rem;
+  }
+  .selected-tag .remove-tag:hover { opacity: 1; }
+
   /* ── 파일 선택 영역 ── */
   .drop-zone {
     display: block;
@@ -198,6 +306,20 @@
   <!-- 제목 입력 -->
   <input type="text" class="title-input" id="imageTitle" placeholder="제목을 입력하세요">
 
+  <!-- 캐릭터 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">등장 캐릭터</span>
+      <button class="tag-toggle-btn" id="tagToggle">선택하기 ▾</button>
+    </div>
+    <div class="selected-tags" id="selectedTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>
+    </div>
+    <div class="tag-picker collapsed" id="tagPicker">
+      <!-- Firestore에서 캐릭터 로드 -->
+    </div>
+  </div>
+
   <!-- 파일 선택 -->
   <label class="drop-zone" id="dropZone">
     <span class="drop-zone-label">📷 눌러서 그림 선택하기</span>
@@ -285,6 +407,93 @@
     }
   }
   loadUserNames();
+
+  // ── 캐릭터 태그 ──
+  let selectedCharacters = [];
+  let allCharacters = [];
+
+  async function loadCharacters() {
+    try {
+      const charDoc = await db.collection('data').doc('characters').get();
+      if (!charDoc.exists) return;
+
+      const groups = [];
+      (charDoc.data().groups || []).forEach(owner => {
+        (owner.subs || []).forEach(sub => {
+          const chars = (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n);
+          if (chars.length > 0) {
+            groups.push({ label: `${owner.owner} — ${sub.label}`, chars });
+          }
+        });
+      });
+
+      allCharacters = groups;
+      renderTagPicker();
+    } catch (e) {
+      console.error('캐릭터 로드 실패:', e);
+    }
+  }
+
+  function renderTagPicker() {
+    const picker = document.getElementById('tagPicker');
+    picker.innerHTML = allCharacters.map(g => `
+      <div class="tag-picker-group">
+        <span class="tag-group-label">${g.label}</span>
+        <div class="tag-picker-tags">
+          ${g.chars.map(name => `
+            <span class="pick-tag${selectedCharacters.includes(name) ? ' selected' : ''}"
+                  data-name="${name}">${name}</span>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    picker.querySelectorAll('.pick-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.name;
+        if (selectedCharacters.includes(name)) {
+          selectedCharacters = selectedCharacters.filter(n => n !== name);
+          tag.classList.remove('selected');
+        } else {
+          selectedCharacters.push(name);
+          tag.classList.add('selected');
+        }
+        renderSelectedTags();
+      });
+    });
+  }
+
+  function renderSelectedTags() {
+    const wrap = document.getElementById('selectedTags');
+    if (selectedCharacters.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>';
+      return;
+    }
+    wrap.innerHTML = selectedCharacters.map(name => `
+      <span class="selected-tag">
+        ${name}
+        <span class="remove-tag" data-name="${name}">✕</span>
+      </span>
+    `).join('');
+
+    wrap.querySelectorAll('.remove-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.name;
+        selectedCharacters = selectedCharacters.filter(n => n !== name);
+        renderSelectedTags();
+        renderTagPicker();
+      });
+    });
+  }
+
+  document.getElementById('tagToggle').addEventListener('click', () => {
+    const picker = document.getElementById('tagPicker');
+    const btn = document.getElementById('tagToggle');
+    picker.classList.toggle('collapsed');
+    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  });
+
+  loadCharacters();
 
   // ── 뒤로가기 ──
   document.getElementById('backBtn').addEventListener('click', async () => {
@@ -391,6 +600,7 @@
       batch.set(imageRef, {
         title,
         owner,
+        characters: selectedCharacters,
         fullUrl,
         thumbUrl,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
