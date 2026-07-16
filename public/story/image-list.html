@@ -201,9 +201,15 @@
     object-fit: cover;
     background: rgba(184,169,201,0.12);
   }
-  .image-card-chcount {
+  .image-card-chcount,
+  .image-card-comment-count {
     font-size: 0.62rem;
     color: #a99ab8;
+  }
+  .image-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
   }
 
   @keyframes fadeUp {
@@ -510,7 +516,8 @@
       characters: data.characters || [],
       tags: data.tags || [],
       thumbUrl: data.thumbUrl || '',
-      chapterCount: data.chapterCount || 1
+      chapterCount: data.chapterCount || 1,
+      commentCount: data.commentCount || 0
     };
   }
 
@@ -568,7 +575,10 @@
             <div class="image-card-title">${escapeHtml(img.title)}</div>
             ${img.description ? `<div class="image-card-desc">${escapeHtml(img.description)}</div>` : ''}
             ${tagsHtml ? `<div class="image-card-tags">${tagsHtml}</div>` : ''}
-            ${img.chapterCount > 1 ? `<div class="image-card-chcount">🖼 ${img.chapterCount}장</div>` : ''}
+            <div class="image-card-meta">
+              ${img.chapterCount > 1 ? `<span class="image-card-chcount">🖼 ${img.chapterCount}장</span>` : ''}
+              <span class="image-card-comment-count">💬 ${img.commentCount}개</span>
+            </div>
           </div>
           <img class="image-card-thumb" src="${escapeHtml(img.thumbUrl)}" alt="" loading="lazy">
         </a>

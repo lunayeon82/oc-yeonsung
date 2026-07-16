@@ -62,6 +62,193 @@
   }
   .bookmark-btn:hover { background: rgba(184,169,201,0.15); }
 
+  .comment-toggle-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .comment-toggle-btn:hover { background: rgba(184,169,201,0.15); }
+  .comment-toggle-btn.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  /* ── 댓글 패널 ── */
+  .comment-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.15);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  .comment-overlay.open { opacity: 1; visibility: visible; }
+
+  .comment-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 340px;
+    max-width: 88vw;
+    background: rgba(245,240,232,0.97);
+    backdrop-filter: blur(16px);
+    z-index: 200;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(90,74,107,0.1);
+  }
+  .comment-panel.open { transform: translateX(0); }
+
+  .comment-panel-header {
+    padding: 1.2rem 1rem;
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .comment-panel-header h3 {
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.95rem;
+    color: #5a4a6b;
+    font-weight: 700;
+  }
+
+  .comment-panel-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #8a7a9a;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comment-panel-close:hover { background: rgba(184,169,201,0.15); }
+
+  .comment-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.4rem 1rem;
+  }
+
+  .comment-item {
+    position: relative;
+    padding: 0.8rem 1.7rem 0.8rem 0;
+    border-bottom: 1px solid rgba(184,169,201,0.1);
+  }
+  .comment-item:last-child { border-bottom: none; }
+
+  .comment-delete-btn {
+    position: absolute;
+    top: 0.7rem;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #c8b8d8;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .comment-delete-btn:hover {
+    background: rgba(184,169,201,0.18);
+    color: #8a6a9a;
+  }
+
+  .comment-chapter-tag {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    margin-bottom: 0.35rem;
+    background: rgba(184,169,201,0.15);
+    color: #7a6a8a;
+    border-radius: 8px;
+    font-size: 0.65rem;
+  }
+
+  .comment-body {
+    font-size: 0.85rem;
+    color: #4a3a5b;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .comment-date {
+    font-size: 0.68rem;
+    color: #a99ab8;
+    margin-top: 0.3rem;
+  }
+
+  .comment-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #a99ab8;
+    font-size: 0.8rem;
+  }
+
+  .comment-form {
+    padding: 0.9rem 1rem;
+    border-top: 1px solid rgba(184,169,201,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .comment-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 56px;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.6);
+    color: #4a3a5b;
+    font-size: 0.82rem;
+    font-family: 'ko-font', sans-serif;
+    line-height: 1.5;
+  }
+  .comment-input:focus {
+    outline: none;
+    border-color: #b8a9c9;
+  }
+
+  .comment-submit-btn {
+    align-self: flex-end;
+    padding: 0.45rem 1.1rem;
+    background: #b8a9c9;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .comment-submit-btn:hover { background: #a594b8; }
+  .comment-submit-btn:disabled { opacity: 0.5; cursor: default; }
+
   /* ── 설정 드롭다운 ── */
   .settings-wrap { position: relative; }
 
@@ -286,6 +473,7 @@
   <button class="nav-link" id="backBtn">← 목록</button>
   <div class="top-bar-actions">
     <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
+    <button class="comment-toggle-btn" id="commentToggleBtn" title="댓글" style="display:none;">💬</button>
     <div class="settings-wrap" id="settingsWrap" style="display:none;">
       <button class="settings-btn" id="settingsBtn" title="설정">⚙</button>
       <div class="settings-dropdown" id="settingsDropdown">
@@ -301,6 +489,20 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 댓글 패널 -->
+<div class="comment-overlay" id="commentOverlay"></div>
+<div class="comment-panel" id="commentPanel">
+  <div class="comment-panel-header">
+    <h3>댓글</h3>
+    <button class="comment-panel-close" id="commentPanelClose">✕</button>
+  </div>
+  <div class="comment-list" id="commentList"></div>
+  <div class="comment-form">
+    <textarea class="comment-input" id="commentInput" placeholder="댓글을 남겨보세요" rows="2" maxlength="500"></textarea>
+    <button class="comment-submit-btn" id="commentSubmitBtn">등록</button>
+  </div>
+</div>
 
 <script src="../assets/personal-nav.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -352,6 +554,7 @@
   let imageSet = null;
   let chapters = [];
   let currentIndex = 0;
+  let comments = [];
 
   let USER_NAMES = ['김굥', '하지', '예밍'];
   async function loadUserNames() {
@@ -385,7 +588,9 @@
 
       document.getElementById('settingsWrap').style.display = 'flex';
       document.getElementById('bookmarkBtn').style.display = 'flex';
+      document.getElementById('commentToggleBtn').style.display = 'flex';
       renderSet();
+      loadComments();
       setSyncStatus(true);
     } catch (e) {
       console.error('로드 실패:', e);
@@ -507,11 +712,15 @@
   });
 
   document.getElementById('deleteItem').addEventListener('click', async () => {
-    if (!(await customConfirm(`"${imageSet?.title || '이 그림'}"을(를) 삭제할까요?\n모든 그림과 정보가 함께 삭제됩니다.`))) return;
+    if (!(await customConfirm(`"${imageSet?.title || '이 그림'}"을(를) 삭제할까요?\n그림과 댓글도 모두 삭제돼요.`))) return;
 
     try {
       const batch = db.batch();
       chapters.forEach(ch => batch.delete(db.collection('imageChapters').doc(ch.chapterPid)));
+
+      const commentSnap = await db.collection('comments').where('storyId', '==', pid).get();
+      commentSnap.docs.forEach(doc => batch.delete(doc.ref));
+
       batch.delete(db.collection('images').doc(pid));
       batch.delete(db.collection('feed').doc(pid));
       await batch.commit();
@@ -528,6 +737,142 @@
       showToast('삭제에 실패했어요');
     }
   });
+
+  // ── 댓글 ──
+  function currentChapter() {
+    return chapters[currentIndex] || null;
+  }
+
+  function chapterLabel(chapterPid) {
+    const idx = chapters.findIndex(c => c.chapterPid === chapterPid);
+    if (idx === -1) return '';
+    return `${idx + 1}번째 그림`;
+  }
+
+  async function loadComments() {
+    try {
+      const snap = await db.collection('comments').where('storyId', '==', pid).get();
+      comments = snap.docs.map(doc => ({
+        id: doc.id,
+        body: doc.data().body || '',
+        chapterPid: doc.data().chapterPid || '',
+        createdAt: doc.data().createdAt
+      })).sort((a, b) => {
+        const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return bt - at;
+      });
+      renderComments();
+    } catch (e) {
+      console.error('댓글 로드 실패:', e);
+    }
+  }
+
+  function renderComments() {
+    const list = document.getElementById('commentList');
+    if (comments.length === 0) {
+      list.innerHTML = '<div class="comment-empty">아직 댓글이 없어요. 첫 댓글을 남겨보세요!</div>';
+      return;
+    }
+    list.innerHTML = comments.map(c => {
+      const dateStr = c.createdAt?.toDate ? formatCommentDate(c.createdAt.toDate()) : '';
+      const chapterTag = chapters.length > 1 ? chapterLabel(c.chapterPid) : '';
+      return `
+        <div class="comment-item">
+          <button class="comment-delete-btn" data-id="${c.id}" title="댓글 삭제" aria-label="댓글 삭제">✕</button>
+          ${chapterTag ? `<span class="comment-chapter-tag">${escapeHtml(chapterTag)}</span>` : ''}
+          <div class="comment-body">${escapeHtml(c.body)}</div>
+          ${dateStr ? `<div class="comment-date">${dateStr}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.comment-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteComment(btn.dataset.id));
+    });
+  }
+
+  async function deleteComment(commentId) {
+    if (!(await customConfirm('이 댓글을 삭제할까요?'))) return;
+    try {
+      const batch = db.batch();
+      batch.delete(db.collection('comments').doc(commentId));
+      batch.update(db.collection('images').doc(pid), {
+        commentCount: firebase.firestore.FieldValue.increment(-1)
+      });
+      await batch.commit();
+
+      await loadComments();
+      showToast('댓글을 삭제했어요');
+    } catch (e) {
+      console.error('댓글 삭제 실패:', e);
+      showToast('댓글 삭제에 실패했어요');
+    }
+  }
+
+  async function submitComment() {
+    const ch = currentChapter();
+    if (!ch) return;
+
+    const input = document.getElementById('commentInput');
+    const body = input.value.trim();
+    if (!body) return;
+
+    const btn = document.getElementById('commentSubmitBtn');
+    btn.disabled = true;
+    try {
+      const commentRef = db.collection('comments').doc();
+      const batch = db.batch();
+      batch.set(commentRef, {
+        storyId: pid,
+        chapterPid: ch.chapterPid,
+        body,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      batch.update(db.collection('images').doc(pid), {
+        commentCount: firebase.firestore.FieldValue.increment(1)
+      });
+      await batch.commit();
+
+      input.value = '';
+      await loadComments();
+      showToast('댓글이 등록되었어요');
+    } catch (e) {
+      console.error('댓글 등록 실패:', e);
+      showToast('댓글 등록에 실패했어요');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function openCommentPanel() {
+    document.getElementById('commentPanel').classList.add('open');
+    document.getElementById('commentOverlay').classList.add('open');
+    document.getElementById('commentToggleBtn').classList.add('active');
+  }
+
+  function closeCommentPanel() {
+    document.getElementById('commentPanel').classList.remove('open');
+    document.getElementById('commentOverlay').classList.remove('open');
+    document.getElementById('commentToggleBtn').classList.remove('active');
+  }
+
+  document.getElementById('commentToggleBtn').addEventListener('click', () => {
+    const isOpen = document.getElementById('commentPanel').classList.contains('open');
+    isOpen ? closeCommentPanel() : openCommentPanel();
+  });
+  document.getElementById('commentPanelClose').addEventListener('click', closeCommentPanel);
+  document.getElementById('commentOverlay').addEventListener('click', closeCommentPanel);
+  document.getElementById('commentSubmitBtn').addEventListener('click', submitComment);
+
+  function formatCommentDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${y}.${m}.${d} ${hh}:${mm}`;
+  }
 
   loadImageSet();
 </script>

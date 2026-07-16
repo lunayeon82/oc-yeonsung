@@ -1173,6 +1173,7 @@
 
       // 스토리 삭제
       batch.delete(db.collection('stories').doc(pid));
+      batch.delete(db.collection('feed').doc(pid));
 
       await batch.commit();
       showToast('삭제했어요');

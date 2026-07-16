@@ -1022,6 +1022,14 @@
         });
       });
 
+      const feedRef = db.collection('feed').doc(pid);
+      batch.set(feedRef, {
+        type: 'story',
+        refId: pid,
+        title,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
       await batch.commit();
 
       document.getElementById('saveStatus').textContent = '저장됨';
@@ -1100,8 +1108,14 @@
         .where('storyId', '==', pid).get();
       chapSnap.forEach(doc => batch.delete(doc.ref));
 
+      // 댓글 삭제
+      const commentSnap = await db.collection('comments')
+        .where('storyId', '==', pid).get();
+      commentSnap.forEach(doc => batch.delete(doc.ref));
+
       // 스토리 삭제
       batch.delete(db.collection('stories').doc(pid));
+      batch.delete(db.collection('feed').doc(pid));
       await batch.commit();
 
       showToast('삭제되었어요');

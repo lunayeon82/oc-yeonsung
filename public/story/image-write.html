@@ -1047,8 +1047,10 @@
 
     try {
       const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
+      const commentSnap = await db.collection('comments').where('storyId', '==', pid).get();
       const batch = db.batch();
       chapSnap.forEach(doc => batch.delete(doc.ref));
+      commentSnap.forEach(doc => batch.delete(doc.ref));
       batch.delete(db.collection('images').doc(pid));
       batch.delete(db.collection('feed').doc(pid));
       await batch.commit();
