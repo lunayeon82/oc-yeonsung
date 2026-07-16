@@ -223,10 +223,10 @@
         <img src="assets/icon/chick-v0.png" alt="" class="modal-card-icon">
         <span>랜덤 뽑기 실행</span>
       </a>
-      <a class="modal-card" href="story/story-list.html">
+      <div class="modal-card" id="storyCard">
         <img src="assets/icon/hedgehog-v0.png" alt="" class="modal-card-icon">
-        <span>연성글 보러가기</span>
-      </a>
+        <span>연성 보러가기</span>
+      </div>
       <a class="modal-card" href="character.html">
         <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
         <span>캐릭터 목록</span>
@@ -250,6 +250,20 @@
         <span>예밍</span>
       </a>
     </div>
+    <div class="enter-modal-links" id="storyLinks" style="display:none">
+      <a class="modal-card" href="story/story-list.html">
+        <img src="assets/icon/hedgehog-v0.png" alt="" class="modal-card-icon">
+        <span>글</span>
+      </a>
+      <a class="modal-card" href="story/image-list.html">
+        <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
+        <span>그림</span>
+      </a>
+      <a class="modal-card" href="story/timeline.html">
+        <img src="assets/icon/chick-v0.png" alt="" class="modal-card-icon">
+        <span>타임라인</span>
+      </a>
+    </div>
     <button class="modal-back-btn" id="modalBackBtn" style="display:none">← 뒤로</button>
   </div>
 </div>
@@ -262,19 +276,30 @@
   const enterModalTitle = document.getElementById('enterModalTitle');
   const mainLinks = document.getElementById('mainLinks');
   const userLinks = document.getElementById('userLinks');
+  const storyLinks = document.getElementById('storyLinks');
   const myStorageCard = document.getElementById('myStorageCard');
+  const storyCard = document.getElementById('storyCard');
   const modalBackBtn = document.getElementById('modalBackBtn');
 
   function showMainLinks() {
     enterModalTitle.textContent = '어디로 가시겠어요?';
     mainLinks.style.display = '';
     userLinks.style.display = 'none';
+    storyLinks.style.display = 'none';
     modalBackBtn.style.display = 'none';
   }
   function showUserLinks() {
     enterModalTitle.textContent = '누구의 저장소로 가시겠어요?';
     mainLinks.style.display = 'none';
     userLinks.style.display = '';
+    storyLinks.style.display = 'none';
+    modalBackBtn.style.display = '';
+  }
+  function showStoryLinks() {
+    enterModalTitle.textContent = '무엇을 보러 가시겠어요?';
+    mainLinks.style.display = 'none';
+    userLinks.style.display = 'none';
+    storyLinks.style.display = '';
     modalBackBtn.style.display = '';
   }
 
@@ -284,6 +309,7 @@
     if (e.target === enterOverlay) enterOverlay.classList.remove('show');
   });
   myStorageCard.addEventListener('click', showUserLinks);
+  storyCard.addEventListener('click', showStoryLinks);
   modalBackBtn.addEventListener('click', showMainLinks);
 
   // 물 속을 떠다니는 입자 — 적은 개수, 느린 속도로 은은하게

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 그림 목록</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a89ec4">
+<link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/pwa.js" defer></script>
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('../assets/ko-font.ttf') format('truetype');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.2rem 3rem;
+  }
+
+  /* ── 그림 그리드 ── */
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.8rem;
+  }
+
+  .image-card {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(184,169,201,0.2);
+    transition: all 0.25s ease;
+    animation: fadeUp 0.4s ease both;
+  }
+  .image-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.15);
+    border-color: rgba(184,169,201,0.4);
+  }
+  .image-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .image-card-scrim {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 0.6rem 0.6rem 0.4rem;
+    background: linear-gradient(180deg, rgba(58,53,48,0) 0%, rgba(58,53,48,0.65) 100%);
+    color: #fff;
+  }
+  .image-card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .image-card-owner {
+    font-size: 0.62rem;
+    opacity: 0.85;
+    margin-top: 0.1rem;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── 빈 상태 / 로딩 ── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #a99ab8;
+  }
+  .empty-state .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+  .empty-state p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #a99ab8;
+    font-size: 0.85rem;
+  }
+  .loading .dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+
+  /* ── 새 그림 버튼 ── */
+  .new-image-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b8a9c9, #9a86b5);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(90,74,107,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    text-decoration: none;
+  }
+  .new-image-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(90,74,107,0.35);
+  }
+
+  /* ── 이미지 뷰어 모달 ── */
+  .viewer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20,14,30,0.75);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    padding: 1.2rem;
+  }
+  .viewer-overlay.show { opacity: 1; visibility: visible; }
+  .viewer-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.25s ease;
+  }
+  .viewer-overlay.show .viewer-content { transform: translateY(0) scale(1); }
+  .viewer-img {
+    max-width: 100%;
+    max-height: 74vh;
+    border-radius: 10px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+  }
+  .viewer-caption {
+    margin-top: 0.8rem;
+    text-align: center;
+    color: #f4efe6;
+  }
+  .viewer-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .viewer-owner {
+    font-size: 0.75rem;
+    opacity: 0.75;
+    margin-top: 0.2rem;
+  }
+  .viewer-close {
+    position: absolute;
+    top: -44px; right: 0;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .viewer-close:hover { background: rgba(255,255,255,0.3); }
+
+  /* ── 반응형 ── */
+  @media (max-width: 480px) {
+    .container { padding: 0 0.8rem 4rem; }
+    .image-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<a href="../index.html" class="nav-link nav-corner">← 홈</a>
+<div class="nav-corner-right">
+  <a class="action-pill" href="story-list.html">📝 글 목록</a>
+</div>
+
+<header class="page-hero">
+  <h1>연성 그림 목록</h1>
+</header>
+
+<div class="container">
+  <div class="image-grid" id="imageGrid">
+    <div class="loading">불러오는 중<span class="dots"></span></div>
+  </div>
+</div>
+
+<!-- 새 그림 업로드 FAB -->
+<a class="new-image-btn" href="image-upload.html" title="새 그림 업로드">✎</a>
+
+<!-- 이미지 뷰어 -->
+<div class="viewer-overlay" id="viewerOverlay">
+  <div class="viewer-content">
+    <button class="viewer-close" id="viewerClose" aria-label="닫기">✕</button>
+    <img class="viewer-img" id="viewerImg" alt="">
+    <div class="viewer-caption">
+      <div class="viewer-title" id="viewerTitle"></div>
+      <div class="viewer-owner" id="viewerOwner"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.firebasestorage.app",
+    messagingSenderId: "145543545184",
+    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+  db.collection('data').doc('characters').onSnapshot(
+    () => setSyncStatus(true),
+    () => setSyncStatus(false)
+  );
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ── 그림 목록 로드 ──
+  async function loadImages() {
+    const grid = document.getElementById('imageGrid');
+    try {
+      const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
+      if (snapshot.empty) {
+        grid.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!</p></div>';
+        return;
+      }
+
+      const images = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          pid: doc.id,
+          title: data.title || '(제목 없음)',
+          owner: data.owner || '',
+          fullUrl: data.fullUrl || '',
+          thumbUrl: data.thumbUrl || ''
+        };
+      });
+
+      grid.innerHTML = images.map(img => `
+        <div class="image-card" data-pid="${img.pid}">
+          <img src="${escapeHtml(img.thumbUrl)}" alt="${escapeHtml(img.title)}" loading="lazy">
+          <div class="image-card-scrim">
+            <div class="image-card-title">${escapeHtml(img.title)}</div>
+            ${img.owner ? `<div class="image-card-owner">${escapeHtml(img.owner)}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.image-card').forEach((card, i) => {
+        card.addEventListener('click', () => openViewer(images[i]));
+      });
+    } catch (e) {
+      console.error('그림 목록 로드 실패:', e);
+      grid.innerHTML = '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+    }
+  }
+
+  // ── 이미지 뷰어 ──
+  const viewerOverlay = document.getElementById('viewerOverlay');
+  const viewerImg = document.getElementById('viewerImg');
+  const viewerTitle = document.getElementById('viewerTitle');
+  const viewerOwner = document.getElementById('viewerOwner');
+
+  function openViewer(img) {
+    viewerImg.src = img.fullUrl;
+    viewerTitle.textContent = img.title;
+    viewerOwner.textContent = img.owner;
+    viewerOverlay.classList.add('show');
+  }
+  function closeViewer() {
+    viewerOverlay.classList.remove('show');
+  }
+  document.getElementById('viewerClose').addEventListener('click', closeViewer);
+  viewerOverlay.addEventListener('click', (e) => {
+    if (e.target === viewerOverlay) closeViewer();
+  });
+
+  loadImages();
+</script>
+</body>
+</html>
