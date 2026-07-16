@@ -40,6 +40,28 @@
     justify-content: space-between;
   }
 
+  .top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .bookmark-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .bookmark-btn:hover { background: rgba(184,169,201,0.15); }
+
   /* ── 설정 드롭다운 ── */
   .settings-wrap { position: relative; }
 
@@ -262,11 +284,14 @@
 
 <div class="top-bar">
   <button class="nav-link" id="backBtn">← 목록</button>
-  <div class="settings-wrap" id="settingsWrap" style="display:none;">
-    <button class="settings-btn" id="settingsBtn" title="설정">⚙</button>
-    <div class="settings-dropdown" id="settingsDropdown">
-      <button class="settings-item" id="editItem">✏ 수정</button>
-      <button class="settings-item danger" id="deleteItem">🗑 삭제</button>
+  <div class="top-bar-actions">
+    <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
+    <div class="settings-wrap" id="settingsWrap" style="display:none;">
+      <button class="settings-btn" id="settingsBtn" title="설정">⚙</button>
+      <div class="settings-dropdown" id="settingsDropdown">
+        <button class="settings-item" id="editItem">✏ 수정</button>
+        <button class="settings-item danger" id="deleteItem">🗑 삭제</button>
+      </div>
     </div>
   </div>
 </div>
@@ -282,6 +307,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="../assets/confirm-modal.js"></script>
+<script src="../assets/storage-modal.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
@@ -327,6 +353,19 @@
   let chapters = [];
   let currentIndex = 0;
 
+  let USER_NAMES = ['김굥', '하지', '예밍'];
+  async function loadUserNames() {
+    try {
+      const doc = await db.collection('data').doc('users').get();
+      if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length) {
+        USER_NAMES = doc.data().names;
+      }
+    } catch (e) {
+      console.warn('유저 목록 로드 실패:', e);
+    }
+  }
+  loadUserNames();
+
   async function loadImageSet() {
     try {
       const doc = await db.collection('images').doc(pid).get();
@@ -345,6 +384,7 @@
       })).sort((a, b) => a.order - b.order);
 
       document.getElementById('settingsWrap').style.display = 'flex';
+      document.getElementById('bookmarkBtn').style.display = 'flex';
       renderSet();
       setSyncStatus(true);
     } catch (e) {
@@ -412,6 +452,39 @@
   // ── 뒤로가기 ──
   document.getElementById('backBtn').addEventListener('click', () => {
     location.href = 'image-list.html';
+  });
+
+  // ── 북마크 버튼 ──
+  document.getElementById('bookmarkBtn').addEventListener('click', async () => {
+    const result = await openStoragePicker({
+      title: '저장하기',
+      users: USER_NAMES,
+      targets: [
+        { key: 'readLater', label: '📌 나중에 볼 연성' },
+        { key: 'storyBox', label: '📚 연성 보관함' }
+      ]
+    });
+    if (!result) return;
+
+    const targetLabel = result.target === 'readLater' ? '나중에 볼 연성' : '연성 보관함';
+    try {
+      const ref = db.collection('users').doc(result.user).collection(result.target);
+      const dup = await ref.where('storyId', '==', pid).limit(1).get();
+      if (!dup.empty) {
+        showToast('이미 저장되어 있어요');
+        return;
+      }
+      await ref.add({
+        storyId: pid,
+        title: imageSet.title || '(제목 없음)',
+        type: 'image',
+        addedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast(`${result.user}님의 ${targetLabel}에 저장했어요`);
+    } catch (e) {
+      console.error('저장 실패:', e);
+      showToast('저장에 실패했어요');
+    }
   });
 
   // ── 설정 드롭다운 ──

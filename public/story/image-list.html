@@ -243,6 +243,31 @@
     75% { content: '...'; }
   }
 
+  .load-more-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  .load-more-btn {
+    padding: 0.6rem 1.6rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 999px;
+    color: #7a6a8a;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .load-more-btn:hover {
+    background: rgba(184,169,201,0.12);
+    border-color: rgba(184,169,201,0.5);
+  }
+  .load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
   /* ── 새 그림 버튼 ── */
   .new-image-btn {
     position: fixed;
@@ -366,6 +391,8 @@
     return result;
   }
 
+  const IMAGE_PAGE_SIZE = 5;
+
   // ── 캐릭터 필터 ──
   let allCharacters = [];
   let selectedChars = new Set();
@@ -375,13 +402,13 @@
     charFilterMode = 'or';
     document.getElementById('charModeOr').classList.add('active');
     document.getElementById('charModeAnd').classList.remove('active');
-    renderList();
+    refreshList();
   });
   document.getElementById('charModeAnd').addEventListener('click', () => {
     charFilterMode = 'and';
     document.getElementById('charModeAnd').classList.add('active');
     document.getElementById('charModeOr').classList.remove('active');
-    renderList();
+    refreshList();
   });
 
   async function loadCharacters() {
@@ -425,7 +452,7 @@
         if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
         else { selectedChars.add(name); tag.classList.add('active'); }
         document.getElementById('clearCharFilter').style.display = selectedChars.size > 0 ? 'block' : 'none';
-        renderList();
+        refreshList();
       });
     });
   }
@@ -437,15 +464,16 @@
     document.getElementById('charModeAnd').classList.remove('active');
     document.getElementById('clearCharFilter').style.display = 'none';
     document.querySelectorAll('#charFilter .char-tag.active').forEach(t => t.classList.remove('active'));
-    renderList();
+    refreshList();
   });
 
-  // ── 태그 필터 (업로드된 그림들의 태그 합집합에서 도출) ──
+  // ── 태그 필터 (지금까지 불러온 그림들의 태그 합집합에서 도출) ──
   let selectedTags = new Set();
 
   function renderTagFilter() {
     const wrap = document.getElementById('tagFilter');
-    const allTags = [...new Set(allImages.flatMap(img => img.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
+    const source = allImagesFull || allImages;
+    const allTags = [...new Set(source.flatMap(img => img.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
 
     if (allTags.length === 0) {
       wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">태그 없음</span>';
@@ -461,7 +489,7 @@
         if (selectedTags.has(name)) { selectedTags.delete(name); tag.classList.remove('active'); }
         else { selectedTags.add(name); tag.classList.add('active'); }
         document.getElementById('clearTagFilter').style.display = selectedTags.size > 0 ? 'block' : 'none';
-        renderList();
+        refreshList();
       });
     });
   }
@@ -470,55 +498,68 @@
     selectedTags.clear();
     document.getElementById('clearTagFilter').style.display = 'none';
     document.querySelectorAll('#tagFilter .char-tag.active').forEach(t => t.classList.remove('active'));
-    renderList();
+    refreshList();
   });
 
-  // ── 그림 목록 로드 ──
-  let allImages = [];
-
-  async function loadImages() {
-    const list = document.getElementById('imageList');
-    try {
-      const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
-      allImages = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          pid: doc.id,
-          title: data.title || '(제목 없음)',
-          description: data.description || '',
-          characters: data.characters || [],
-          tags: data.tags || [],
-          thumbUrl: data.thumbUrl || '',
-          chapterCount: data.chapterCount || 1
-        };
-      });
-      renderTagFilter();
-      renderList();
-    } catch (e) {
-      console.error('그림 목록 로드 실패:', e);
-      list.innerHTML = '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
-    }
+  function mapImageDoc(doc) {
+    const data = doc.data();
+    return {
+      pid: doc.id,
+      title: data.title || '(제목 없음)',
+      description: data.description || '',
+      characters: data.characters || [],
+      tags: data.tags || [],
+      thumbUrl: data.thumbUrl || '',
+      chapterCount: data.chapterCount || 1
+    };
   }
 
-  // ── 목록 렌더 (캐릭터 + 태그 필터 적용) ──
-  function renderList() {
-    const list = document.getElementById('imageList');
-    const images = allImages.filter(img => {
-      const matchChar = selectedChars.size === 0 || (charFilterMode === 'and'
-        ? [...selectedChars].every(name => img.characters.includes(name))
-        : [...selectedChars].some(name => img.characters.includes(name)));
-      const matchTag = selectedTags.size === 0 || img.tags.some(t => selectedTags.has(t));
-      return matchChar && matchTag;
-    });
+  // ── 그림 목록 로드 (최근 수정순 페이지네이션) ──
+  let allImages = [];
+  let lastImageDoc = null;
+  let noMoreImages = false;
+  let isLoadingMoreImages = false;
+  let allImagesFull = null; // 필터 적용 시 1회 캐싱되는 전체 목록 (지연 로드)
 
-    if (images.length === 0) {
-      list.innerHTML = allImages.length === 0
-        ? '<div class="empty-state"><div class="icon">🖼</div><p>아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!</p></div>'
-        : '<div class="empty-state"><div class="icon">🖼</div><p>조건에 맞는 그림이 없어요</p></div>';
-      return;
+  async function loadImages() {
+    allImages = [];
+    lastImageDoc = null;
+    noMoreImages = false;
+    await loadMoreImages();
+  }
+
+  async function loadMoreImages() {
+    if (noMoreImages || isLoadingMoreImages) return;
+    isLoadingMoreImages = true;
+    renderDefaultList();
+
+    try {
+      let query = db.collection('images').orderBy('updatedAt', 'desc').limit(IMAGE_PAGE_SIZE);
+      if (lastImageDoc) query = query.startAfter(lastImageDoc);
+      const snapshot = await query.get();
+
+      const page = snapshot.docs.map(mapImageDoc);
+      allImages = allImages.concat(page);
+      lastImageDoc = snapshot.docs[snapshot.docs.length - 1] || lastImageDoc;
+      if (snapshot.docs.length < IMAGE_PAGE_SIZE) noMoreImages = true;
+    } catch (e) {
+      console.error('그림 목록 로드 실패:', e);
+      if (allImages.length === 0) {
+        isLoadingMoreImages = false;
+        document.getElementById('imageList').innerHTML =
+          '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+        return;
+      }
     }
 
-    list.innerHTML = images.map(img => {
+    isLoadingMoreImages = false;
+    renderDefaultList();
+    renderTagFilter();
+  }
+
+  // ── 카드 HTML 빌드 ──
+  function buildCardsHtml(images) {
+    return images.map(img => {
       const tagsHtml = [...img.characters, ...img.tags]
         .map(t => `<span class="image-card-tag">${escapeHtml(t)}</span>`).join('');
       return `
@@ -533,6 +574,95 @@
         </a>
       `;
     }).join('');
+  }
+
+  // ── 목록 렌더 (기본 모드 / 필터 모드 공용) ──
+  function renderList({ items, visibleCount, hasMore, isLoadingMore, onLoadMore, emptyMessage }) {
+    const list = document.getElementById('imageList');
+    const visible = items.slice(0, visibleCount);
+
+    if (visible.length === 0 && isLoadingMore) {
+      list.innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
+      return;
+    }
+
+    let html = visible.length === 0
+      ? `<div class="empty-state"><div class="icon">🖼</div><p>${emptyMessage}</p></div>`
+      : buildCardsHtml(visible);
+
+    if (hasMore) {
+      html += `
+        <div class="load-more-wrap">
+          <button class="load-more-btn" id="loadMoreBtn" ${isLoadingMore ? 'disabled' : ''}>${isLoadingMore ? '불러오는 중...' : '더보기'}</button>
+        </div>`;
+    }
+
+    list.innerHTML = html;
+
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', onLoadMore);
+  }
+
+  // ── 기본 모드 렌더 (최근 수정순 페이지네이션) ──
+  function renderDefaultList() {
+    renderList({
+      items: allImages,
+      visibleCount: allImages.length,
+      hasMore: !noMoreImages,
+      isLoadingMore: isLoadingMoreImages,
+      onLoadMore: loadMoreImages,
+      emptyMessage: '아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!'
+    });
+  }
+
+  // ── 필터 일치 여부 판정 ──
+  function matchesFilters(img) {
+    const matchChar = selectedChars.size === 0 || (charFilterMode === 'and'
+      ? [...selectedChars].every(name => img.characters.includes(name))
+      : [...selectedChars].some(name => img.characters.includes(name)));
+    const matchTag = selectedTags.size === 0 || img.tags.some(t => selectedTags.has(t));
+    return matchChar && matchTag;
+  }
+
+  function hasAnyFilterCriteria() {
+    return selectedChars.size > 0 || selectedTags.size > 0;
+  }
+
+  // ── 필터 모드 렌더 (캐싱된 전체 목록에서 필터링, 캐시 내에서 더보기) ──
+  let filteredVisibleCount = IMAGE_PAGE_SIZE;
+
+  function renderFilteredList() {
+    const filtered = (allImagesFull || []).filter(matchesFilters);
+    renderList({
+      items: filtered,
+      visibleCount: filteredVisibleCount,
+      hasMore: filteredVisibleCount < filtered.length,
+      isLoadingMore: false,
+      onLoadMore: () => { filteredVisibleCount += IMAGE_PAGE_SIZE; renderFilteredList(); },
+      emptyMessage: '조건에 맞는 그림이 없어요'
+    });
+  }
+
+  // ── 전체 목록 캐싱 (필터 적용 시 1회만 로드) ──
+  async function ensureFullImagesLoaded() {
+    if (allImagesFull !== null) return;
+    const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
+    allImagesFull = snapshot.docs.map(mapImageDoc);
+    renderTagFilter();
+  }
+
+  // ── 필터 적용/해제 진입점: 기본(페이지네이션) ↔ 필터(전체 캐시) 전환 ──
+  async function refreshList() {
+    if (!hasAnyFilterCriteria()) {
+      renderDefaultList();
+      return;
+    }
+    if (allImagesFull === null) {
+      document.getElementById('imageList').innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
+    }
+    await ensureFullImagesLoaded();
+    filteredVisibleCount = IMAGE_PAGE_SIZE;
+    renderFilteredList();
   }
 
   document.getElementById('newImageBtn').addEventListener('click', () => {

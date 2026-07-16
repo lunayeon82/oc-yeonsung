@@ -264,6 +264,7 @@
       <div class="section-header-actions">
         <button class="action-pill toggle-all-btn" id="readLaterToggleBtn">전체보기</button>
         <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+        <a class="action-pill" href="../story/image-list.html">🖼 그림 목록</a>
       </div>
     </div>
     <div class="story-list" id="readLaterList">
@@ -278,6 +279,7 @@
       <div class="section-header-actions">
         <button class="action-pill toggle-all-btn" id="storyBoxToggleBtn">전체보기</button>
         <a class="action-pill" href="../story/story-list.html">📖 글 목록</a>
+        <a class="action-pill" href="../story/image-list.html">🖼 그림 목록</a>
       </div>
     </div>
     <div class="story-list" id="storyBoxList">
@@ -560,7 +562,7 @@
       const d = doc.data();
       return `
         <div class="story-row" data-id="${doc.id}">
-          <a class="story-row-link" href="../story/story-view.html?pid=${esc(d.storyId)}">${esc(d.title)}</a>
+          <a class="story-row-link" href="../story/${d.type === 'image' ? 'image-view' : 'story-view'}.html?pid=${esc(d.storyId)}">${esc(d.title)}</a>
           <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="${coll}" title="삭제">✕</button>
         </div>
       `;
