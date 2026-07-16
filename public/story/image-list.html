@@ -259,9 +259,14 @@
     font-size: 0.95rem;
     font-weight: 700;
   }
-  .viewer-close {
+  .viewer-actions {
     position: absolute;
     top: -44px; right: 0;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .viewer-close,
+  .viewer-delete {
     width: 34px; height: 34px;
     border-radius: 50%;
     border: none;
@@ -275,6 +280,28 @@
     transition: background 0.2s;
   }
   .viewer-close:hover { background: rgba(255,255,255,0.3); }
+  .viewer-delete:hover { background: rgba(194,114,127,0.55); }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
   /* ── 반응형 ── */
   @media (max-width: 480px) {
@@ -316,7 +343,10 @@
 <!-- 이미지 뷰어 -->
 <div class="viewer-overlay" id="viewerOverlay">
   <div class="viewer-content">
-    <button class="viewer-close" id="viewerClose" aria-label="닫기">✕</button>
+    <div class="viewer-actions">
+      <button class="viewer-delete" id="viewerDelete" aria-label="삭제" title="삭제">🗑</button>
+      <button class="viewer-close" id="viewerClose" aria-label="닫기">✕</button>
+    </div>
     <img class="viewer-img" id="viewerImg" alt="">
     <div class="viewer-caption">
       <div class="viewer-title" id="viewerTitle"></div>
@@ -324,9 +354,13 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script src="../assets/personal-nav.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
@@ -339,6 +373,14 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
 
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
@@ -474,18 +516,51 @@
   const viewerOverlay = document.getElementById('viewerOverlay');
   const viewerImg = document.getElementById('viewerImg');
   const viewerTitle = document.getElementById('viewerTitle');
+  let currentViewingImage = null;
 
   function openViewer(img) {
+    currentViewingImage = img;
     viewerImg.src = img.fullUrl;
     viewerTitle.textContent = img.title;
     viewerOverlay.classList.add('show');
   }
   function closeViewer() {
     viewerOverlay.classList.remove('show');
+    currentViewingImage = null;
   }
   document.getElementById('viewerClose').addEventListener('click', closeViewer);
   viewerOverlay.addEventListener('click', (e) => {
     if (e.target === viewerOverlay) closeViewer();
+  });
+
+  // ── 이미지 삭제 ──
+  document.getElementById('viewerDelete').addEventListener('click', async () => {
+    if (!currentViewingImage) return;
+    const img = currentViewingImage;
+    if (!(await customConfirm(`"${img.title}"을(를) 삭제할까요?\n삭제하면 되돌릴 수 없어요.`))) return;
+
+    try {
+      await Promise.all([
+        storage.ref(`images/${img.pid}/full.webp`).delete().catch(() => {}),
+        storage.ref(`images/${img.pid}/thumb.webp`).delete().catch(() => {})
+      ]);
+
+      const batch = db.batch();
+      batch.delete(db.collection('images').doc(img.pid));
+
+      const feedSnap = await db.collection('feed').where('refId', '==', img.pid).get();
+      feedSnap.docs.forEach(doc => batch.delete(doc.ref));
+
+      await batch.commit();
+
+      allImages = allImages.filter(i => i.pid !== img.pid);
+      closeViewer();
+      renderGrid();
+      showToast('삭제했어요');
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
   });
 
   loadCharacters();
