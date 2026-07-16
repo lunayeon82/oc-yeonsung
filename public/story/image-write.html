@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 그림 업로드</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a89ec4">
+<link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/pwa.js" defer></script>
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('../assets/ko-font.ttf') format('truetype');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  /* ── 상단 바 ── */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .top-bar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4a3a5b;
+  }
+
+  .top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .save-status {
+    font-size: 0.7rem;
+    color: #a99ab8;
+  }
+
+  .save-btn {
+    padding: 0.45rem 1.1rem;
+    background: linear-gradient(135deg, #b8a9c9, #9a86b5);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .save-btn:hover { background: linear-gradient(135deg, #a998bd, #8a76a5); }
+  .save-btn:disabled { opacity: 0.55; cursor: default; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 1.5rem 1.2rem 4rem;
+  }
+
+  /* ── 제목 입력 ── */
+  .title-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: 'ko-font', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #4a3a5b;
+    padding: 0.5rem 0;
+    outline: none;
+    border-bottom: 2px solid rgba(184,169,201,0.2);
+    transition: border-color 0.2s;
+    margin-bottom: 1.4rem;
+  }
+  .title-input::placeholder { color: #c8b8d8; }
+  .title-input:focus { border-bottom-color: #b8a9c9; }
+
+  /* ── 태그 / 캐릭터 선택 공용 ── */
+  .tag-section {
+    margin-bottom: 1.2rem;
+  }
+
+  .tag-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag-section-label {
+    font-size: 0.75rem;
+    color: #8a7a9a;
+    font-weight: 500;
+  }
+
+  .tag-toggle-btn {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    text-decoration: underline;
+  }
+
+  .tag-picker {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 0.8rem;
+    transition: all 0.3s ease;
+  }
+
+  .tag-picker.collapsed {
+    max-height: 0;
+    padding: 0 0.8rem;
+    overflow: hidden;
+    border-color: transparent;
+  }
+
+  .tag-picker-group {
+    margin-bottom: 0.5rem;
+  }
+  .tag-picker-group:last-child { margin-bottom: 0; }
+
+  .tag-group-label {
+    font-size: 0.65rem;
+    color: #a99ab8;
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  .tag-picker-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .pick-tag {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 16px;
+    font-size: 0.72rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    font-family: 'ko-font', sans-serif;
+  }
+  .pick-tag:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.1);
+  }
+  .pick-tag.selected {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  .selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    min-height: 1.5rem;
+  }
+
+  .selected-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    background: rgba(184,169,201,0.18);
+    color: #6a5a7a;
+    border-radius: 12px;
+    font-size: 0.72rem;
+  }
+
+  .selected-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 0.65rem;
+  }
+  .selected-tag .remove-tag:hover { opacity: 1; }
+
+  /* ── 자유 태그 입력 ── */
+  .tag-input-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .tag-input {
+    flex: 1;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.7);
+    color: #4a3a5b;
+    outline: none;
+  }
+  .tag-input::placeholder { color: #c8b8d8; }
+  .tag-input:focus { border-color: #b8a9c9; }
+  .tag-add-btn {
+    padding: 0.45rem 0.9rem;
+    background: rgba(184,169,201,0.2);
+    color: #6a5a7a;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tag-add-btn:hover { background: rgba(184,169,201,0.35); }
+
+  /* ── 내용(설명) ── */
+  .desc-textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.5);
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.85rem;
+    color: #4a3a5b;
+    outline: none;
+    resize: vertical;
+    line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+  .desc-textarea::placeholder { color: #c8b8d8; }
+  .desc-textarea:focus { border-color: #b8a9c9; }
+
+  /* ── 그림(챕터) 탭 ── */
+  .chapter-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+    overflow-x: auto;
+    padding-bottom: 0.3rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184,169,201,0.3) transparent;
+  }
+
+  .chapter-tab {
+    flex-shrink: 0;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 8px 8px 0 0;
+    font-size: 0.78rem;
+    color: #8a7a9a;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'ko-font', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+  .chapter-tab:hover { background: rgba(255,255,255,0.5); }
+  .chapter-tab.active {
+    background: rgba(255,255,255,0.7);
+    color: #5a4a6b;
+    border-bottom-color: transparent;
+    font-weight: 500;
+  }
+
+  .chapter-tab .del-ch {
+    font-size: 0.6rem;
+    opacity: 0;
+    cursor: pointer;
+    color: #c9a0a0;
+    transition: opacity 0.2s;
+  }
+  .chapter-tab:hover .del-ch { opacity: 0.7; }
+  .chapter-tab .del-ch:hover { opacity: 1; }
+
+  .add-chapter-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px dashed rgba(184,169,201,0.4);
+    background: transparent;
+    color: #b8a9c9;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .add-chapter-btn:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.1);
+  }
+
+  /* ── 파일 선택 영역 ── */
+  .drop-zone {
+    display: block;
+    width: 100%;
+    border: 2px dashed rgba(184,169,201,0.4);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.45);
+    padding: 1.6rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.8rem;
+  }
+  .drop-zone:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.08);
+  }
+  .drop-zone-label {
+    font-size: 0.85rem;
+    color: #8a7a9a;
+  }
+  .drop-zone input[type="file"] { display: none; }
+
+  .preview-wrap {
+    display: none;
+    margin-bottom: 0.8rem;
+    text-align: center;
+  }
+  .preview-wrap.show { display: block; }
+  .preview-img {
+    max-width: 100%;
+    max-height: 360px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(90,74,107,0.15);
+  }
+
+  .thumb-designate-wrap {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .thumb-designate-btn {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 20px;
+    font-size: 0.72rem;
+    color: #8a7a9a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'ko-font', sans-serif;
+  }
+  .thumb-designate-btn:hover { border-color: #b8a9c9; }
+  .thumb-designate-btn.active {
+    background: #c9962a;
+    border-color: #c9962a;
+    color: white;
+  }
+
+  /* ── 업로드 정보 ── */
+  .upload-info {
+    font-size: 0.7rem;
+    color: #a99ab8;
+    line-height: 1.6;
+    margin-bottom: 1.6rem;
+  }
+
+  /* ── 진행 상태 ── */
+  .progress-wrap {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    background: rgba(184,169,201,0.12);
+    color: #6a5a8a;
+    font-size: 0.82rem;
+    margin-top: 1rem;
+  }
+  .progress-wrap.show { display: flex; }
+  .progress-spinner {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(168,158,196,0.3);
+    border-top-color: #a89ec4;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── 하단 삭제 ── */
+  .bottom-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  .delete-set-btn {
+    padding: 0.5rem 1.2rem;
+    background: transparent;
+    border: 1px solid rgba(200,140,140,0.4);
+    border-radius: 8px;
+    color: #b88a8a;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+    transition: all 0.2s;
+  }
+  .delete-set-btn:hover {
+    background: rgba(200,140,140,0.08);
+    border-color: rgba(200,140,140,0.5);
+  }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 200;
+    pointer-events: none;
+    max-width: 80vw;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- 실시간 연결 표시 -->
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<!-- 상단 바 -->
+<div class="top-bar">
+  <button class="nav-link" id="backBtn">← 목록</button>
+  <span class="top-bar-title" id="topBarTitle">그림 업로드</span>
+  <div class="top-bar-actions">
+    <span class="save-status" id="saveStatus"></span>
+    <button class="save-btn" id="saveBtn">저장</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 제목 입력 -->
+  <input type="text" class="title-input" id="imageTitle" placeholder="제목을 입력하세요">
+
+  <!-- 캐릭터 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">등장 캐릭터</span>
+      <button class="tag-toggle-btn" id="tagToggle">선택하기 ▾</button>
+    </div>
+    <div class="selected-tags" id="selectedTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>
+    </div>
+    <div class="tag-picker collapsed" id="tagPicker">
+      <!-- Firestore에서 캐릭터 로드 -->
+    </div>
+  </div>
+
+  <!-- 자유 태그 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">태그</span>
+    </div>
+    <div class="tag-input-row">
+      <input type="text" class="tag-input" id="tagInput" placeholder="태그 입력 후 Enter">
+      <button class="tag-add-btn" id="tagAddBtn">추가</button>
+    </div>
+    <div class="selected-tags" id="selectedFreeTags">
+      <span style="font-size:0.72rem;color:#b8a9c9;">태그를 입력해보세요</span>
+    </div>
+  </div>
+
+  <!-- 내용 -->
+  <div class="tag-section">
+    <div class="tag-section-header">
+      <span class="tag-section-label">내용 (선택)</span>
+    </div>
+    <textarea class="desc-textarea" id="imageDescription" rows="4" placeholder="그림에 대한 설명이나 이야기를 적어보세요"></textarea>
+  </div>
+
+  <!-- 그림 탭 -->
+  <div class="chapter-tabs" id="chapterTabs">
+    <button class="add-chapter-btn" id="addChapterBtn" title="그림 추가">+</button>
+  </div>
+
+  <!-- 파일 선택 -->
+  <label class="drop-zone" id="dropZone">
+    <span class="drop-zone-label">📷 눌러서 그림 선택하기</span>
+    <input type="file" id="fileInput" accept="image/*">
+  </label>
+
+  <div class="preview-wrap" id="previewWrap">
+    <img class="preview-img" id="previewImg" alt="미리보기">
+  </div>
+
+  <div class="thumb-designate-wrap">
+    <button class="thumb-designate-btn" id="thumbDesignateBtn">☆ 이 그림을 썸네일로 사용</button>
+  </div>
+
+  <div class="upload-info">
+    각 그림은 감상용(최대 1600px)으로 자동 변환되어 업로드돼요. 목록에 보이는 썸네일(최대 300px)은 지정한 그림 1장에서만 만들어져요. 원본 파일은 저장되지 않아요.
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <span class="progress-spinner"></span>
+    <span id="progressText">변환 중...</span>
+  </div>
+
+  <div class="bottom-actions" id="bottomActions" style="display:none;">
+    <button class="delete-set-btn" id="deleteBtn">이 그림 삭제</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.firebasestorage.app",
+    messagingSenderId: "145543545184",
+    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // ── URL 파라미터 ──
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('pid');
+  const isNew = params.get('new') === '1';
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+  db.collection('data').doc('characters').onSnapshot(
+    () => setSyncStatus(true),
+    () => setSyncStatus(false)
+  );
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function generatePid() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+  }
+
+  // ── 캐릭터 태그 ──
+  let selectedCharacters = [];
+  let allCharacters = [];
+
+  async function loadCharacters() {
+    try {
+      const charDoc = await db.collection('data').doc('characters').get();
+      if (!charDoc.exists) return;
+
+      const groups = [];
+      (charDoc.data().groups || []).forEach(owner => {
+        (owner.subs || []).forEach(sub => {
+          const chars = (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n);
+          if (chars.length > 0) {
+            groups.push({ label: `${owner.owner} — ${sub.label}`, chars });
+          }
+        });
+      });
+
+      allCharacters = groups;
+      renderTagPicker();
+    } catch (e) {
+      console.error('캐릭터 로드 실패:', e);
+    }
+  }
+
+  function renderTagPicker() {
+    const picker = document.getElementById('tagPicker');
+    picker.innerHTML = allCharacters.map(g => `
+      <div class="tag-picker-group">
+        <span class="tag-group-label">${g.label}</span>
+        <div class="tag-picker-tags">
+          ${g.chars.map(name => `
+            <span class="pick-tag${selectedCharacters.includes(name) ? ' selected' : ''}"
+                  data-name="${name}">${name}</span>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    picker.querySelectorAll('.pick-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.name;
+        if (selectedCharacters.includes(name)) {
+          selectedCharacters = selectedCharacters.filter(n => n !== name);
+          tag.classList.remove('selected');
+        } else {
+          selectedCharacters.push(name);
+          tag.classList.add('selected');
+        }
+        renderSelectedTags();
+      });
+    });
+  }
+
+  function renderSelectedTags() {
+    const wrap = document.getElementById('selectedTags');
+    if (selectedCharacters.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>';
+      return;
+    }
+    wrap.innerHTML = selectedCharacters.map(name => `
+      <span class="selected-tag">
+        ${name}
+        <span class="remove-tag" data-name="${name}">✕</span>
+      </span>
+    `).join('');
+
+    wrap.querySelectorAll('.remove-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.name;
+        selectedCharacters = selectedCharacters.filter(n => n !== name);
+        renderSelectedTags();
+        renderTagPicker();
+      });
+    });
+  }
+
+  document.getElementById('tagToggle').addEventListener('click', () => {
+    const picker = document.getElementById('tagPicker');
+    const btn = document.getElementById('tagToggle');
+    picker.classList.toggle('collapsed');
+    btn.textContent = picker.classList.contains('collapsed') ? '선택하기 ▾' : '접기 ▴';
+  });
+
+  loadCharacters();
+
+  // ── 자유 태그 ──
+  let selectedTags = [];
+
+  function addTag() {
+    const input = document.getElementById('tagInput');
+    const val = input.value.trim();
+    if (!val) return;
+    if (!selectedTags.includes(val)) selectedTags.push(val);
+    input.value = '';
+    renderFreeTags();
+  }
+
+  function renderFreeTags() {
+    const wrap = document.getElementById('selectedFreeTags');
+    if (selectedTags.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.72rem;color:#b8a9c9;">태그를 입력해보세요</span>';
+      return;
+    }
+    wrap.innerHTML = selectedTags.map(t => `
+      <span class="selected-tag">
+        ${escapeHtml(t)}
+        <span class="remove-tag" data-name="${escapeHtml(t)}">✕</span>
+      </span>
+    `).join('');
+
+    wrap.querySelectorAll('.remove-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedTags = selectedTags.filter(t => t !== btn.dataset.name);
+        renderFreeTags();
+      });
+    });
+  }
+
+  document.getElementById('tagAddBtn').addEventListener('click', addTag);
+  document.getElementById('tagInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addTag(); }
+  });
+
+  // ── 뒤로가기 ──
+  document.getElementById('backBtn').addEventListener('click', async () => {
+    if (await customConfirm('저장하지 않은 내용은 사라져요. 돌아갈까요?')) {
+      location.href = 'image-list.html';
+    }
+  });
+
+  // ── 그림(챕터) 관리 ──
+  let chapters = [{ chapterPid: generatePid(), file: null, imageUrl: null, previewUrl: null }];
+  let currentChapterIndex = 0;
+  let thumbChapterId = null; // null이면 첫 번째 그림이 기본값
+  let originalChapterIds = [];
+  let loadedThumbUrl = null;
+  let loadedThumbChapterId = null;
+
+  const fileInput = document.getElementById('fileInput');
+  const dropZone = document.getElementById('dropZone');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewImg = document.getElementById('previewImg');
+
+  function renderChapterTabs() {
+    const wrap = document.getElementById('chapterTabs');
+    const addBtn = document.getElementById('addChapterBtn');
+    wrap.querySelectorAll('.chapter-tab').forEach(t => t.remove());
+
+    chapters.forEach((ch, i) => {
+      const tab = document.createElement('div');
+      tab.className = `chapter-tab${i === currentChapterIndex ? ' active' : ''}`;
+
+      const label = document.createElement('span');
+      label.className = 'ch-label';
+      label.textContent = `그림 ${i + 1}`;
+      tab.appendChild(label);
+
+      if (chapters.length > 1) {
+        const del = document.createElement('span');
+        del.className = 'del-ch';
+        del.textContent = '✕';
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (await customConfirm(`그림 ${i + 1}을(를) 삭제할까요?`)) {
+            deleteChapter(i);
+          }
+        });
+        tab.appendChild(del);
+      }
+
+      tab.addEventListener('click', () => switchChapter(i));
+      wrap.insertBefore(tab, addBtn);
+    });
+  }
+
+  function renderChapterPanel() {
+    const ch = chapters[currentChapterIndex];
+    const src = ch.previewUrl || ch.imageUrl;
+    if (src) {
+      previewImg.src = src;
+      previewWrap.classList.add('show');
+      dropZone.querySelector('.drop-zone-label').textContent = '📷 다른 그림으로 바꾸기';
+    } else {
+      previewWrap.classList.remove('show');
+      dropZone.querySelector('.drop-zone-label').textContent = '📷 눌러서 그림 선택하기';
+    }
+
+    const effectiveThumbId = thumbChapterId || chapters[0].chapterPid;
+    const isThumb = ch.chapterPid === effectiveThumbId;
+    const thumbBtn = document.getElementById('thumbDesignateBtn');
+    thumbBtn.classList.toggle('active', isThumb);
+    thumbBtn.textContent = isThumb ? '🌟 썸네일로 지정됨' : '☆ 이 그림을 썸네일로 사용';
+  }
+
+  function switchChapter(index) {
+    currentChapterIndex = index;
+    renderChapterTabs();
+    renderChapterPanel();
+  }
+
+  document.getElementById('addChapterBtn').addEventListener('click', () => {
+    chapters.push({ chapterPid: generatePid(), file: null, imageUrl: null, previewUrl: null });
+    switchChapter(chapters.length - 1);
+  });
+
+  function deleteChapter(index) {
+    const removed = chapters[index];
+    chapters.splice(index, 1);
+    if (thumbChapterId === removed.chapterPid) thumbChapterId = null;
+    if (currentChapterIndex >= chapters.length) currentChapterIndex = chapters.length - 1;
+    switchChapter(currentChapterIndex);
+    showToast('그림이 삭제되었어요');
+  }
+
+  document.getElementById('thumbDesignateBtn').addEventListener('click', () => {
+    thumbChapterId = chapters[currentChapterIndex].chapterPid;
+    renderChapterPanel();
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    chapters[currentChapterIndex].file = file;
+    chapters[currentChapterIndex].previewUrl = URL.createObjectURL(file);
+    renderChapterPanel();
+  });
+
+  renderChapterTabs();
+  renderChapterPanel();
+
+  // ── 이미지 로드 & 리사이즈 ──
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function resizeToWebp(source, maxSize, quality) {
+    const srcW = source.naturalWidth || source.width;
+    const srcH = source.naturalHeight || source.height;
+    const scale = Math.min(1, maxSize / Math.max(srcW, srcH));
+    const w = Math.max(1, Math.round(srcW * scale));
+    const h = Math.max(1, Math.round(srcH * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(source, 0, 0, w, h);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('이미지 변환 실패')),
+        'image/webp',
+        quality
+      );
+    });
+  }
+
+  function uploadBlob(path, blob) {
+    const ref = storage.ref(path);
+    return ref.put(blob, { contentType: 'image/webp' }).then(() => ref.getDownloadURL());
+  }
+
+  // ── 진행 상태 표시 ──
+  const progressWrap = document.getElementById('progressWrap');
+  const progressText = document.getElementById('progressText');
+  function setProgress(text) {
+    progressWrap.classList.add('show');
+    progressText.textContent = text;
+  }
+  function hideProgress() {
+    progressWrap.classList.remove('show');
+  }
+
+  // ── 저장 ──
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.addEventListener('click', async () => {
+    const title = document.getElementById('imageTitle').value.trim();
+    if (!title) { showToast('제목을 입력해주세요'); return; }
+    if (!chapters.some(ch => ch.file || ch.imageUrl)) { showToast('그림을 최소 1개 선택해주세요'); return; }
+
+    saveBtn.disabled = true;
+    document.getElementById('saveStatus').textContent = '저장 중...';
+
+    try {
+      setProgress('변환 중...');
+      // 새로 선택된 파일들을 이미지로 미리 디코딩
+      for (const ch of chapters) {
+        if (ch.file) ch._img = await loadImage(ch.file);
+      }
+
+      setProgress('업로드 중...');
+      for (const ch of chapters) {
+        if (ch.file) {
+          const fullBlob = await resizeToWebp(ch._img, 1600, 0.85);
+          ch.imageUrl = await uploadBlob(`images/${pid}/chapters/${ch.chapterPid}/full.webp`, fullBlob);
+        }
+      }
+
+      // 썸네일: 지정된 그림(없으면 첫 번째 그림)에서 새로 생성.
+      // 이미 업로드되어 있는(새로 선택하지 않은) 그림에서는 브라우저 보안 정책상 다시 축소본을
+      // 만들 수 없어서, 이 경우엔 그 그림을 다시 선택해야 썸네일이 바뀐다.
+      const thumbId = thumbChapterId || chapters[0].chapterPid;
+      const thumbChapterIndex = chapters.findIndex(ch => ch.chapterPid === thumbId);
+      const thumbChapter = chapters[thumbChapterIndex] || chapters[0];
+
+      let thumbUrl = loadedThumbUrl;
+      let finalThumbChapterId = thumbId;
+      let thumbNote = '';
+
+      if (thumbChapter._img) {
+        const thumbBlob = await resizeToWebp(thumbChapter._img, 300, 0.8);
+        thumbUrl = await uploadBlob(`images/${pid}/thumb.webp`, thumbBlob);
+      } else if (thumbId !== loadedThumbChapterId) {
+        finalThumbChapterId = loadedThumbChapterId || thumbId;
+        thumbNote = ' (썸네일을 바꾸려면 해당 그림을 다시 선택해주세요)';
+      }
+
+      // 삭제된 그림 정리 대상
+      const removedChapterIds = originalChapterIds.filter(id => !chapters.some(ch => ch.chapterPid === id));
+
+      const batch = db.batch();
+      const imageRef = db.collection('images').doc(pid);
+      batch.set(imageRef, {
+        title,
+        characters: selectedCharacters,
+        tags: selectedTags,
+        description: document.getElementById('imageDescription').value.trim(),
+        ...(thumbUrl ? { thumbUrl } : {}),
+        thumbChapterId: finalThumbChapterId,
+        chapterCount: chapters.length,
+        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      chapters.forEach((ch, i) => {
+        const ref = db.collection('imageChapters').doc(ch.chapterPid);
+        batch.set(ref, { setId: pid, order: i, imageUrl: ch.imageUrl });
+      });
+      removedChapterIds.forEach(id => {
+        batch.delete(db.collection('imageChapters').doc(id));
+      });
+
+      const feedRef = db.collection('feed').doc(pid);
+      batch.set(feedRef, {
+        type: 'image',
+        refId: pid,
+        title,
+        ...(thumbUrl ? { thumb: thumbUrl } : {}),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      await batch.commit();
+
+      await Promise.all(removedChapterIds.map(id =>
+        storage.ref(`images/${pid}/chapters/${id}/full.webp`).delete().catch(() => {})
+      ));
+
+      originalChapterIds = chapters.map(ch => ch.chapterPid);
+      chapters.forEach(ch => { ch.file = null; ch.previewUrl = null; });
+      loadedThumbUrl = thumbUrl;
+      loadedThumbChapterId = finalThumbChapterId;
+      thumbChapterId = finalThumbChapterId;
+
+      const finalThumbIndex = chapters.findIndex(ch => ch.chapterPid === finalThumbChapterId);
+      document.getElementById('saveStatus').textContent = '저장됨';
+      showToast(`저장됐어요! (${finalThumbIndex >= 0 ? finalThumbIndex + 1 : 1}번째 그림이 썸네일)${thumbNote}`);
+      hideProgress();
+      renderChapterPanel();
+
+      if (isNew) {
+        history.replaceState(null, '', `image-write.html?pid=${pid}`);
+      }
+    } catch (e) {
+      console.error('저장 실패:', e);
+      showToast('저장에 실패했어요');
+      document.getElementById('saveStatus').textContent = '';
+      hideProgress();
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  // ── 기존 그림 로드 ──
+  async function loadExistingImageSet() {
+    if (isNew) {
+      document.getElementById('bottomActions').style.display = 'none';
+      return;
+    }
+
+    try {
+      const doc = await db.collection('images').doc(pid).get();
+      if (!doc.exists) {
+        showToast('존재하지 않는 그림이에요');
+        return;
+      }
+
+      const data = doc.data();
+      document.getElementById('imageTitle').value = data.title || '';
+      document.getElementById('imageDescription').value = data.description || '';
+      selectedCharacters = data.characters || [];
+      selectedTags = data.tags || [];
+      thumbChapterId = data.thumbChapterId || null;
+      loadedThumbUrl = data.thumbUrl || null;
+      loadedThumbChapterId = data.thumbChapterId || null;
+      renderSelectedTags();
+      renderFreeTags();
+
+      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
+      if (!chapSnap.empty) {
+        chapters = chapSnap.docs.map(cdoc => ({
+          chapterPid: cdoc.id,
+          imageUrl: cdoc.data().imageUrl || '',
+          file: null,
+          previewUrl: null,
+          order: cdoc.data().order ?? 0
+        })).sort((a, b) => a.order - b.order);
+        originalChapterIds = chapters.map(ch => ch.chapterPid);
+      }
+
+      switchChapter(0);
+      document.getElementById('bottomActions').style.display = 'flex';
+      document.getElementById('topBarTitle').textContent = '그림 수정';
+    } catch (e) {
+      console.error('로드 실패:', e);
+    }
+  }
+
+  // ── 삭제 ──
+  document.getElementById('deleteBtn').addEventListener('click', async () => {
+    if (!(await customConfirm('이 그림을 정말 삭제할까요? 모든 그림과 정보가 함께 삭제됩니다.'))) return;
+
+    try {
+      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
+      const batch = db.batch();
+      chapSnap.forEach(doc => batch.delete(doc.ref));
+      batch.delete(db.collection('images').doc(pid));
+      batch.delete(db.collection('feed').doc(pid));
+      await batch.commit();
+
+      await Promise.all([
+        ...chapSnap.docs.map(doc => storage.ref(`images/${pid}/chapters/${doc.id}/full.webp`).delete().catch(() => {})),
+        storage.ref(`images/${pid}/thumb.webp`).delete().catch(() => {})
+      ]);
+
+      showToast('삭제되었어요');
+      setTimeout(() => location.href = 'image-list.html', 1000);
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
+  });
+
+  loadExistingImageSet();
+</script>
+</body>
+</html>

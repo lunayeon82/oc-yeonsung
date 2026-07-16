@@ -34,7 +34,7 @@
     padding: 0 1.2rem 3rem;
   }
 
-  /* ── 캐릭터 필터 ── */
+  /* ── 필터 영역 ── */
   .filter-area {
     background: rgba(255,255,255,0.6);
     backdrop-filter: blur(8px);
@@ -44,6 +44,8 @@
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 12px rgba(90,74,107,0.06);
   }
+  .filter-section { margin-bottom: 0.8rem; }
+  .filter-section:last-child { margin-bottom: 0; }
   .filter-header {
     display: flex;
     align-items: center;
@@ -82,7 +84,8 @@
     padding-top: 0.25rem;
     min-width: 3.5rem;
   }
-  .char-tag-group {
+  .char-tag-group,
+  .tag-filter-group {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
@@ -108,52 +111,79 @@
     border-color: #b8a9c9;
   }
 
-  /* ── 그림 그리드 ── */
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* ── 그림 목록 (row card) ── */
+  .image-list {
+    display: flex;
+    flex-direction: column;
     gap: 0.8rem;
   }
 
   .image-card {
-    position: relative;
-    aspect-ratio: 1 / 1;
-    border-radius: 10px;
-    overflow: hidden;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
     background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
     border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    cursor: pointer;
     transition: all 0.25s ease;
+    text-decoration: none;
     animation: fadeUp 0.4s ease both;
   }
   .image-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(90,74,107,0.15);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
     border-color: rgba(184,169,201,0.4);
   }
-  .image-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .image-card-scrim {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    padding: 0.6rem 0.6rem 0.4rem;
-    background: linear-gradient(180deg, rgba(58,53,48,0) 0%, rgba(58,53,48,0.65) 100%);
-    color: #fff;
+  .image-card-main {
+    flex: 1;
+    min-width: 0;
   }
   .image-card-title {
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 700;
-    line-height: 1.3;
+    color: #4a3a5b;
+    margin-bottom: 0.3rem;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
   }
+  .image-card-desc {
+    font-size: 0.78rem;
+    color: #8a7a9a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0.4rem;
+  }
+  .image-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .image-card-tag {
+    font-size: 0.62rem;
+    padding: 0.12rem 0.5rem;
+    background: rgba(184,169,201,0.15);
+    color: #7a6a8a;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .image-card-thumb {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(184,169,201,0.12);
+  }
+  .image-card-chcount {
+    font-size: 0.62rem;
+    color: #a99ab8;
+  }
+
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
@@ -217,96 +247,11 @@
     box-shadow: 0 6px 24px rgba(90,74,107,0.35);
   }
 
-  /* ── 이미지 뷰어 모달 ── */
-  .viewer-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(20,14,30,0.75);
-    backdrop-filter: blur(4px);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
-    padding: 1.2rem;
-  }
-  .viewer-overlay.show { opacity: 1; visibility: visible; }
-  .viewer-content {
-    position: relative;
-    max-width: 90vw;
-    max-height: 88vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transform: translateY(16px) scale(0.98);
-    transition: transform 0.25s ease;
-  }
-  .viewer-overlay.show .viewer-content { transform: translateY(0) scale(1); }
-  .viewer-img {
-    max-width: 100%;
-    max-height: 74vh;
-    border-radius: 10px;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.4);
-  }
-  .viewer-caption {
-    margin-top: 0.8rem;
-    text-align: center;
-    color: #f4efe6;
-  }
-  .viewer-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-  }
-  .viewer-actions {
-    position: absolute;
-    top: -44px; right: 0;
-    display: flex;
-    gap: 0.5rem;
-  }
-  .viewer-close,
-  .viewer-delete {
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-  }
-  .viewer-close:hover { background: rgba(255,255,255,0.3); }
-  .viewer-delete:hover { background: rgba(194,114,127,0.55); }
-
-  /* ── 토스트 ── */
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: rgba(90,74,107,0.9);
-    color: white;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 400;
-    pointer-events: none;
-  }
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
   /* ── 반응형 ── */
   @media (max-width: 480px) {
     .container { padding: 0 0.8rem 4rem; }
-    .image-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
+    .image-card { padding: 0.7rem 0.9rem; }
+    .image-card-thumb { width: 46px; height: 46px; }
   }
 </style>
 </head>
@@ -325,42 +270,33 @@
 
 <div class="container">
   <div class="filter-area">
-    <div class="filter-header">
-      <span class="filter-label">캐릭터로 보기</span>
-      <button class="clear-filter" id="clearFilter" style="display:none;">필터 초기화</button>
+    <div class="filter-section">
+      <div class="filter-header">
+        <span class="filter-label">캐릭터로 보기</span>
+        <button class="clear-filter" id="clearCharFilter" style="display:none;">초기화</button>
+      </div>
+      <div class="char-filter-wrap" id="charFilter"></div>
     </div>
-    <div class="char-filter-wrap" id="charFilter"></div>
+    <div class="filter-section">
+      <div class="filter-header">
+        <span class="filter-label">태그로 보기</span>
+        <button class="clear-filter" id="clearTagFilter" style="display:none;">초기화</button>
+      </div>
+      <div class="tag-filter-group" id="tagFilter"></div>
+    </div>
   </div>
 
-  <div class="image-grid" id="imageGrid">
+  <div class="image-list" id="imageList">
     <div class="loading">불러오는 중<span class="dots"></span></div>
   </div>
 </div>
 
 <!-- 새 그림 업로드 FAB -->
-<a class="new-image-btn" href="image-upload.html" title="새 그림 업로드">✎</a>
-
-<!-- 이미지 뷰어 -->
-<div class="viewer-overlay" id="viewerOverlay">
-  <div class="viewer-content">
-    <div class="viewer-actions">
-      <button class="viewer-delete" id="viewerDelete" aria-label="삭제" title="삭제">🗑</button>
-      <button class="viewer-close" id="viewerClose" aria-label="닫기">✕</button>
-    </div>
-    <img class="viewer-img" id="viewerImg" alt="">
-    <div class="viewer-caption">
-      <div class="viewer-title" id="viewerTitle"></div>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
+<button class="new-image-btn" id="newImageBtn" title="새 그림 업로드">✎</button>
 
 <script src="../assets/personal-nav.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-<script src="../assets/confirm-modal.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
@@ -373,14 +309,6 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const storage = firebase.storage();
-
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  }
 
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
@@ -401,6 +329,15 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function generatePid() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
   }
 
   // ── 캐릭터 필터 ──
@@ -447,24 +384,57 @@
         const name = tag.dataset.name;
         if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
         else { selectedChars.add(name); tag.classList.add('active'); }
-        document.getElementById('clearFilter').style.display = selectedChars.size > 0 ? 'block' : 'none';
-        renderGrid();
+        document.getElementById('clearCharFilter').style.display = selectedChars.size > 0 ? 'block' : 'none';
+        renderList();
       });
     });
   }
 
-  document.getElementById('clearFilter').addEventListener('click', () => {
+  document.getElementById('clearCharFilter').addEventListener('click', () => {
     selectedChars.clear();
-    document.getElementById('clearFilter').style.display = 'none';
+    document.getElementById('clearCharFilter').style.display = 'none';
     document.querySelectorAll('#charFilter .char-tag.active').forEach(t => t.classList.remove('active'));
-    renderGrid();
+    renderList();
+  });
+
+  // ── 태그 필터 (업로드된 그림들의 태그 합집합에서 도출) ──
+  let selectedTags = new Set();
+
+  function renderTagFilter() {
+    const wrap = document.getElementById('tagFilter');
+    const allTags = [...new Set(allImages.flatMap(img => img.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
+
+    if (allTags.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">태그 없음</span>';
+      return;
+    }
+    wrap.innerHTML = allTags.map(tag =>
+      `<span class="char-tag${selectedTags.has(tag) ? ' active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
+    ).join('');
+
+    wrap.querySelectorAll('.char-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const name = tag.dataset.tag;
+        if (selectedTags.has(name)) { selectedTags.delete(name); tag.classList.remove('active'); }
+        else { selectedTags.add(name); tag.classList.add('active'); }
+        document.getElementById('clearTagFilter').style.display = selectedTags.size > 0 ? 'block' : 'none';
+        renderList();
+      });
+    });
+  }
+
+  document.getElementById('clearTagFilter').addEventListener('click', () => {
+    selectedTags.clear();
+    document.getElementById('clearTagFilter').style.display = 'none';
+    document.querySelectorAll('#tagFilter .char-tag.active').forEach(t => t.classList.remove('active'));
+    renderList();
   });
 
   // ── 그림 목록 로드 ──
   let allImages = [];
 
   async function loadImages() {
-    const grid = document.getElementById('imageGrid');
+    const list = document.getElementById('imageList');
     try {
       const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
       allImages = snapshot.docs.map(doc => {
@@ -472,95 +442,57 @@
         return {
           pid: doc.id,
           title: data.title || '(제목 없음)',
+          description: data.description || '',
           characters: data.characters || [],
-          fullUrl: data.fullUrl || '',
-          thumbUrl: data.thumbUrl || ''
+          tags: data.tags || [],
+          thumbUrl: data.thumbUrl || '',
+          chapterCount: data.chapterCount || 1
         };
       });
-      renderGrid();
+      renderTagFilter();
+      renderList();
     } catch (e) {
       console.error('그림 목록 로드 실패:', e);
-      grid.innerHTML = '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
+      list.innerHTML = '<div class="empty-state"><div class="icon">⚠</div><p>목록을 불러오지 못했어요</p></div>';
     }
   }
 
-  // ── 그리드 렌더 (캐릭터 필터 적용) ──
-  function renderGrid() {
-    const grid = document.getElementById('imageGrid');
-    const images = selectedChars.size === 0
-      ? allImages
-      : allImages.filter(img => img.characters.some(c => selectedChars.has(c)));
+  // ── 목록 렌더 (캐릭터 + 태그 필터 적용) ──
+  function renderList() {
+    const list = document.getElementById('imageList');
+    const images = allImages.filter(img => {
+      const matchChar = selectedChars.size === 0 || img.characters.some(c => selectedChars.has(c));
+      const matchTag = selectedTags.size === 0 || img.tags.some(t => selectedTags.has(t));
+      return matchChar && matchTag;
+    });
 
     if (images.length === 0) {
-      grid.innerHTML = allImages.length === 0
+      list.innerHTML = allImages.length === 0
         ? '<div class="empty-state"><div class="icon">🖼</div><p>아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!</p></div>'
-        : '<div class="empty-state"><div class="icon">🖼</div><p>해당 캐릭터의 그림이 없어요</p></div>';
+        : '<div class="empty-state"><div class="icon">🖼</div><p>조건에 맞는 그림이 없어요</p></div>';
       return;
     }
 
-    grid.innerHTML = images.map(img => `
-      <div class="image-card" data-pid="${img.pid}">
-        <img src="${escapeHtml(img.thumbUrl)}" alt="${escapeHtml(img.title)}" loading="lazy">
-        <div class="image-card-scrim">
-          <div class="image-card-title">${escapeHtml(img.title)}</div>
-        </div>
-      </div>
-    `).join('');
-
-    grid.querySelectorAll('.image-card').forEach((card, i) => {
-      card.addEventListener('click', () => openViewer(images[i]));
-    });
+    list.innerHTML = images.map(img => {
+      const tagsHtml = [...img.characters, ...img.tags]
+        .map(t => `<span class="image-card-tag">${escapeHtml(t)}</span>`).join('');
+      return `
+        <a class="image-card" href="image-view.html?pid=${img.pid}">
+          <div class="image-card-main">
+            <div class="image-card-title">${escapeHtml(img.title)}</div>
+            ${img.description ? `<div class="image-card-desc">${escapeHtml(img.description)}</div>` : ''}
+            ${tagsHtml ? `<div class="image-card-tags">${tagsHtml}</div>` : ''}
+            ${img.chapterCount > 1 ? `<div class="image-card-chcount">🖼 ${img.chapterCount}장</div>` : ''}
+          </div>
+          <img class="image-card-thumb" src="${escapeHtml(img.thumbUrl)}" alt="" loading="lazy">
+        </a>
+      `;
+    }).join('');
   }
 
-  // ── 이미지 뷰어 ──
-  const viewerOverlay = document.getElementById('viewerOverlay');
-  const viewerImg = document.getElementById('viewerImg');
-  const viewerTitle = document.getElementById('viewerTitle');
-  let currentViewingImage = null;
-
-  function openViewer(img) {
-    currentViewingImage = img;
-    viewerImg.src = img.fullUrl;
-    viewerTitle.textContent = img.title;
-    viewerOverlay.classList.add('show');
-  }
-  function closeViewer() {
-    viewerOverlay.classList.remove('show');
-    currentViewingImage = null;
-  }
-  document.getElementById('viewerClose').addEventListener('click', closeViewer);
-  viewerOverlay.addEventListener('click', (e) => {
-    if (e.target === viewerOverlay) closeViewer();
-  });
-
-  // ── 이미지 삭제 ──
-  document.getElementById('viewerDelete').addEventListener('click', async () => {
-    if (!currentViewingImage) return;
-    const img = currentViewingImage;
-    if (!(await customConfirm(`"${img.title}"을(를) 삭제할까요?\n삭제하면 되돌릴 수 없어요.`))) return;
-
-    try {
-      await Promise.all([
-        storage.ref(`images/${img.pid}/full.webp`).delete().catch(() => {}),
-        storage.ref(`images/${img.pid}/thumb.webp`).delete().catch(() => {})
-      ]);
-
-      const batch = db.batch();
-      batch.delete(db.collection('images').doc(img.pid));
-
-      const feedSnap = await db.collection('feed').where('refId', '==', img.pid).get();
-      feedSnap.docs.forEach(doc => batch.delete(doc.ref));
-
-      await batch.commit();
-
-      allImages = allImages.filter(i => i.pid !== img.pid);
-      closeViewer();
-      renderGrid();
-      showToast('삭제했어요');
-    } catch (e) {
-      console.error('삭제 실패:', e);
-      showToast('삭제에 실패했어요');
-    }
+  document.getElementById('newImageBtn').addEventListener('click', () => {
+    const newPid = generatePid();
+    window.location.href = `image-write.html?pid=${newPid}&new=1`;
   });
 
   loadCharacters();

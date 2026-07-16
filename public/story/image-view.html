@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 그림 보기</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a89ec4">
+<link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/pwa.js" defer></script>
+<link rel="stylesheet" href="../assets/theme.css">
+<style>
+  @font-face {
+    font-family: 'ko-font';
+    src: url('../assets/ko-font.ttf') format('truetype');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'ko-font', sans-serif;
+    min-height: 100vh;
+    background: var(--page-gradient); background-attachment: fixed;
+    position: relative;
+  }
+
+  /* ── 상단 바 ── */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184,169,201,0.15);
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── 설정 드롭다운 ── */
+  .settings-wrap { position: relative; }
+
+  .settings-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    color: #8a7a9a;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .settings-btn:hover { background: rgba(184,169,201,0.15); border-color: rgba(184,169,201,0.4); }
+  .settings-btn.open { background: rgba(184,169,201,0.18); border-color: rgba(184,169,201,0.5); color: #6a5a7a; }
+
+  .settings-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: rgba(250,247,242,0.97);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(90,74,107,0.13);
+    min-width: 108px;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px) scale(0.97);
+    transition: opacity 0.17s ease, transform 0.17s ease, visibility 0.17s;
+    z-index: 300;
+  }
+  .settings-dropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .settings-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.62rem 0.95rem;
+    font-family: 'ko-font', sans-serif;
+    font-size: 0.82rem;
+    color: #5a4a6b;
+    cursor: pointer;
+    transition: background 0.13s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .settings-item:hover { background: rgba(184,169,201,0.1); }
+  .settings-item + .settings-item { border-top: 1px solid rgba(184,169,201,0.12); }
+  .settings-item.danger { color: #b06070; }
+  .settings-item.danger:hover { background: rgba(194,114,127,0.08); }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 1.2rem 3rem;
+  }
+
+  .set-title {
+    font-family: 'ko-font', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #4a3a5b;
+    margin-bottom: 0.6rem;
+    word-break: keep-all;
+  }
+
+  .set-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.8rem;
+  }
+  .set-tag {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.55rem;
+    background: rgba(184,169,201,0.15);
+    color: #7a6a8a;
+    border-radius: 10px;
+  }
+
+  .set-desc {
+    font-size: 0.85rem;
+    color: #6a5a7a;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: keep-all;
+    margin-bottom: 1.4rem;
+    padding: 0.9rem 1rem;
+    background: rgba(255,255,255,0.4);
+    border-radius: 10px;
+  }
+
+  /* ── 그림 뷰어 ── */
+  .viewer-main {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .viewer-img {
+    max-width: 100%;
+    max-height: 68vh;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(90,74,107,0.18);
+  }
+
+  .chapter-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.8rem;
+  }
+  .nav-arrow {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(184,169,201,0.3);
+    background: rgba(255,255,255,0.6);
+    color: #7a6a8a;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .nav-arrow:hover:not(:disabled) { background: rgba(184,169,201,0.2); border-color: #b8a9c9; }
+  .nav-arrow:disabled { opacity: 0.35; cursor: default; }
+  .chapter-position {
+    font-size: 0.78rem;
+    color: #8a7a9a;
+    min-width: 3.5rem;
+    text-align: center;
+  }
+
+  /* ── 그림 스트립 ── */
+  .ch-strip {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.4rem 0.1rem 0.8rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184,169,201,0.3) transparent;
+  }
+  .ch-thumb {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.55;
+    transition: all 0.2s;
+  }
+  .ch-thumb:hover { opacity: 0.85; }
+  .ch-thumb.active {
+    opacity: 1;
+    border-color: #b8a9c9;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #a99ab8;
+  }
+  .empty-state .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+  .empty-state p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .empty-state a {
+    color: #8a7a9a;
+    text-decoration: underline;
+  }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(90,74,107,0.9);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+
+<div class="top-bar">
+  <button class="nav-link" id="backBtn">← 목록</button>
+  <div class="settings-wrap" id="settingsWrap" style="display:none;">
+    <button class="settings-btn" id="settingsBtn" title="설정">⚙</button>
+    <div class="settings-dropdown" id="settingsDropdown">
+      <button class="settings-item" id="editItem">✏ 수정</button>
+      <button class="settings-item danger" id="deleteItem">🗑 삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="mainContainer">
+  <div class="empty-state"><div class="icon">⏳</div><p>불러오는 중...</p></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../assets/personal-nav.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="../assets/confirm-modal.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
+    authDomain: "oc-yeonsung.firebaseapp.com",
+    projectId: "oc-yeonsung",
+    storageBucket: "oc-yeonsung.firebasestorage.app",
+    messagingSenderId: "145543545184",
+    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('pid');
+
+  function setSyncStatus(online) {
+    const badge = document.getElementById('syncBadge');
+    if (online) {
+      badge.classList.remove('offline');
+      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+    } else {
+      badge.classList.add('offline');
+      badge.innerHTML = '<span class="dot"></span>오프라인';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  let imageSet = null;
+  let chapters = [];
+  let currentIndex = 0;
+
+  async function loadImageSet() {
+    try {
+      const doc = await db.collection('images').doc(pid).get();
+      if (!doc.exists) {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="empty-state"><div class="icon">📭</div><p>존재하지 않는 그림이에요</p><a href="image-list.html">목록으로 돌아가기</a></div>';
+        return;
+      }
+      imageSet = doc.data();
+
+      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
+      chapters = chapSnap.docs.map(cdoc => ({
+        chapterPid: cdoc.id,
+        imageUrl: cdoc.data().imageUrl || '',
+        order: cdoc.data().order ?? 0
+      })).sort((a, b) => a.order - b.order);
+
+      document.getElementById('settingsWrap').style.display = 'flex';
+      renderSet();
+      setSyncStatus(true);
+    } catch (e) {
+      console.error('로드 실패:', e);
+      document.getElementById('mainContainer').innerHTML =
+        '<div class="empty-state"><div class="icon">⚠</div><p>그림을 불러오지 못했어요</p><a href="image-list.html">목록으로 돌아가기</a></div>';
+      setSyncStatus(false);
+    }
+  }
+
+  function renderSet() {
+    const tagsHtml = [...(imageSet.characters || []), ...(imageSet.tags || [])]
+      .map(t => `<span class="set-tag">${escapeHtml(t)}</span>`).join('');
+
+    document.getElementById('mainContainer').innerHTML = `
+      <h1 class="set-title">${escapeHtml(imageSet.title || '(제목 없음)')}</h1>
+      ${tagsHtml ? `<div class="set-tags">${tagsHtml}</div>` : ''}
+      ${imageSet.description ? `<p class="set-desc">${escapeHtml(imageSet.description)}</p>` : ''}
+      <div class="viewer-main">
+        <img class="viewer-img" id="viewerImg" alt="">
+        <div class="chapter-nav" id="chapterNav" style="display:none;">
+          <button class="nav-arrow" id="prevBtn">‹</button>
+          <span class="chapter-position" id="chapterPosition"></span>
+          <button class="nav-arrow" id="nextBtn">›</button>
+        </div>
+      </div>
+      <div class="ch-strip" id="chStrip" style="display:none;"></div>
+    `;
+
+    if (chapters.length > 1) {
+      document.getElementById('chapterNav').style.display = 'flex';
+      document.getElementById('chStrip').style.display = 'flex';
+      document.getElementById('prevBtn').addEventListener('click', () => switchChapter(currentIndex - 1));
+      document.getElementById('nextBtn').addEventListener('click', () => switchChapter(currentIndex + 1));
+    }
+
+    switchChapter(0);
+  }
+
+  function switchChapter(index) {
+    if (index < 0 || index >= chapters.length) return;
+    currentIndex = index;
+    document.getElementById('viewerImg').src = chapters[index].imageUrl;
+
+    if (chapters.length > 1) {
+      document.getElementById('chapterPosition').textContent = `${index + 1} / ${chapters.length}`;
+      document.getElementById('prevBtn').disabled = index === 0;
+      document.getElementById('nextBtn').disabled = index === chapters.length - 1;
+
+      const strip = document.getElementById('chStrip');
+      strip.innerHTML = chapters.map((ch, i) => `
+        <img class="ch-thumb${i === index ? ' active' : ''}" data-index="${i}" src="${escapeHtml(ch.imageUrl)}" loading="lazy" alt="그림 ${i + 1}">
+      `).join('');
+      strip.querySelectorAll('.ch-thumb').forEach(el => {
+        el.addEventListener('click', () => switchChapter(Number(el.dataset.index)));
+      });
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') switchChapter(currentIndex - 1);
+    else if (e.key === 'ArrowRight') switchChapter(currentIndex + 1);
+  });
+
+  // ── 뒤로가기 ──
+  document.getElementById('backBtn').addEventListener('click', () => {
+    location.href = 'image-list.html';
+  });
+
+  // ── 설정 드롭다운 ──
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsDropdown = document.getElementById('settingsDropdown');
+
+  settingsBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = settingsDropdown.classList.contains('open');
+    settingsDropdown.classList.toggle('open', !isOpen);
+    settingsBtn.classList.toggle('open', !isOpen);
+  });
+  document.addEventListener('click', () => {
+    settingsDropdown.classList.remove('open');
+    settingsBtn.classList.remove('open');
+  });
+
+  document.getElementById('editItem').addEventListener('click', () => {
+    location.href = `image-write.html?pid=${pid}`;
+  });
+
+  document.getElementById('deleteItem').addEventListener('click', async () => {
+    if (!(await customConfirm(`"${imageSet?.title || '이 그림'}"을(를) 삭제할까요?\n모든 그림과 정보가 함께 삭제됩니다.`))) return;
+
+    try {
+      const batch = db.batch();
+      chapters.forEach(ch => batch.delete(db.collection('imageChapters').doc(ch.chapterPid)));
+      batch.delete(db.collection('images').doc(pid));
+      batch.delete(db.collection('feed').doc(pid));
+      await batch.commit();
+
+      await Promise.all([
+        ...chapters.map(ch => storage.ref(`images/${pid}/chapters/${ch.chapterPid}/full.webp`).delete().catch(() => {})),
+        storage.ref(`images/${pid}/thumb.webp`).delete().catch(() => {})
+      ]);
+
+      showToast('삭제했어요');
+      setTimeout(() => { location.href = 'image-list.html'; }, 600);
+    } catch (e) {
+      console.error('삭제 실패:', e);
+      showToast('삭제에 실패했어요');
+    }
+  });
+
+  loadImageSet();
+</script>
+</body>
+</html>
