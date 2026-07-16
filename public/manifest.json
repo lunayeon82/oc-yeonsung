@@ -1,0 +1,15 @@
+{
+  "name": "연성대나무숲",
+  "short_name": "연성대나무숲",
+  "description": "다 놀았니? 이제 연성을 하자",
+  "lang": "ko",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#a89ec4",
+  "icons": [
+    { "src": "/assets/icon/pwa-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon/pwa-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
