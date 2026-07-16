@@ -349,7 +349,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="../assets/confirm-modal.js"></script>
-<script src="../assets/storage-modal.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
@@ -394,19 +393,6 @@
     }
     return result;
   }
-
-  let USER_NAMES = ['김굥', '하지', '예밍'];
-  async function loadUserNames() {
-    try {
-      const doc = await db.collection('data').doc('users').get();
-      if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length) {
-        USER_NAMES = doc.data().names;
-      }
-    } catch (e) {
-      console.warn('유저 목록 로드 실패:', e);
-    }
-  }
-  loadUserNames();
 
   // ── 캐릭터 태그 ──
   let selectedCharacters = [];
@@ -572,13 +558,6 @@
     if (!title) { showToast('제목을 입력해주세요'); return; }
     if (!selectedFile) { showToast('그림을 선택해주세요'); return; }
 
-    const pickResult = await openStoragePicker({
-      title: '누구의 그림인가요?',
-      users: USER_NAMES
-    });
-    if (!pickResult) return;
-    const owner = pickResult.user;
-
     uploadBtn.disabled = true;
     try {
       setProgress('변환 중...');
@@ -599,7 +578,6 @@
       const imageRef = db.collection('images').doc(pid);
       batch.set(imageRef, {
         title,
-        owner,
         characters: selectedCharacters,
         fullUrl,
         thumbUrl,
@@ -613,7 +591,6 @@
         refId: pid,
         title,
         thumb: thumbUrl,
-        owner,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
