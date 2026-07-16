@@ -982,8 +982,15 @@
     document.getElementById('saveStatus').textContent = '저장 중...';
 
     try {
-      // 1) stories 문서 저장
-      await db.collection('stories').doc(pid).set({
+      // 기존 챕터 조회 (배치에 포함시키기 위해 미리 읽어둠)
+      const existing = await db.collection('chapters')
+        .where('storyId', '==', pid).get();
+
+      // stories 문서 갱신 + 챕터 삭제/재저장을 하나의 배치로 원자적 처리
+      const batch = db.batch();
+
+      const storyRef = db.collection('stories').doc(pid);
+      batch.set(storyRef, {
         title,
         characters: selectedCharacters,
         roles: selectedRoles,
@@ -996,10 +1003,6 @@
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
-      // 2) 기존 챕터 삭제 후 재저장
-      const existing = await db.collection('chapters')
-        .where('storyId', '==', pid).get();
-      const batch = db.batch();
       existing.forEach(doc => batch.delete(doc.ref));
 
       chapters.forEach((ch, i) => {

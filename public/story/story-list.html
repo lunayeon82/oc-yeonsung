@@ -808,11 +808,38 @@
     });
   }
 
-  // ── 글 목록 로드 (최신순 페이지네이션) ──
+  // ── 기존 글의 updatedAt 백필 (최초 1회만 실행) ──
+  // updatedAt이 없는 문서는 orderBy('updatedAt') 쿼리에서 아예 빠지므로,
+  // 정렬 기준을 updatedAt으로 쓰기 전에 createdAt 값으로 채워준다.
+  async function backfillMissingUpdatedAt() {
+    const metaRef = db.collection('data').doc('meta');
+    try {
+      const metaDoc = await metaRef.get();
+      if (metaDoc.exists && metaDoc.data().storiesUpdatedAtBackfilled) return;
+
+      const snapshot = await db.collection('stories').get();
+      const missing = snapshot.docs.filter(doc => doc.data().updatedAt == null);
+
+      const batch = db.batch();
+      missing.forEach(doc => {
+        const data = doc.data();
+        batch.set(doc.ref, {
+          updatedAt: data.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+      batch.set(metaRef, { storiesUpdatedAtBackfilled: true }, { merge: true });
+      await batch.commit();
+    } catch (e) {
+      console.error('updatedAt 백필 실패:', e);
+    }
+  }
+
+  // ── 글 목록 로드 (최근 수정순 페이지네이션) ──
   async function loadStories() {
     allStories = [];
     lastStoryDoc = null;
     noMoreStories = false;
+    await backfillMissingUpdatedAt();
     await loadMoreStories();
   }
 
@@ -823,7 +850,7 @@
 
     try {
       let query = db.collection('stories')
-        .orderBy('createdAt', 'desc')
+        .orderBy('updatedAt', 'desc')
         .limit(STORY_PAGE_SIZE);
       if (lastStoryDoc) query = query.startAfter(lastStoryDoc);
 
@@ -974,7 +1001,7 @@
   // ── 전체 글 목록 캐싱 (필터 적용 시 1회만 로드) ──
   async function ensureFullStoriesLoaded() {
     if (allStoriesFull !== null) return;
-    const snapshot = await db.collection('stories').orderBy('createdAt', 'desc').get();
+    const snapshot = await db.collection('stories').orderBy('updatedAt', 'desc').get();
     // chapterCount/commentCount는 story 문서에 이미 저장돼 있어 추가 쿼리 없이 바로 사용 가능
     allStoriesFull = snapshot.docs.map(doc => {
       const data = doc.data();
