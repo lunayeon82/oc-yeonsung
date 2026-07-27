@@ -3,7 +3,7 @@
 // (봇/크롤러의 무단 쓰기를 막는 용도이며, 기존 firebaseConfig와 동일하게 이 값도 공개 노출됩니다.)
 (function () {
   const API_BASE = '/api';
-  const API_KEY = 'REPLACE_WITH_SERVER_API_KEY';
+  const API_KEY = 'b90c8078682c940190f617b2cc163cf799b782b610306e41bd99ff8f4a0ee6ba';
 
   async function request(method, path, { json, formData, query } = {}) {
     let url = API_BASE + path;
