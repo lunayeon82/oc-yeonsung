@@ -83,6 +83,11 @@ router.get('/', (req, res) => {
   res.json({ items: page.map(toJson), nextCursor });
 });
 
+router.get('/tags', (req, res) => {
+  const rows = db.prepare(`SELECT tag, COUNT(*) AS uses FROM oc_image_tags GROUP BY tag ORDER BY uses DESC, tag ASC`).all();
+  res.json(rows.map((r) => r.tag));
+});
+
 router.get('/:pid', (req, res) => {
   const row = db.prepare('SELECT * FROM oc_images WHERE pid = ?').get(req.params.pid);
   if (!row) return res.status(404).json({ error: 'not_found' });

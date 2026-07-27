@@ -75,6 +75,7 @@
     createImage: (body) => request('POST', '/images', { json: body }),
     updateImage: (pid, body) => request('PUT', `/images/${pid}`, { json: body }),
     deleteImage: (pid) => request('DELETE', `/images/${pid}`),
+    listImageTags: () => request('GET', '/images/tags'),
 
     // 이미지 업로드 (webp Blob은 호출측에서 canvas로 이미 생성). 썸네일은 서버가
     // 지정된 챕터의 원본 이미지에서 자동으로 생성하므로 별도 업로드가 필요 없음.

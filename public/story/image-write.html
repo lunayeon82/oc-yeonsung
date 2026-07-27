@@ -208,9 +208,39 @@
 
   /* ── 자유 태그 입력 ── */
   .tag-input-row {
+    position: relative;
     display: flex;
     gap: 0.4rem;
     margin-bottom: 0.5rem;
+  }
+  .tag-suggest-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: rgba(250,247,242,0.97);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(90,74,107,0.12);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 50;
+    display: none;
+  }
+  .tag-suggest-dropdown.open { display: block; }
+  .tag-suggest-item {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8rem;
+    color: #4a3a5b;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .tag-suggest-item:hover { background: rgba(184,169,201,0.1); }
+  .tag-suggest-empty {
+    padding: 0.8rem;
+    text-align: center;
+    font-size: 0.76rem;
+    color: #a99ab8;
   }
   .tag-input {
     flex: 1;
@@ -496,8 +526,9 @@
       <span class="tag-section-label">태그</span>
     </div>
     <div class="tag-input-row">
-      <input type="text" class="tag-input" id="tagInput" placeholder="태그 입력 후 Enter">
+      <input type="text" class="tag-input" id="tagInput" placeholder="태그 입력 후 Enter" autocomplete="off">
       <button class="tag-add-btn" id="tagAddBtn">추가</button>
+      <div class="tag-suggest-dropdown" id="tagSuggestDropdown"></div>
     </div>
     <div class="selected-tags" id="selectedFreeTags">
       <span style="font-size:0.72rem;color:#b8a9c9;">태그를 입력해보세요</span>
@@ -680,14 +711,42 @@
 
   // ── 자유 태그 ──
   let selectedTags = [];
+  let allImageTags = [];
 
-  function addTag() {
+  API.listImageTags().then(tags => { allImageTags = tags; }).catch(e => console.error('태그 목록 로드 실패:', e));
+
+  function addTag(value) {
     const input = document.getElementById('tagInput');
-    const val = input.value.trim();
+    const val = (value != null ? value : input.value).trim();
     if (!val) return;
     if (!selectedTags.includes(val)) selectedTags.push(val);
+    if (!allImageTags.includes(val)) allImageTags.unshift(val);
     input.value = '';
+    hideTagSuggestions();
     renderFreeTags();
+  }
+
+  function renderTagSuggestions(query) {
+    const dropdown = document.getElementById('tagSuggestDropdown');
+    const q = query.trim().toLowerCase();
+    const candidates = allImageTags.filter(t => !selectedTags.includes(t) && (!q || t.toLowerCase().includes(q)));
+
+    if (candidates.length === 0) {
+      dropdown.innerHTML = `<div class="tag-suggest-empty">${q ? '일치하는 태그가 없어요' : '등록된 태그가 없어요'}</div>`;
+    } else {
+      dropdown.innerHTML = candidates.slice(0, 30).map(t => `<div class="tag-suggest-item" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</div>`).join('');
+      dropdown.querySelectorAll('.tag-suggest-item').forEach(item => {
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          addTag(item.dataset.tag);
+        });
+      });
+    }
+    dropdown.classList.add('open');
+  }
+
+  function hideTagSuggestions() {
+    document.getElementById('tagSuggestDropdown').classList.remove('open');
   }
 
   function renderFreeTags() {
@@ -711,10 +770,14 @@
     });
   }
 
-  document.getElementById('tagAddBtn').addEventListener('click', addTag);
+  document.getElementById('tagAddBtn').addEventListener('click', () => addTag());
   document.getElementById('tagInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addTag(); }
+    if (e.key === 'Escape') hideTagSuggestions();
   });
+  document.getElementById('tagInput').addEventListener('focus', (e) => renderTagSuggestions(e.target.value));
+  document.getElementById('tagInput').addEventListener('input', (e) => renderTagSuggestions(e.target.value));
+  document.getElementById('tagInput').addEventListener('blur', () => hideTagSuggestions());
 
   // ── 뒤로가기 ──
   document.getElementById('backBtn').addEventListener('click', async () => {
