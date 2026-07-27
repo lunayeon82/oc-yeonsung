@@ -16,4 +16,4 @@ jobs:
             git pull
             cd server
             npm install
-            pm2 restart oc-yeonsung-api
+            /usr/bin/pm2 restart oc-yeonsung-api
