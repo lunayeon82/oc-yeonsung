@@ -279,22 +279,9 @@
 </div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
 
@@ -320,24 +307,18 @@
 
   async function loadLore() {
     try {
-      const loreDoc = await db.collection('lores').doc(pid).get();
-      if (!loreDoc.exists) {
+      loreData = await API.getLore(pid);
+      if (!loreData) {
         document.getElementById('mainContainer').innerHTML =
           '<div class="error-state"><div class="icon">📭</div><p>존재하지 않는 로어예요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
         return;
       }
 
-      loreData = loreDoc.data();
-
-      const chapSnap = await db.collection('loreChapters')
-        .where('loreId', '==', pid).get();
-
-      chapters = chapSnap.docs.map(doc => ({
-        chapterPid: doc.id,
-        title: doc.data().title || '',
-        body: doc.data().body || '',
-        order: doc.data().order ?? 0
-      })).sort((a, b) => a.order - b.order);
+      chapters = (loreData.chapters || []).map(ch => ({
+        chapterPid: ch.pid,
+        title: ch.title || '',
+        body: ch.body || ''
+      }));
 
       document.getElementById('editBtn').style.display = 'block';
       document.getElementById('deleteBtn').style.display = 'block';
@@ -351,15 +332,20 @@
       setSyncStatus(true);
     } catch (e) {
       console.error('로드 실패:', e);
-      document.getElementById('mainContainer').innerHTML =
-        '<div class="error-state"><div class="icon">⚠</div><p>로어를 불러오지 못했어요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+      if (e.status === 404) {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="error-state"><div class="icon">📭</div><p>존재하지 않는 로어예요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+      } else {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="error-state"><div class="icon">⚠</div><p>로어를 불러오지 못했어요</p><a href="lore-list.html">목록으로 돌아가기</a></div>';
+      }
       setSyncStatus(false);
     }
   }
 
   function renderLore() {
     const container = document.getElementById('mainContainer');
-    const dateStr = loreData.createdAt?.toDate ? formatDate(loreData.createdAt.toDate()) : '';
+    const dateStr = loreData.createdAt ? formatDate(new Date(loreData.createdAt)) : '';
 
     let html = `
       <div class="lore-header">
@@ -484,11 +470,7 @@
   async function deleteLore() {
     if (!(await customConfirm(`"${loreData?.title || '이 로어'}"을(를) 삭제할까요?\n챕터도 모두 삭제돼요.`))) return;
     try {
-      const batch = db.batch();
-      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
-      chapSnap.docs.forEach(doc => batch.delete(doc.ref));
-      batch.delete(db.collection('lores').doc(pid));
-      await batch.commit();
+      await API.deleteLore(pid);
       showToast('삭제했어요');
       setTimeout(() => { location.href = 'lore-list.html'; }, 800);
     } catch (e) {

@@ -505,25 +505,10 @@
 </div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script src="../assets/storage-modal.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
 
@@ -559,9 +544,9 @@
   let USER_NAMES = ['김굥', '하지', '예밍'];
   async function loadUserNames() {
     try {
-      const doc = await db.collection('data').doc('users').get();
-      if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length) {
-        USER_NAMES = doc.data().names;
+      const users = await API.getUsers();
+      if (Array.isArray(users) && users.length) {
+        USER_NAMES = users.map(u => u.name);
       }
     } catch (e) {
       console.warn('유저 목록 로드 실패:', e);
@@ -571,20 +556,13 @@
 
   async function loadImageSet() {
     try {
-      const doc = await db.collection('images').doc(pid).get();
-      if (!doc.exists) {
-        document.getElementById('mainContainer').innerHTML =
-          '<div class="empty-state"><div class="icon">📭</div><p>존재하지 않는 그림이에요</p><a href="image-list.html">목록으로 돌아가기</a></div>';
-        return;
-      }
-      imageSet = doc.data();
+      const data = await API.getImage(pid);
+      imageSet = data;
 
-      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
-      chapters = chapSnap.docs.map(cdoc => ({
-        chapterPid: cdoc.id,
-        imageUrl: cdoc.data().imageUrl || '',
-        order: cdoc.data().order ?? 0
-      })).sort((a, b) => a.order - b.order);
+      chapters = (data.chapters || []).map(c => ({
+        chapterPid: c.pid,
+        imageUrl: c.imageUrl || ''
+      }));
 
       document.getElementById('settingsWrap').style.display = 'flex';
       document.getElementById('bookmarkBtn').style.display = 'flex';
@@ -594,6 +572,11 @@
       setSyncStatus(true);
     } catch (e) {
       console.error('로드 실패:', e);
+      if (e.status === 404) {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="empty-state"><div class="icon">📭</div><p>존재하지 않는 그림이에요</p><a href="image-list.html">목록으로 돌아가기</a></div>';
+        return;
+      }
       document.getElementById('mainContainer').innerHTML =
         '<div class="empty-state"><div class="icon">⚠</div><p>그림을 불러오지 못했어요</p><a href="image-list.html">목록으로 돌아가기</a></div>';
       setSyncStatus(false);
@@ -672,21 +655,15 @@
     if (!result) return;
 
     const targetLabel = result.target === 'readLater' ? '나중에 볼 연성' : '연성 보관함';
+    const addFn = result.target === 'readLater' ? API.addReadLater : API.addStoryBox;
     try {
-      const ref = db.collection('users').doc(result.user).collection(result.target);
-      const dup = await ref.where('storyId', '==', pid).limit(1).get();
-      if (!dup.empty) {
+      await addFn(result.user, { parentType: 'image', parentPid: pid, title: imageSet.title || '(제목 없음)' });
+      showToast(`${result.user}님의 ${targetLabel}에 저장했어요`);
+    } catch (e) {
+      if (e.status === 409) {
         showToast('이미 저장되어 있어요');
         return;
       }
-      await ref.add({
-        storyId: pid,
-        title: imageSet.title || '(제목 없음)',
-        type: 'image',
-        addedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showToast(`${result.user}님의 ${targetLabel}에 저장했어요`);
-    } catch (e) {
       console.error('저장 실패:', e);
       showToast('저장에 실패했어요');
     }
@@ -715,20 +692,7 @@
     if (!(await customConfirm(`"${imageSet?.title || '이 그림'}"을(를) 삭제할까요?\n그림과 댓글도 모두 삭제돼요.`))) return;
 
     try {
-      const batch = db.batch();
-      chapters.forEach(ch => batch.delete(db.collection('imageChapters').doc(ch.chapterPid)));
-
-      const commentSnap = await db.collection('comments').where('storyId', '==', pid).get();
-      commentSnap.docs.forEach(doc => batch.delete(doc.ref));
-
-      batch.delete(db.collection('images').doc(pid));
-      batch.delete(db.collection('feed').doc(pid));
-      await batch.commit();
-
-      await Promise.all([
-        ...chapters.map(ch => storage.ref(`images/${pid}/chapters/${ch.chapterPid}/full.webp`).delete().catch(() => {})),
-        storage.ref(`images/${pid}/thumb.webp`).delete().catch(() => {})
-      ]);
+      await API.deleteImage(pid);
 
       showToast('삭제했어요');
       setTimeout(() => { location.href = 'image-list.html'; }, 600);
@@ -751,17 +715,7 @@
 
   async function loadComments() {
     try {
-      const snap = await db.collection('comments').where('storyId', '==', pid).get();
-      comments = snap.docs.map(doc => ({
-        id: doc.id,
-        body: doc.data().body || '',
-        chapterPid: doc.data().chapterPid || '',
-        createdAt: doc.data().createdAt
-      })).sort((a, b) => {
-        const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-        return bt - at;
-      });
+      comments = await API.listComments('image', pid);
       renderComments();
     } catch (e) {
       console.error('댓글 로드 실패:', e);
@@ -775,7 +729,7 @@
       return;
     }
     list.innerHTML = comments.map(c => {
-      const dateStr = c.createdAt?.toDate ? formatCommentDate(c.createdAt.toDate()) : '';
+      const dateStr = c.createdAt ? formatCommentDate(new Date(c.createdAt)) : '';
       const chapterTag = chapters.length > 1 ? chapterLabel(c.chapterPid) : '';
       return `
         <div class="comment-item">
@@ -795,12 +749,7 @@
   async function deleteComment(commentId) {
     if (!(await customConfirm('이 댓글을 삭제할까요?'))) return;
     try {
-      const batch = db.batch();
-      batch.delete(db.collection('comments').doc(commentId));
-      batch.update(db.collection('images').doc(pid), {
-        commentCount: firebase.firestore.FieldValue.increment(-1)
-      });
-      await batch.commit();
+      await API.deleteComment(commentId);
 
       await loadComments();
       showToast('댓글을 삭제했어요');
@@ -821,18 +770,7 @@
     const btn = document.getElementById('commentSubmitBtn');
     btn.disabled = true;
     try {
-      const commentRef = db.collection('comments').doc();
-      const batch = db.batch();
-      batch.set(commentRef, {
-        storyId: pid,
-        chapterPid: ch.chapterPid,
-        body,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      batch.update(db.collection('images').doc(pid), {
-        commentCount: firebase.firestore.FieldValue.increment(1)
-      });
-      await batch.commit();
+      await API.addComment({ parentType: 'image', parentPid: pid, chapterPid: ch.chapterPid, body });
 
       input.value = '';
       await loadComments();

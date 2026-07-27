@@ -205,22 +205,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
   const isNew = params.get('new') === '1';
@@ -357,29 +344,21 @@
     document.getElementById('saveStatus').textContent = '저장 중...';
 
     try {
-      await db.collection('lores').doc(pid).set({
+      const body = {
         title,
-        chapterCount: chapters.length,
-        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      const existing = await db.collection('loreChapters').where('loreId', '==', pid).get();
-      const batch = db.batch();
-      existing.forEach(doc => batch.delete(doc.ref));
-
-      chapters.forEach((ch, i) => {
-        const ref = db.collection('loreChapters').doc(ch.chapterPid);
-        batch.set(ref, {
-          loreId: pid,
-          order: i,
+        chapters: chapters.map(ch => ({
+          pid: ch.chapterPid,
           title: ch.title || '',
-          body: ch.body || '',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      });
+          body: ch.body || ''
+        }))
+      };
 
-      await batch.commit();
+      if (isNew) {
+        await API.createLore({ pid, ...body });
+      } else {
+        await API.updateLore(pid, body);
+      }
+
       document.getElementById('saveStatus').textContent = '저장됨';
       showToast('저장되었어요!');
       setSyncStatus(true);
@@ -399,37 +378,30 @@
     if (isNew) { document.getElementById('bottomActions').style.display = 'none'; return; }
 
     try {
-      const loreDoc = await db.collection('lores').doc(pid).get();
-      if (!loreDoc.exists) { showToast('존재하지 않는 로어예요'); return; }
+      const data = await API.getLore(pid);
 
-      const data = loreDoc.data();
       document.getElementById('loreTitle').value = data.title || '';
 
-      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
-      if (!chapSnap.empty) {
-        chapters = chapSnap.docs.map(doc => ({
-          chapterPid: doc.id,
-          title: doc.data().title || '',
-          body: doc.data().body || '',
-          order: doc.data().order ?? 0
-        })).sort((a, b) => a.order - b.order);
+      if (data.chapters && data.chapters.length) {
+        chapters = data.chapters.map(ch => ({
+          chapterPid: ch.pid,
+          title: ch.title || '',
+          body: ch.body || ''
+        }));
       }
 
       switchChapter(0, true);
       document.getElementById('bottomActions').style.display = 'flex';
     } catch (e) {
       console.error('로드 실패:', e);
+      if (e.status === 404) showToast('존재하지 않는 로어예요');
     }
   }
 
   document.getElementById('deleteBtn').addEventListener('click', async () => {
     if (!(await customConfirm('이 로어를 삭제할까요? 모든 챕터가 함께 삭제됩니다.'))) return;
     try {
-      const batch = db.batch();
-      const chapSnap = await db.collection('loreChapters').where('loreId', '==', pid).get();
-      chapSnap.forEach(doc => batch.delete(doc.ref));
-      batch.delete(db.collection('lores').doc(pid));
-      await batch.commit();
+      await API.deleteLore(pid);
       showToast('삭제되었어요');
       setTimeout(() => location.href = 'lore-list.html', 1000);
     } catch (e) {

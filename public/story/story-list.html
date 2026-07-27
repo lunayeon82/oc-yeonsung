@@ -606,22 +606,8 @@
 <button class="new-story-btn" id="newStoryBtn" title="새 글 쓰기">✎</button>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script>
-  // ★ firebaseConfig는 기존 프로젝트 파일에서 복사해 넣으세요
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
     if (online) {
@@ -632,20 +618,13 @@
       badge.innerHTML = '<span class="dot"></span>오프라인';
     }
   }
-  db.collection('data').doc('characters').onSnapshot(
-    () => setSyncStatus(true),
-    () => setSyncStatus(false)
-  );
 
   // ── 상태 ──
   const STORY_PAGE_SIZE = 5;
   let allStories = [];
-  let lastStoryDoc = null;
+  let storyCursor = null;
   let noMoreStories = false;
   let isLoadingMoreStories = false;
-  let allStoriesFull = null;       // 필터 적용 시 1회 캐싱되는 전체 글 목록 (지연 로드)
-  let isFilterActive = false;
-  let filteredVisibleCount = STORY_PAGE_SIZE;
   let allCharacters = [];
   let selectedChars = new Set();
   let selectedRoles = new Set();
@@ -655,17 +634,16 @@
   let ratingFilterMode = 'include'; // 'include' | 'exclude'
   let searchTerm = '';
 
-  // ── 캐릭터 목록 로드 (기존 Firestore 구조에서) ──
+  // ── 캐릭터 목록 로드 ──
   async function loadCharacters() {
     try {
-      const charDoc = await db.collection('data').doc('characters').get();
-      if (!charDoc.exists) { renderCharFilter(); return; }
+      const tree = await API.getCharacters();
 
       // 오너별 그룹으로 보존
-      allCharacters = (charDoc.data().groups || []).map(owner => ({
-        owner: owner.owner,
-        names: (owner.subs || []).flatMap(sub =>
-          (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n)
+      allCharacters = (tree.owners || []).map(owner => ({
+        owner: owner.name,
+        names: (owner.subgroups || []).flatMap(sub =>
+          (sub.characters || []).map(ch => ch.name)
         )
       })).filter(g => g.names.length > 0);
 
@@ -774,12 +752,12 @@
   // ── 캐릭터 설정 / 관계성 로드 ──
   async function loadRolesAndAus() {
     try {
-      const [roleDoc, auDoc] = await Promise.all([
-        db.collection('data').doc('roles').get(),
-        db.collection('data').doc('aus').get()
+      const [roleTree, auTree] = await Promise.all([
+        API.getRoles(),
+        API.getAus()
       ]);
-      if (roleDoc.exists) renderGroupedFilter('roleFilter', roleDoc.data().groups || [], selectedRoles);
-      if (auDoc.exists)   renderGroupedFilter('auFilter',   auDoc.data().groups  || [], selectedAus);
+      renderGroupedFilter('roleFilter', roleTree.groups || [], selectedRoles);
+      renderGroupedFilter('auFilter',   auTree.groups  || [], selectedAus);
     } catch (e) {
       console.error('설정/관계성 로드 실패:', e);
     }
@@ -815,79 +793,50 @@
     });
   }
 
-  // ── 기존 글의 updatedAt 백필 (최초 1회만 실행) ──
-  // updatedAt이 없는 문서는 orderBy('updatedAt') 쿼리에서 아예 빠지므로,
-  // 정렬 기준을 updatedAt으로 쓰기 전에 createdAt 값으로 채워준다.
-  async function backfillMissingUpdatedAt() {
-    const metaRef = db.collection('data').doc('meta');
-    try {
-      const metaDoc = await metaRef.get();
-      if (metaDoc.exists && metaDoc.data().storiesUpdatedAtBackfilled) return;
-
-      const snapshot = await db.collection('stories').get();
-      const missing = snapshot.docs.filter(doc => doc.data().updatedAt == null);
-
-      const batch = db.batch();
-      missing.forEach(doc => {
-        const data = doc.data();
-        batch.set(doc.ref, {
-          updatedAt: data.createdAt || firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      });
-      batch.set(metaRef, { storiesUpdatedAtBackfilled: true }, { merge: true });
-      await batch.commit();
-    } catch (e) {
-      console.error('updatedAt 백필 실패:', e);
-    }
-  }
-
-  // ── 글 목록 로드 (최근 수정순 페이지네이션) ──
+  // ── 글 목록 로드 (최근 수정순 페이지네이션, 필터는 서버에서 적용) ──
   async function loadStories() {
     allStories = [];
-    lastStoryDoc = null;
+    storyCursor = null;
     noMoreStories = false;
-    await backfillMissingUpdatedAt();
     await loadMoreStories();
   }
 
   async function loadMoreStories() {
     if (noMoreStories || isLoadingMoreStories) return;
     isLoadingMoreStories = true;
-    renderDefaultStories();
+    renderStories();
 
     try {
-      let query = db.collection('stories')
-        .orderBy('updatedAt', 'desc')
-        .limit(STORY_PAGE_SIZE);
-      if (lastStoryDoc) query = query.startAfter(lastStoryDoc);
+      const res = await API.listStories({
+        q: searchTerm,
+        characters: [...selectedChars].join(','),
+        charMode: charFilterMode,
+        roles: [...selectedRoles].join(','),
+        aus: [...selectedAus].join(','),
+        rating: [...selectedRatings].join(','),
+        cursor: storyCursor,
+        limit: STORY_PAGE_SIZE
+      });
 
-      const snapshot = await query.get();
-
-      const page = await Promise.all(snapshot.docs.map(async doc => {
-        const data = doc.data();
-        // chapterCount가 저장된 경우 바로 사용, 없으면 실제 쿼리 (병렬)
-        const chapterCount = data.chapterCount != null
-          ? data.chapterCount
-          : (await db.collection('chapters').where('storyId', '==', doc.id).get()).size;
-        return {
-          pid: doc.id,
-          title: data.title || '(제목 없음)',
-          characters: data.characters || [],
-          roles: data.roles || [],
-          aus: data.aus || [],
-          rating: data.rating || '',
-          theme: data.theme || 'default',
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-          chapterCount,
-          commentCount: data.commentCount || 0
-        };
+      const page = res.items.map(data => ({
+        pid: data.pid,
+        title: data.title || '(제목 없음)',
+        characters: data.characters || [],
+        roles: data.roles || [],
+        aus: data.aus || [],
+        rating: data.rating || '',
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+        chapterCount: data.chapterCount || 0,
+        commentCount: data.commentCount || 0
       }));
 
       allStories = allStories.concat(page);
-      lastStoryDoc = snapshot.docs[snapshot.docs.length - 1] || lastStoryDoc;
-      if (snapshot.docs.length < STORY_PAGE_SIZE) noMoreStories = true;
+      storyCursor = res.nextCursor;
+      if (!res.nextCursor) noMoreStories = true;
+      setSyncStatus(true);
     } catch (e) {
       console.error('글 목록 로드 실패:', e);
+      setSyncStatus(false);
       if (allStories.length === 0) {
         isLoadingMoreStories = false;
         document.getElementById('storyList').innerHTML =
@@ -897,7 +846,7 @@
     }
 
     isLoadingMoreStories = false;
-    renderDefaultStories();
+    renderStories();
   }
 
   // ── 카드 HTML 빌드 ──
@@ -950,81 +899,22 @@
     if (loadMoreBtn) loadMoreBtn.addEventListener('click', onLoadMore);
   }
 
-  // ── 기본 모드 렌더 (최신순 페이지네이션) ──
-  function renderDefaultStories() {
+  // ── 목록 렌더 (필터는 이미 서버 쪽 쿼리에 반영되어 있음) ──
+  function renderStories() {
     renderList({
       items: allStories,
       visibleCount: allStories.length,
       hasMore: !noMoreStories,
       isLoadingMore: isLoadingMoreStories,
       onLoadMore: loadMoreStories,
-      emptyMessage: '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
+      emptyMessage: hasAnyFilterCriteria()
+        ? '검색 결과가 없어요'
+        : '아직 작성된 글이 없어요<br>첫 번째 이야기를 시작해보세요!'
     });
-  }
-
-  // ── 필터 일치 여부 판정 ──
-  function matchesFilters(s) {
-    if (searchTerm && !s.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-
-    if (selectedChars.size > 0) {
-      const matchChars = charFilterMode === 'and'
-        ? [...selectedChars].every(name => s.characters.includes(name))
-        : [...selectedChars].some(name => s.characters.includes(name));
-      if (!matchChars) return false;
-    }
-
-    if (selectedRoles.size > 0 || selectedAus.size > 0) {
-      const matchGroups =
-        [...selectedRoles].some(name => s.roles.includes(name)) ||
-        [...selectedAus].some(name => s.aus.includes(name));
-      if (!matchGroups) return false;
-    }
-
-    if (selectedRatings.size > 0) {
-      const hasRating = selectedRatings.has(s.rating);
-      if (ratingFilterMode === 'exclude' ? hasRating : !hasRating) return false;
-    }
-
-    return true;
   }
 
   function hasAnyFilterCriteria() {
     return !!searchTerm || selectedChars.size > 0 || selectedRoles.size > 0 || selectedAus.size > 0 || selectedRatings.size > 0;
-  }
-
-  // ── 필터 모드 렌더 (캐싱된 전체 목록에서 필터링, 캐시 내에서 더보기) ──
-  function renderFilteredStories() {
-    const filtered = (allStoriesFull || []).filter(matchesFilters);
-    renderList({
-      items: filtered,
-      visibleCount: filteredVisibleCount,
-      hasMore: filteredVisibleCount < filtered.length,
-      isLoadingMore: false,
-      onLoadMore: () => { filteredVisibleCount += STORY_PAGE_SIZE; renderFilteredStories(); },
-      emptyMessage: '검색 결과가 없어요'
-    });
-  }
-
-  // ── 전체 글 목록 캐싱 (필터 적용 시 1회만 로드) ──
-  async function ensureFullStoriesLoaded() {
-    if (allStoriesFull !== null) return;
-    const snapshot = await db.collection('stories').orderBy('updatedAt', 'desc').get();
-    // chapterCount/commentCount는 story 문서에 이미 저장돼 있어 추가 쿼리 없이 바로 사용 가능
-    allStoriesFull = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        pid: doc.id,
-        title: data.title || '(제목 없음)',
-        characters: data.characters || [],
-        roles: data.roles || [],
-        aus: data.aus || [],
-        rating: data.rating || '',
-        theme: data.theme || 'default',
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        chapterCount: data.chapterCount || 0,
-        commentCount: data.commentCount || 0
-      };
-    });
   }
 
   function setApplyBtnLoading(loading) {
@@ -1033,24 +923,15 @@
     btn.textContent = loading ? '불러오는 중...' : '필터 적용';
   }
 
-  // ── 필터 적용: 전체 목록을 캐싱한 뒤 필터링해서 보여줌 ──
+  // ── 필터 적용: 서버에 새 쿼리를 던지고 첫 페이지부터 다시 불러옴 ──
   async function applyFilters() {
     searchTerm = document.getElementById('searchInput').value.trim();
 
-    if (!hasAnyFilterCriteria()) {
-      isFilterActive = false;
-      renderDefaultStories();
-      return;
-    }
-
     setApplyBtnLoading(true);
     try {
-      await ensureFullStoriesLoaded();
-      isFilterActive = true;
-      filteredVisibleCount = STORY_PAGE_SIZE;
-      renderFilteredStories();
+      await loadStories();
     } catch (e) {
-      console.error('전체 목록 로드 실패:', e);
+      console.error('필터 적용 실패:', e);
       document.getElementById('storyList').innerHTML =
         '<div class="empty-state"><div class="icon">⚠</div><p>필터 적용에 실패했어요<br>잠시 후 다시 시도해주세요</p></div>';
     } finally {
@@ -1092,8 +973,7 @@
     document.getElementById('searchInput').value = '';
     searchTerm = '';
     updateAllCounts();
-    isFilterActive = false;
-    renderDefaultStories();
+    loadStories();
   });
 
   document.getElementById('newStoryBtn').addEventListener('click', () => {

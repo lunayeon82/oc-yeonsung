@@ -1,0 +1,38 @@
+# oc-yeonsung.lunayeon.com — Nginx 서버 블록 예시
+#
+# 정적 자산(public/)은 지금처럼 Nginx가 직접 서빙하고, /api/ 요청만 로컬 Express(포트 3001)로
+# 프록시합니다. 정적 파일까지 Node를 거치게 하면 불필요한 오버헤드가 생기므로 이 두 가지를
+# 분리했습니다 — 기존 "root → public 폴더" 서빙 방식은 그대로 두고 /api/ location만 추가하는
+# 형태입니다.
+#
+# 실제 서버의 /etc/nginx/sites-available/oc-yeonsung.conf (또는 기존 파일)에 맞게
+# server_name, root 경로, ssl 인증서 경로 등을 조정해서 적용하세요.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name oc-yeonsung.lunayeon.com;
+
+    # certbot 등으로 443/SSL을 이미 구성했다면 이 블록은 80 -> 443 리다이렉트만 남기고
+    # 아래 location들은 443 서버 블록으로 옮기세요.
+
+    root /var/www/oc-yeonsung/public;   # 기존 정적 파일 루트 경로로 교체
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 이미지 업로드(/api/upload)가 큰 파일을 받을 수 있으므로 넉넉하게 설정
+        client_max_body_size 25m;
+        proxy_read_timeout 60s;
+    }
+}

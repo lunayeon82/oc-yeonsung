@@ -834,24 +834,10 @@
 </div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script src="../assets/storage-modal.js"></script>
 <script>
-  // ★ firebaseConfig는 기존 프로젝트 파일에서 복사
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   // ── URL 파라미터 ──
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
@@ -882,27 +868,14 @@
   // ── 로드 ──
   async function loadStory() {
     try {
-      // 스토리 메타
-      const storyDoc = await db.collection('stories').doc(pid).get();
-      if (!storyDoc.exists) {
-        document.getElementById('mainContainer').innerHTML =
-          '<div class="error-state"><div class="icon">📭</div><p>존재하지 않는 글이에요</p><a href="story-list.html">목록으로 돌아가기</a></div>';
-        return;
-      }
+      // 스토리 메타 + 챕터 (한 번의 요청으로 함께 옴)
+      storyData = await API.getStory(pid);
 
-      storyData = storyDoc.data();
-
-      // 챕터 로드 (복합 인덱스 없이 JS 정렬)
-      const chapSnap = await db.collection('chapters')
-        .where('storyId', '==', pid)
-        .get();
-
-      chapters = chapSnap.docs.map(doc => ({
-        chapterPid: doc.id,
-        title: doc.data().title || '',
-        body: doc.data().body || '',
-        order: doc.data().order ?? 0
-      })).sort((a, b) => a.order - b.order);
+      chapters = (storyData.chapters || []).map(c => ({
+        chapterPid: c.pid,
+        title: c.title || '',
+        body: c.body || ''
+      }));
 
       // 설정 버튼 표시
       document.getElementById('settingsWrap').style.display = 'flex';
@@ -920,8 +893,13 @@
 
     } catch (e) {
       console.error('로드 실패:', e);
-      document.getElementById('mainContainer').innerHTML =
-        '<div class="error-state"><div class="icon">⚠</div><p>글을 불러오지 못했어요</p><a href="story-list.html">목록으로 돌아가기</a></div>';
+      if (e.status === 404) {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="error-state"><div class="icon">📭</div><p>존재하지 않는 글이에요</p><a href="story-list.html">목록으로 돌아가기</a></div>';
+      } else {
+        document.getElementById('mainContainer').innerHTML =
+          '<div class="error-state"><div class="icon">⚠</div><p>글을 불러오지 못했어요</p><a href="story-list.html">목록으로 돌아가기</a></div>';
+      }
       setSyncStatus(false);
     }
   }
@@ -929,7 +907,7 @@
   // ── 렌더링 ──
   function renderStory() {
     const container = document.getElementById('mainContainer');
-    const dateStr = storyData.createdAt?.toDate ? formatDate(storyData.createdAt.toDate()) : '';
+    const dateStr = storyData.createdAt ? formatDate(new Date(storyData.createdAt)) : '';
     const tagGroups = [
       storyData.characters || [],
       storyData.roles || [],
@@ -1161,21 +1139,7 @@
     if (!(await customConfirm(`"${storyData?.title || '이 글'}"을(를) 삭제할까요?\n챕터와 댓글도 모두 삭제돼요.`))) return;
 
     try {
-      const batch = db.batch();
-
-      // 챕터 삭제
-      const chapSnap = await db.collection('chapters').where('storyId', '==', pid).get();
-      chapSnap.docs.forEach(doc => batch.delete(doc.ref));
-
-      // 댓글 삭제
-      const commentSnap = await db.collection('comments').where('storyId', '==', pid).get();
-      commentSnap.docs.forEach(doc => batch.delete(doc.ref));
-
-      // 스토리 삭제
-      batch.delete(db.collection('stories').doc(pid));
-      batch.delete(db.collection('feed').doc(pid));
-
-      await batch.commit();
+      await API.deleteStory(pid);
       showToast('삭제했어요');
       setTimeout(() => { location.href = 'story-list.html'; }, 800);
     } catch (e) {
@@ -1187,9 +1151,9 @@
   // ── 북마크 버튼 ──
   async function loadUserNames() {
     try {
-      const doc = await db.collection('data').doc('users').get();
-      if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length) {
-        USER_NAMES = doc.data().names;
+      const users = await API.getUsers();
+      if (Array.isArray(users) && users.length) {
+        USER_NAMES = users.map(u => u.name);
       }
     } catch (e) {
       console.warn('유저 목록 로드 실패:', e);
@@ -1209,19 +1173,14 @@
 
     const targetLabel = result.target === 'readLater' ? '나중에 볼 연성' : '연성 보관함';
     try {
-      const ref = db.collection('users').doc(result.user).collection(result.target);
-      const dup = await ref.where('storyId', '==', pid).limit(1).get();
-      if (!dup.empty) {
+      const addFn = result.target === 'readLater' ? API.addReadLater : API.addStoryBox;
+      await addFn(result.user, { parentType: 'story', parentPid: pid, title: storyData.title });
+      showToast(`${result.user}님의 ${targetLabel}에 저장했어요`);
+    } catch (e) {
+      if (e.status === 409) {
         showToast('이미 저장되어 있어요');
         return;
       }
-      await ref.add({
-        storyId: pid,
-        title: storyData.title,
-        addedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showToast(`${result.user}님의 ${targetLabel}에 저장했어요`);
-    } catch (e) {
       console.error('저장 실패:', e);
       showToast('저장에 실패했어요');
     }
@@ -1241,17 +1200,7 @@
 
   async function loadComments() {
     try {
-      const snap = await db.collection('comments').where('storyId', '==', pid).get();
-      comments = snap.docs.map(doc => ({
-        id: doc.id,
-        body: doc.data().body || '',
-        chapterPid: doc.data().chapterPid || '',
-        createdAt: doc.data().createdAt
-      })).sort((a, b) => {
-        const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-        return bt - at;
-      });
+      comments = await API.listComments('story', pid);
       renderComments();
     } catch (e) {
       console.error('댓글 로드 실패:', e);
@@ -1265,7 +1214,7 @@
       return;
     }
     list.innerHTML = comments.map(c => {
-      const dateStr = c.createdAt?.toDate ? formatCommentDate(c.createdAt.toDate()) : '';
+      const dateStr = c.createdAt ? formatCommentDate(new Date(c.createdAt)) : '';
       const chapterTag = chapters.length > 1 ? chapterLabel(c.chapterPid) : '';
       return `
         <div class="comment-item">
@@ -1285,12 +1234,7 @@
   async function deleteComment(commentId) {
     if (!(await customConfirm('이 댓글을 삭제할까요?'))) return;
     try {
-      const batch = db.batch();
-      batch.delete(db.collection('comments').doc(commentId));
-      batch.update(db.collection('stories').doc(pid), {
-        commentCount: firebase.firestore.FieldValue.increment(-1)
-      });
-      await batch.commit();
+      await API.deleteComment(commentId);
 
       await loadComments();
       showToast('댓글을 삭제했어요');
@@ -1311,18 +1255,7 @@
     const btn = document.getElementById('commentSubmitBtn');
     btn.disabled = true;
     try {
-      const commentRef = db.collection('comments').doc();
-      const batch = db.batch();
-      batch.set(commentRef, {
-        storyId: pid,
-        chapterPid: ch.chapterPid,
-        body,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      batch.update(db.collection('stories').doc(pid), {
-        commentCount: firebase.firestore.FieldValue.increment(1)
-      });
-      await batch.commit();
+      await API.addComment({ parentType: 'story', parentPid: pid, chapterPid: ch.chapterPid, body });
 
       input.value = '';
       await loadComments();

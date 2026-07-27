@@ -218,21 +218,8 @@
 <button class="new-lore-btn" id="newLoreBtn" title="새 로어 작성">✎</button>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
     if (online) {
@@ -246,17 +233,14 @@
 
   const PAGE_SIZE = 10;
   let allLores = [];
-  let lastDoc = null;
+  let cursor = null;
   let noMore = false;
   let isLoading = false;
   let searchTerm = '';
-  let allLoresFull = null;
-  let isFiltered = false;
-  let filteredVisible = PAGE_SIZE;
 
   async function loadLores() {
     allLores = [];
-    lastDoc = null;
+    cursor = null;
     noMore = false;
     await loadMore();
   }
@@ -267,23 +251,17 @@
     renderList();
 
     try {
-      let query = db.collection('lores').orderBy('createdAt', 'desc').limit(PAGE_SIZE);
-      if (lastDoc) query = query.startAfter(lastDoc);
-
-      const snap = await query.get();
-      const page = snap.docs.map(doc => {
-        const d = doc.data();
-        return {
-          pid: doc.id,
-          title: d.title || '(제목 없음)',
-          createdAt: d.createdAt?.toDate?.() || new Date(),
-          chapterCount: d.chapterCount || 0
-        };
-      });
+      const res = await API.listLores({ q: searchTerm || undefined, cursor: cursor || undefined, limit: PAGE_SIZE });
+      const page = (res.items || []).map(l => ({
+        pid: l.pid,
+        title: l.title || '(제목 없음)',
+        createdAt: l.createdAt ? new Date(l.createdAt) : new Date(),
+        chapterCount: l.chapterCount || 0
+      }));
 
       allLores = allLores.concat(page);
-      lastDoc = snap.docs[snap.docs.length - 1] || lastDoc;
-      if (snap.docs.length < PAGE_SIZE) noMore = true;
+      cursor = res.nextCursor || null;
+      if (!res.nextCursor) noMore = true;
       setSyncStatus(true);
     } catch (e) {
       console.error('로어 목록 로드 실패:', e);
@@ -309,33 +287,14 @@
   function renderList() {
     const el = document.getElementById('loreList');
 
-    if (isFiltered) {
-      const filtered = (allLoresFull || []).filter(l =>
-        l.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      const visible = filtered.slice(0, filteredVisible);
-      if (visible.length === 0) {
-        el.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>검색 결과가 없어요</p></div>';
-        return;
-      }
-      let html = buildCardsHtml(visible);
-      if (filteredVisible < filtered.length) {
-        html += `<div class="load-more-wrap"><button class="load-more-btn" id="loadMoreBtn">더보기</button></div>`;
-      }
-      el.innerHTML = html;
-      document.getElementById('loadMoreBtn')?.addEventListener('click', () => {
-        filteredVisible += PAGE_SIZE;
-        renderList();
-      });
-      return;
-    }
-
     if (allLores.length === 0 && isLoading) {
       el.innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
       return;
     }
     if (allLores.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">📖</div><p>아직 작성된 로어가 없어요</p></div>';
+      el.innerHTML = searchTerm
+        ? '<div class="empty-state"><div class="icon">🔍</div><p>검색 결과가 없어요</p></div>'
+        : '<div class="empty-state"><div class="icon">📖</div><p>아직 작성된 로어가 없어요</p></div>';
       return;
     }
 
@@ -349,33 +308,7 @@
 
   async function doSearch() {
     searchTerm = document.getElementById('searchInput').value.trim();
-    if (!searchTerm) {
-      isFiltered = false;
-      renderList();
-      return;
-    }
-
-    if (!allLoresFull) {
-      try {
-        const snap = await db.collection('lores').orderBy('createdAt', 'desc').get();
-        allLoresFull = snap.docs.map(doc => {
-          const d = doc.data();
-          return {
-            pid: doc.id,
-            title: d.title || '(제목 없음)',
-            createdAt: d.createdAt?.toDate?.() || new Date(),
-            chapterCount: d.chapterCount || 0
-          };
-        });
-      } catch (e) {
-        console.error('로어 전체 로드 실패:', e);
-        return;
-      }
-    }
-
-    isFiltered = true;
-    filteredVisible = PAGE_SIZE;
-    renderList();
+    await loadLores();
   }
 
   document.getElementById('searchBtn').addEventListener('click', doSearch);

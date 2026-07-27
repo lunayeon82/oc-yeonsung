@@ -233,7 +233,7 @@
 </head>
 <body>
 
-<div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
+<div class="sync-badge" id="syncBadge"><span class="dot"></span>연결됨</div>
 
 <a href="../index.html" class="nav-link nav-corner">← 홈</a>
 
@@ -292,31 +292,24 @@
 <div class="toast" id="toast"></div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   const USER_NAME = '하지';
-  const userRef = db.collection('users').doc(USER_NAME);
+  const POLL_INTERVAL_MS = 7000;
+
+  const DELETE_APIS = {
+    drawBox: API.deleteDrawBox,
+    readLater: API.deleteReadLater,
+    storyBox: API.deleteStoryBox,
+  };
 
   // ── 유틸 ──
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
     if (online) {
       badge.classList.remove('offline');
-      badge.innerHTML = '<span class="dot"></span>실시간 연결됨';
+      badge.innerHTML = '<span class="dot"></span>연결됨';
     } else {
       badge.classList.add('offline');
       badge.innerHTML = '<span class="dot"></span>오프라인';
@@ -339,44 +332,49 @@
   async function deleteItem(coll, id) {
     if (!(await customConfirm('삭제할까요?'))) return;
     try {
-      await userRef.collection(coll).doc(id).delete();
+      await DELETE_APIS[coll](USER_NAME, id);
       showToast('삭제했어요');
+      refetchAll();
     } catch (e) {
       console.error('삭제 실패:', e);
       showToast('삭제에 실패했어요');
     }
   }
 
+  function refetchAll() {
+    fetchDraw();
+    fetchReadLater();
+    fetchStoryBox();
+  }
+  setInterval(refetchAll, POLL_INTERVAL_MS);
+
   // ============ 🎲 뽑기 보관함 ============
-  let lastDrawDocs = [];
+  let lastDrawItems = [];
   let editingId = null;
   let drawExpanded = false;
-  let drawUnsub = null;
 
-  function subscribeDraw() {
-    if (drawUnsub) drawUnsub();
-    let q = userRef.collection('drawBox').orderBy('createdAt', 'desc');
-    if (!drawExpanded) q = q.limit(4);
-    drawUnsub = q.onSnapshot(snap => {
-      lastDrawDocs = snap.docs;
+  async function fetchDraw() {
+    try {
+      const items = await API.listDrawBox(USER_NAME, drawExpanded ? undefined : 4);
+      lastDrawItems = items;
       renderDrawList();
       setSyncStatus(true);
-    }, err => {
-      console.error('뽑기 보관함 로드 실패:', err);
+    } catch (e) {
+      console.error('뽑기 보관함 로드 실패:', e);
       setSyncStatus(false);
-    });
+    }
   }
-  subscribeDraw();
+  fetchDraw();
 
   document.getElementById('drawToggleBtn').addEventListener('click', () => {
     drawExpanded = !drawExpanded;
-    subscribeDraw();
+    fetchDraw();
   });
 
-  // 두 스키마(2인/N인)를 하나로 통일하고, 캐릭터 설정이 전부 같으면 하나로 합쳐서 보여준다
+  // 캐릭터 설정이 전부 같으면 하나로 합쳐서 보여준다
   function drawParts(d) {
-    const names = Array.isArray(d.names) ? d.names : [d.left, d.right];
-    const roles = Array.isArray(d.names) ? (d.roles || []) : [d.roleL, d.roleR];
+    const names = d.names || [];
+    const roles = d.roles || [];
     const shared = roles.length > 0 && roles[0] && roles.every(r => r === roles[0]) ? roles[0] : null;
     return { names, roles, shared };
   }
@@ -398,32 +396,31 @@
   function renderDrawList() {
     const el = document.getElementById('drawList');
     const toggleBtn = document.getElementById('drawToggleBtn');
-    if (!lastDrawDocs.length) {
+    if (!lastDrawItems.length) {
       el.innerHTML = '<div class="empty-state">아직 저장된 뽑기 결과가 없어요</div>';
       toggleBtn.style.display = 'none';
       return;
     }
-    const docsToShow = (!drawExpanded && lastDrawDocs.length > 3) ? lastDrawDocs.slice(0, 3) : lastDrawDocs;
-    el.innerHTML = docsToShow.map(doc => {
-      const d = doc.data();
-      if (doc.id === editingId) return renderDrawEditForm(doc.id, d);
+    const itemsToShow = (!drawExpanded && lastDrawItems.length > 3) ? lastDrawItems.slice(0, 3) : lastDrawItems;
+    el.innerHTML = itemsToShow.map(d => {
+      if (d.id === editingId) return renderDrawEditForm(d.id, d);
       return `
-        <div class="draw-item" data-id="${doc.id}">
+        <div class="draw-item" data-id="${d.id}">
           <div class="draw-result">
             ${drawResultInnerHtml(d)}
           </div>
           ${d.memo ? `<div class="draw-memo">${esc(d.memo)}</div>` : ''}
           <div class="draw-actions">
-            <button class="icon-btn copy-btn" data-id="${doc.id}" title="복사">📋</button>
-            <button class="icon-btn edit-btn" data-id="${doc.id}" title="수정">✎</button>
-            <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="drawBox" title="삭제">✕</button>
+            <button class="icon-btn copy-btn" data-id="${d.id}" title="복사">📋</button>
+            <button class="icon-btn edit-btn" data-id="${d.id}" title="수정">✎</button>
+            <button class="icon-btn delete-btn" data-id="${d.id}" data-coll="drawBox" title="삭제">✕</button>
           </div>
         </div>
       `;
     }).join('');
     bindDrawEvents();
 
-    if (drawExpanded || lastDrawDocs.length > 3) {
+    if (drawExpanded || lastDrawItems.length > 3) {
       toggleBtn.style.display = 'inline-flex';
       toggleBtn.textContent = drawExpanded ? '최소화하기' : '전체보기';
     } else {
@@ -432,52 +429,28 @@
   }
 
   function renderDrawEditForm(id, d) {
-    if (Array.isArray(d.names)) {
-      const roles = d.roles || [];
-      const rows = d.names.map((n, i) => `
-          <div class="draw-edit-row">
-            <input class="draw-edit-input" data-field="name${i}" value="${esc(n)}" placeholder="캐릭터 ${i+1}">
-            <input class="draw-edit-input" data-field="role${i}" value="${esc(roles[i] || '')}" placeholder="설정 ${i+1}">
-          </div>`).join('<span class="draw-edit-sep">✕</span>');
-      return `
-      <div class="draw-item" data-id="${id}" data-count="${d.names.length}">
-        <div class="draw-edit-form">
-          ${rows}
-          <div class="draw-edit-row">
-            <input class="draw-edit-input" data-field="au" value="${esc(d.au)}" placeholder="관계성">
-          </div>
-          <textarea class="draw-edit-memo" data-field="memo" placeholder="메모">${esc(d.memo || '')}</textarea>
-          <div class="draw-edit-actions">
-            <button class="draw-edit-btn draw-edit-cancel" data-id="${id}">취소</button>
-            <button class="draw-edit-btn draw-edit-save" data-id="${id}">저장</button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
+    const names = d.names || [];
+    const roles = d.roles || [];
+    const rows = names.map((n, i) => `
+        <div class="draw-edit-row">
+          <input class="draw-edit-input" data-field="name${i}" value="${esc(n)}" placeholder="캐릭터 ${i+1}">
+          <input class="draw-edit-input" data-field="role${i}" value="${esc(roles[i] || '')}" placeholder="설정 ${i+1}">
+        </div>`).join('<span class="draw-edit-sep">✕</span>');
     return `
-      <div class="draw-item" data-id="${id}">
-        <div class="draw-edit-form">
-          <div class="draw-edit-row">
-            <input class="draw-edit-input" data-field="left" value="${esc(d.left)}" placeholder="캐릭터 1">
-            <input class="draw-edit-input" data-field="roleL" value="${esc(d.roleL)}" placeholder="설정 1">
-          </div>
-          <span class="draw-edit-sep">✕</span>
-          <div class="draw-edit-row">
-            <input class="draw-edit-input" data-field="right" value="${esc(d.right)}" placeholder="캐릭터 2">
-            <input class="draw-edit-input" data-field="roleR" value="${esc(d.roleR)}" placeholder="설정 2">
-          </div>
-          <div class="draw-edit-row">
-            <input class="draw-edit-input" data-field="au" value="${esc(d.au)}" placeholder="관계성">
-          </div>
-          <textarea class="draw-edit-memo" data-field="memo" placeholder="메모">${esc(d.memo || '')}</textarea>
-          <div class="draw-edit-actions">
-            <button class="draw-edit-btn draw-edit-cancel" data-id="${id}">취소</button>
-            <button class="draw-edit-btn draw-edit-save" data-id="${id}">저장</button>
-          </div>
+    <div class="draw-item" data-id="${id}" data-count="${names.length}">
+      <div class="draw-edit-form">
+        ${rows}
+        <div class="draw-edit-row">
+          <input class="draw-edit-input" data-field="au" value="${esc(d.au)}" placeholder="관계성">
+        </div>
+        <textarea class="draw-edit-memo" data-field="memo" placeholder="메모">${esc(d.memo || '')}</textarea>
+        <div class="draw-edit-actions">
+          <button class="draw-edit-btn draw-edit-cancel" data-id="${id}">취소</button>
+          <button class="draw-edit-btn draw-edit-save" data-id="${id}">저장</button>
         </div>
       </div>
-    `;
+    </div>
+  `;
   }
 
   function bindDrawEvents() {
@@ -486,7 +459,7 @@
     });
     document.querySelectorAll('#drawList .edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        editingId = btn.dataset.id;
+        editingId = Number(btn.dataset.id);
         renderDrawList();
       });
     });
@@ -505,9 +478,8 @@
   }
 
   function copyDrawItem(id) {
-    const doc = lastDrawDocs.find(d => d.id === id);
-    if (!doc) return;
-    const d = doc.data();
+    const d = lastDrawItems.find(item => item.id === Number(id));
+    if (!d) return;
     const { names, roles, shared } = drawParts(d);
     let text = shared
       ? `${names.join(' ✕ ')} / ${shared} / ${d.au}`
@@ -524,28 +496,19 @@
 
   async function saveDrawEdit(id) {
     const item = document.querySelector(`#drawList .draw-item[data-id="${id}"]`);
-    const count = item.dataset.count;
-    const fields = {};
-    if (count) {
-      const n = Number(count);
-      const names = [], roles = [];
-      for (let i = 0; i < n; i++) {
-        names.push(item.querySelector(`[data-field="name${i}"]`).value.trim());
-        roles.push(item.querySelector(`[data-field="role${i}"]`).value.trim());
-      }
-      fields.names = names;
-      fields.roles = roles;
-      fields.au = item.querySelector('[data-field="au"]').value.trim();
-      fields.memo = item.querySelector('[data-field="memo"]').value.trim();
-    } else {
-      item.querySelectorAll('[data-field]').forEach(input => {
-        fields[input.dataset.field] = input.value.trim();
-      });
+    const n = Number(item.dataset.count);
+    const names = [], roles = [];
+    for (let i = 0; i < n; i++) {
+      names.push(item.querySelector(`[data-field="name${i}"]`).value.trim());
+      roles.push(item.querySelector(`[data-field="role${i}"]`).value.trim());
     }
+    const au = item.querySelector('[data-field="au"]').value.trim();
+    const memo = item.querySelector('[data-field="memo"]').value.trim();
     try {
-      await userRef.collection('drawBox').doc(id).update(fields);
+      await API.updateDrawBox(USER_NAME, id, { names, roles, au, memo });
       editingId = null;
       showToast('수정했어요');
+      fetchDraw();
     } catch (e) {
       console.error('수정 실패:', e);
       showToast('수정에 실패했어요');
@@ -553,29 +516,26 @@
   }
 
   // ============ 📌📚 글 목록 (나중에 볼 연성 / 연성 보관함) ============
-  function renderStoryList(elId, toggleBtnId, docs, coll, expanded) {
+  function renderStoryList(elId, toggleBtnId, items, coll, expanded) {
     const el = document.getElementById(elId);
     const toggleBtn = document.getElementById(toggleBtnId);
-    if (!docs.length) {
+    if (!items.length) {
       el.innerHTML = '<div class="empty-state">아직 저장된 글이 없어요</div>';
       toggleBtn.style.display = 'none';
       return;
     }
-    const docsToShow = (!expanded && docs.length > 3) ? docs.slice(0, 3) : docs;
-    el.innerHTML = docsToShow.map(doc => {
-      const d = doc.data();
-      return `
-        <div class="story-row" data-id="${doc.id}">
-          <a class="story-row-link" href="../story/${d.type === 'image' ? 'image-view' : 'story-view'}.html?pid=${esc(d.storyId)}">${esc(d.title)}</a>
-          <button class="icon-btn delete-btn" data-id="${doc.id}" data-coll="${coll}" title="삭제">✕</button>
+    const itemsToShow = (!expanded && items.length > 3) ? items.slice(0, 3) : items;
+    el.innerHTML = itemsToShow.map(d => `
+        <div class="story-row" data-id="${d.id}">
+          <a class="story-row-link" href="../story/${d.parentType === 'image' ? 'image-view' : 'story-view'}.html?pid=${esc(d.parentPid)}">${esc(d.title)}</a>
+          <button class="icon-btn delete-btn" data-id="${d.id}" data-coll="${coll}" title="삭제">✕</button>
         </div>
-      `;
-    }).join('');
+      `).join('');
     el.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteItem(btn.dataset.coll, btn.dataset.id));
     });
 
-    if (expanded || docs.length > 3) {
+    if (expanded || items.length > 3) {
       toggleBtn.style.display = 'inline-flex';
       toggleBtn.textContent = expanded ? '최소화하기' : '전체보기';
     } else {
@@ -584,35 +544,33 @@
   }
 
   let readLaterExpanded = false;
-  let readLaterUnsub = null;
-  function subscribeReadLater() {
-    if (readLaterUnsub) readLaterUnsub();
-    let q = userRef.collection('readLater').orderBy('addedAt', 'desc');
-    if (!readLaterExpanded) q = q.limit(4);
-    readLaterUnsub = q.onSnapshot(snap => {
-      renderStoryList('readLaterList', 'readLaterToggleBtn', snap.docs, 'readLater', readLaterExpanded);
-    }, err => console.error('나중에 볼 연성 로드 실패:', err));
+  async function fetchReadLater() {
+    try {
+      const items = await API.listReadLater(USER_NAME, readLaterExpanded ? undefined : 4);
+      renderStoryList('readLaterList', 'readLaterToggleBtn', items, 'readLater', readLaterExpanded);
+    } catch (e) {
+      console.error('나중에 볼 연성 로드 실패:', e);
+    }
   }
-  subscribeReadLater();
+  fetchReadLater();
   document.getElementById('readLaterToggleBtn').addEventListener('click', () => {
     readLaterExpanded = !readLaterExpanded;
-    subscribeReadLater();
+    fetchReadLater();
   });
 
   let storyBoxExpanded = false;
-  let storyBoxUnsub = null;
-  function subscribeStoryBox() {
-    if (storyBoxUnsub) storyBoxUnsub();
-    let q = userRef.collection('storyBox').orderBy('addedAt', 'desc');
-    if (!storyBoxExpanded) q = q.limit(4);
-    storyBoxUnsub = q.onSnapshot(snap => {
-      renderStoryList('storyBoxList', 'storyBoxToggleBtn', snap.docs, 'storyBox', storyBoxExpanded);
-    }, err => console.error('연성 보관함 로드 실패:', err));
+  async function fetchStoryBox() {
+    try {
+      const items = await API.listStoryBox(USER_NAME, storyBoxExpanded ? undefined : 4);
+      renderStoryList('storyBoxList', 'storyBoxToggleBtn', items, 'storyBox', storyBoxExpanded);
+    } catch (e) {
+      console.error('연성 보관함 로드 실패:', e);
+    }
   }
-  subscribeStoryBox();
+  fetchStoryBox();
   document.getElementById('storyBoxToggleBtn').addEventListener('click', () => {
     storyBoxExpanded = !storyBoxExpanded;
-    subscribeStoryBox();
+    fetchStoryBox();
   });
 </script>
 </body>

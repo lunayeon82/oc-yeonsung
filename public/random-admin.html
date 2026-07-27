@@ -338,7 +338,7 @@
           <span class="card-title">ID 일괄 부여</span>
         </div>
         <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;line-height:1.6">
-          오너 코드가 설정된 캐릭터에 자동으로 ID를 부여합니다.<br>기존 ID가 없는 캐릭터에만 적용되며, <code style="font-size:0.75rem;color:var(--violet)">characters/{id}</code> 컬렉션에도 생성됩니다.
+          오너 코드가 설정된 캐릭터에 자동으로 ID를 부여합니다.<br>기존 ID가 없는 캐릭터에만 적용됩니다.
         </div>
         <button class="add-btn" onclick="migrateIds()" style="background:var(--amber);color:#fff;font-weight:700">⚡ ID 일괄 부여 실행</button>
       </div>
@@ -1066,50 +1066,38 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- Firebase -->
 <script src="assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/api.js"></script>
 <script src="assets/confirm-modal.js"></script>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-  authDomain: "oc-yeonsung.firebaseapp.com",
-  projectId: "oc-yeonsung",
-  storageBucket: "oc-yeonsung.firebasestorage.app",
-  messagingSenderId: "145543545184",
-  appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-});
-const db = firebase.firestore();
+const POLL_INTERVAL_MS = 7000;
 
-let CHARS = { groups: [] };
+let CHARS = { owners: [] };
 let ROLES = { groups: [] };
 let AUS = { groups: [] };
+
+function normalizeTagTree(data) {
+  return data && data.groups ? data : { groups: [{ label: '기본', items: (data && data.list) || [] }] };
+}
 
 // ============ INIT ============
 async function init() {
   try {
-    const [charDoc, roleDoc, auDoc] = await Promise.all([
-      db.collection('data').doc('characters').get(),
-      db.collection('data').doc('roles').get(),
-      db.collection('data').doc('aus').get()
+    const [tree, roleData, auData] = await Promise.all([
+      API.getCharacters(),
+      API.getRoles(),
+      API.getAus()
     ]);
-    if (charDoc.exists) CHARS = charDoc.data();
-    if (roleDoc.exists) {
-      const rd = roleDoc.data();
-      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
-    }
-    if (auDoc.exists) {
-      const ad = auDoc.data();
-      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
-    }
+    CHARS = tree;
+    ROLES = normalizeTagTree(roleData);
+    AUS = normalizeTagTree(auData);
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     setSyncStatus(true);
     renderAll();
-    startListeners();
+    startPolling();
   } catch (err) {
     console.error(err);
     document.getElementById('loadingState').innerHTML = '<div style="color:var(--rose)">연결 실패. 새로고침 해주세요.</div>';
@@ -1117,24 +1105,31 @@ async function init() {
   }
 }
 
-function startListeners() {
-  db.collection('data').doc('characters').onSnapshot(doc => {
-    if (doc.exists) { CHARS = doc.data(); renderAll(); setSyncStatus(true); }
-  });
-  db.collection('data').doc('roles').onSnapshot(doc => {
-    if (doc.exists) {
-      const rd = doc.data();
-      ROLES = rd.groups ? rd : { groups: [{ label: '기본', items: rd.list || [] }] };
-      renderRoles(); setSyncStatus(true);
-    }
-  });
-  db.collection('data').doc('aus').onSnapshot(doc => {
-    if (doc.exists) {
-      const ad = doc.data();
-      AUS = ad.groups ? ad : { groups: [{ label: '기본', items: ad.list || [] }] };
-      renderAUs(); setSyncStatus(true);
-    }
-  });
+function startPolling() {
+  setInterval(async () => {
+    try {
+      CHARS = await API.getCharacters();
+      renderChars();
+      updateSelects();
+      setSyncStatus(true);
+    } catch (err) { setSyncStatus(false); }
+  }, POLL_INTERVAL_MS);
+
+  setInterval(async () => {
+    try {
+      ROLES = normalizeTagTree(await API.getRoles());
+      renderRoles();
+      setSyncStatus(true);
+    } catch (err) { setSyncStatus(false); }
+  }, POLL_INTERVAL_MS);
+
+  setInterval(async () => {
+    try {
+      AUS = normalizeTagTree(await API.getAus());
+      renderAUs();
+      setSyncStatus(true);
+    } catch (err) { setSyncStatus(false); }
+  }, POLL_INTERVAL_MS);
 }
 
 function setSyncStatus(on) {
@@ -1147,7 +1142,9 @@ function setSyncStatus(on) {
 async function saveChars() {
   showSaving();
   try {
-    await db.collection('data').doc('characters').set(CHARS);
+    CHARS = await API.saveCharacterTree(CHARS);
+    renderChars();
+    updateSelects();
     toast('캐릭터 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
@@ -1156,7 +1153,8 @@ async function saveChars() {
 async function saveRoles() {
   showSaving();
   try {
-    await db.collection('data').doc('roles').set(ROLES);
+    ROLES = await API.saveRoles(ROLES);
+    renderRoles();
     toast('캐릭터 설정 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
@@ -1165,7 +1163,8 @@ async function saveRoles() {
 async function saveAUs() {
   showSaving();
   try {
-    await db.collection('data').doc('aus').set(AUS);
+    AUS = await API.saveAus(AUS);
+    renderAUs();
     toast('관계성 저장 완료');
   } catch (e) { console.error(e); toast('저장 실패!'); }
   hideSaving();
@@ -1195,24 +1194,24 @@ function renderAll() {
 // ============ CHARACTERS ============
 function renderChars() {
   const container = document.getElementById('charList');
-  if (!CHARS.groups || !CHARS.groups.length) {
+  if (!CHARS.owners || !CHARS.owners.length) {
     container.innerHTML = '<div class="card"><div style="color:var(--text-muted);text-align:center;padding:20px">캐릭터가 없습니다</div></div>';
     return;
   }
 
-  container.innerHTML = CHARS.groups.map((g, gi) => {
-    const groupsHtml = g.subs.map((s, si) => {
-      const itemsHtml = s.items.map((it, ii) => `
+  container.innerHTML = CHARS.owners.map((g, gi) => {
+    const groupsHtml = g.subgroups.map((s, si) => {
+      const itemsHtml = s.characters.map((it, ii) => `
         <div class="item-row">
           <div class="item-actions">
             <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},-1)" ${ii===0?'disabled':''} title="위로">▲</button>
-            <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},1)" ${ii===s.items.length-1?'disabled':''} title="아래로">▼</button>
+            <button class="item-arrow" onclick="moveChar(${gi},${si},${ii},1)" ${ii===s.characters.length-1?'disabled':''} title="아래로">▼</button>
           </div>
-          <span class="item-name">${esc(it.n)}</span>
-          ${it.id ? `<span class="char-id-badge">${esc(it.id)}</span>` : ''}
+          <span class="item-name">${esc(it.name)}</span>
+          ${it.publicCode ? `<span class="char-id-badge">${esc(it.publicCode)}</span>` : ''}
           <div class="item-tags">
-            <span class="item-tag ${it.g===0?'tag-male':'tag-female'}">${it.g===0?'♂':'♀'}</span>
-            <span class="item-tag ${it.c===1?'tag-couple':'tag-solo'}">${it.c===1?'💕 커플':'솔로'}</span>
+            <span class="item-tag ${it.gender===0?'tag-male':'tag-female'}">${it.gender===0?'♂':'♀'}</span>
+            <span class="item-tag ${it.isCouple===1?'tag-couple':'tag-solo'}">${it.isCouple===1?'💕 커플':'솔로'}</span>
           </div>
           <button class="item-edit" onclick="openEditModal(${gi},${si},${ii})">변경</button>
           <button class="item-del" onclick="delChar(${gi},${si},${ii})" title="삭제">✕</button>
@@ -1223,7 +1222,7 @@ function renderChars() {
           <div class="group-header">
             <span class="group-label">${esc(s.label)}</span>
             ${s.code ? `<span style="font-size:0.6rem;color:var(--text-muted);font-family:monospace">${esc(s.code)}</span>` : ''}
-            <span class="group-count">${s.items.length}명</span>
+            <span class="group-count">${s.characters.length}명</span>
             <button class="danger-btn" style="margin-left:auto;padding:4px 10px;font-size:0.65rem" onclick="delGroup(${gi},${si})">그룹 삭제</button>
           </div>
           <div class="item-list">${itemsHtml || '<div style="color:var(--text-muted);font-size:0.8rem;padding:4px 12px">비어있음</div>'}</div>
@@ -1233,7 +1232,7 @@ function renderChars() {
     return `
       <div class="card owner-section">
         <div class="owner-header">
-          <span class="owner-title">${esc(g.owner)}</span>
+          <span class="owner-title">${esc(g.name)}</span>
           ${g.code ? `<span class="owner-code">${esc(g.code)}</span>` : ''}
           <button class="danger-btn" style="margin-left:auto" onclick="delOwner(${gi})">오너 삭제</button>
         </div>
@@ -1243,7 +1242,7 @@ function renderChars() {
 }
 
 function updateSelects() {
-  const owners = CHARS.groups.map(g => g.owner);
+  const owners = CHARS.owners.map(g => g.name);
   const opts = owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
 
   document.getElementById('groupOwnerSelect').innerHTML = opts;
@@ -1253,10 +1252,10 @@ function updateSelects() {
 
 function updateCharGroupSelect() {
   const ownerName = document.getElementById('charOwnerSelect').value;
-  const group = CHARS.groups.find(g => g.owner === ownerName);
+  const group = CHARS.owners.find(g => g.name === ownerName);
   const sel = document.getElementById('charGroupSelect');
   if (group) {
-    sel.innerHTML = group.subs.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('');
+    sel.innerHTML = group.subgroups.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('');
   } else {
     sel.innerHTML = '';
   }
@@ -1269,9 +1268,9 @@ function addOwner() {
   const code = codeInput.value.trim().toLowerCase();
   if (!name || !code) { toast('이름과 코드를 모두 입력해주세요'); return; }
   if (!/^[a-z0-9]+$/.test(code)) { toast('코드는 영소문자/숫자만 사용 가능해요'); return; }
-  if (CHARS.groups.some(g => g.owner === name)) { toast('이미 존재하는 오너'); return; }
-  if (CHARS.groups.some(g => g.code === code)) { toast('이미 사용 중인 코드'); return; }
-  CHARS.groups.push({ owner: name, code, subs: [] });
+  if (CHARS.owners.some(g => g.name === name)) { toast('이미 존재하는 오너'); return; }
+  if (CHARS.owners.some(g => g.code === code)) { toast('이미 사용 중인 코드'); return; }
+  CHARS.owners.push({ name, code, subgroups: [] });
   nameInput.value = '';
   codeInput.value = '';
   saveChars();
@@ -1282,19 +1281,24 @@ function addGroup() {
   const input = document.getElementById('newGroupName');
   const label = input.value.trim();
   if (!ownerName || !label) return;
-  const group = CHARS.groups.find(g => g.owner === ownerName);
+  const group = CHARS.owners.find(g => g.name === ownerName);
   if (!group) return;
-  if (group.subs.some(s => s.label === label)) { toast('이미 존재하는 그룹'); return; }
+  if (group.subgroups.some(s => s.label === label)) { toast('이미 존재하는 그룹'); return; }
 
-  const maxCode = group.subs.reduce((max, s) => {
+  const maxCode = group.subgroups.reduce((max, s) => {
     const n = parseInt(s.code || '0');
     return n > max ? n : max;
   }, 0);
   const code = String(maxCode + 1).padStart(2, '0');
 
-  group.subs.push({ label, code, items: [] });
+  group.subgroups.push({ label, code, characters: [] });
   input.value = '';
   saveChars();
+}
+
+function publicCodeSuffix(it) {
+  if (it.publicCode && it.publicCode.length >= 2) return it.publicCode.slice(-2);
+  return '0';
 }
 
 function addChar() {
@@ -1305,41 +1309,33 @@ function addChar() {
   const couple = parseInt(document.getElementById('newCharCouple').value);
   if (!name) return;
 
-  const ownerGroup = CHARS.groups.find(g => g.owner === ownerName);
+  const ownerGroup = CHARS.owners.find(g => g.name === ownerName);
   if (!ownerGroup) return;
-  const sub = ownerGroup.subs.find(s => s.label === groupLabel);
+  const sub = ownerGroup.subgroups.find(s => s.label === groupLabel);
   if (!sub) return;
-  if (sub.items.some(it => it.n === name)) { toast('이미 존재하는 캐릭터'); return; }
+  if (sub.characters.some(it => it.name === name)) { toast('이미 존재하는 캐릭터'); return; }
 
-  const maxCode = sub.items.reduce((max, it) => {
-    const n = parseInt(it.charCode || '0');
+  const maxCode = sub.characters.reduce((max, it) => {
+    const n = parseInt(publicCodeSuffix(it));
     return n > max ? n : max;
   }, 0);
   const charCode = String(maxCode + 1).padStart(2, '0');
 
   const ownerCode = ownerGroup.code || '';
   const groupCode = sub.code || '';
-  const id = ownerCode && groupCode ? `${ownerCode}${groupCode}${charCode}` : '';
+  const publicCode = ownerCode && groupCode ? `${ownerCode}${groupCode}${charCode}` : '';
 
-  const charObj = { n: name, g: gender, c: couple, charCode };
-  if (id) charObj.id = id;
+  const charObj = { name, gender, isCouple: couple };
+  if (publicCode) charObj.publicCode = publicCode;
 
-  sub.items.push(charObj);
+  sub.characters.push(charObj);
   document.getElementById('newCharName').value = '';
-
-  if (id) {
-    db.collection('characters').doc(id).set({
-      n: name, g: gender, c: couple,
-      owner: ownerName, group: groupLabel,
-      info: {}
-    }).catch(e => console.error('characters doc 생성 실패:', e));
-  }
 
   saveChars();
 }
 
 function moveChar(gi, si, ii, dir) {
-  const items = CHARS.groups[gi].subs[si].items;
+  const items = CHARS.owners[gi].subgroups[si].characters;
   const target = ii + dir;
   if (target < 0 || target >= items.length) return;
   [items[ii], items[target]] = [items[target], items[ii]];
@@ -1350,11 +1346,11 @@ let editTarget = null; // {gi, si, ii}
 
 function openEditModal(gi, si, ii) {
   editTarget = { gi, si, ii };
-  const it = CHARS.groups[gi].subs[si].items[ii];
-  document.getElementById('editName').value = it.n;
-  document.getElementById('editGender').value = it.g;
-  document.getElementById('editCouple').value = it.c;
-  document.getElementById('editNote').value = it.nt || '';
+  const it = CHARS.owners[gi].subgroups[si].characters[ii];
+  document.getElementById('editName').value = it.name;
+  document.getElementById('editGender').value = it.gender;
+  document.getElementById('editCouple').value = it.isCouple;
+  document.getElementById('editNote').value = it.note || '';
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -1366,76 +1362,66 @@ function closeEditModal() {
 function saveEdit() {
   if (!editTarget) return;
   const { gi, si, ii } = editTarget;
-  const it = CHARS.groups[gi].subs[si].items[ii];
+  const it = CHARS.owners[gi].subgroups[si].characters[ii];
 
   const newName = document.getElementById('editName').value.trim();
   if (!newName) { toast('이름을 입력해주세요'); return; }
 
-  const siblings = CHARS.groups[gi].subs[si].items;
-  if (siblings.some((item, idx) => idx !== ii && item.n === newName)) {
+  const siblings = CHARS.owners[gi].subgroups[si].characters;
+  if (siblings.some((item, idx) => idx !== ii && item.name === newName)) {
     toast('같은 그룹에 동일한 이름이 이미 있어요'); return;
   }
 
-  it.n = newName;
-  it.g = parseInt(document.getElementById('editGender').value);
-  it.c = parseInt(document.getElementById('editCouple').value);
-  const note = document.getElementById('editNote').value.trim();
-  if (note) { it.nt = note; } else { delete it.nt; }
-
-  if (it.id) {
-    db.collection('characters').doc(it.id).set(
-      { n: it.n, g: it.g, c: it.c, note: note || '' },
-      { merge: true }
-    ).catch(e => console.error('characters doc 업데이트 실패:', e));
-  }
+  it.name = newName;
+  it.gender = parseInt(document.getElementById('editGender').value);
+  it.isCouple = parseInt(document.getElementById('editCouple').value);
+  it.note = document.getElementById('editNote').value.trim();
 
   closeEditModal();
   saveChars();
 }
 
 async function delChar(gi, si, ii) {
-  const it = CHARS.groups[gi].subs[si].items[ii];
-  if (!(await customConfirm(`"${it.n}" 삭제할까요?`))) return;
-  CHARS.groups[gi].subs[si].items.splice(ii, 1);
+  const it = CHARS.owners[gi].subgroups[si].characters[ii];
+  if (!(await customConfirm(`"${it.name}" 삭제할까요?`))) return;
+  CHARS.owners[gi].subgroups[si].characters.splice(ii, 1);
   saveChars();
 }
 
 async function delGroup(gi, si) {
-  const label = CHARS.groups[gi].subs[si].label;
+  const label = CHARS.owners[gi].subgroups[si].label;
   if (!(await customConfirm(`"${label}" 그룹 전체를 삭제할까요?`))) return;
-  CHARS.groups[gi].subs.splice(si, 1);
+  CHARS.owners[gi].subgroups.splice(si, 1);
   saveChars();
 }
 
 async function delOwner(gi) {
-  const name = CHARS.groups[gi].owner;
+  const name = CHARS.owners[gi].name;
   if (!(await customConfirm(`"${name}" 오너와 하위 모든 데이터를 삭제할까요?`))) return;
-  CHARS.groups.splice(gi, 1);
+  CHARS.owners.splice(gi, 1);
   saveChars();
 }
 
 async function migrateIds() {
-  const missingCode = CHARS.groups.filter(g => !g.code);
+  const missingCode = CHARS.owners.filter(g => !g.code);
   if (missingCode.length > 0) {
-    toast(`오너 코드가 없는 오너: ${missingCode.map(g => g.owner).join(', ')} — 먼저 오너 코드를 설정해주세요`);
+    toast(`오너 코드가 없는 오너: ${missingCode.map(g => g.name).join(', ')} — 먼저 오너 코드를 설정해주세요`);
     return;
   }
 
   const targets = [];
-  for (const ownerGroup of CHARS.groups) {
-    for (let si = 0; si < ownerGroup.subs.length; si++) {
-      const sub = ownerGroup.subs[si];
+  for (const ownerGroup of CHARS.owners) {
+    for (let si = 0; si < ownerGroup.subgroups.length; si++) {
+      const sub = ownerGroup.subgroups[si];
       if (!sub.code) {
         sub.code = String(si + 1).padStart(2, '0');
       }
-      for (let ii = 0; ii < sub.items.length; ii++) {
-        const it = sub.items[ii];
-        if (!it.charCode) {
-          it.charCode = String(ii + 1).padStart(2, '0');
-        }
-        if (!it.id) {
-          it.id = `${ownerGroup.code}${sub.code}${it.charCode}`;
-          targets.push({ id: it.id, n: it.n, g: it.g, c: it.c, owner: ownerGroup.owner, group: sub.label });
+      for (let ii = 0; ii < sub.characters.length; ii++) {
+        const it = sub.characters[ii];
+        if (!it.publicCode) {
+          const charCode = String(ii + 1).padStart(2, '0');
+          it.publicCode = `${ownerGroup.code}${sub.code}${charCode}`;
+          targets.push({ publicCode: it.publicCode, name: it.name });
         }
       }
     }
@@ -1446,17 +1432,13 @@ async function migrateIds() {
     return;
   }
 
-  if (!(await customConfirm(`${targets.length}명의 캐릭터에 ID를 부여하고 Firestore에 문서를 생성합니다. 계속할까요?`))) return;
+  if (!(await customConfirm(`${targets.length}명의 캐릭터에 ID를 부여합니다. 계속할까요?`))) return;
 
   showSaving();
   try {
-    await Promise.all(targets.map(t =>
-      db.collection('characters').doc(t.id).set(
-        { n: t.n, g: t.g, c: t.c, owner: t.owner, group: t.group, info: {} },
-        { merge: true }
-      )
-    ));
-    await db.collection('data').doc('characters').set(CHARS);
+    CHARS = await API.saveCharacterTree(CHARS);
+    renderChars();
+    updateSelects();
     toast(`ID 부여 완료 (${targets.length}명)`);
   } catch (e) {
     console.error(e);

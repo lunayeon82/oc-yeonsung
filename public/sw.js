@@ -1,5 +1,5 @@
 // 설치 가능한 PWA를 위한 최소 서비스 워커.
-// 정적 에셋(폰트/CSS/아이콘)만 캐시하고, Firestore 등 나머지 요청은 항상 네트워크로 보낸다.
+// 정적 에셋(폰트/CSS/아이콘)만 캐시하고, /api 등 나머지 요청은 항상 네트워크로 보낸다.
 const CACHE_NAME = 'yeonsung-shell-v1';
 const PRECACHE_URLS = [
   '/assets/theme.css',

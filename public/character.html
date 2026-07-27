@@ -546,21 +546,9 @@
 
 <div class="toast" id="toast">복사되었습니다</div>
 
-<!-- Firebase SDK -->
 <script src="assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/api.js"></script>
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-  authDomain: "oc-yeonsung.firebaseapp.com",
-  projectId: "oc-yeonsung",
-  storageBucket: "oc-yeonsung.firebasestorage.app",
-  messagingSenderId: "145543545184",
-  appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-});
-const db = firebase.firestore();
-
 const INFO_LABELS = [
   { key: 'look', label: '외형' },
   { key: 'vibe', label: '인상' },
@@ -596,10 +584,17 @@ function setSyncStatus(online) {
     badge.innerHTML = '<span class="dot"></span>오프라인';
   }
 }
-db.collection('data').doc('characters').onSnapshot(
-  () => setSyncStatus(true),
-  () => setSyncStatus(false)
-);
+function findCharacterById(tree, id) {
+  id = Number(id);
+  for (const owner of (tree.owners || [])) {
+    for (const sub of (owner.subgroups || [])) {
+      for (const ch of (sub.characters || [])) {
+        if (ch.id === id) return { char: ch, ownerName: owner.name, groupLabel: sub.label };
+      }
+    }
+  }
+  return null;
+}
 
 // ============ ROUTING ============
 document.addEventListener('DOMContentLoaded', () => {
@@ -622,17 +617,20 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadCharacter(id) {
   const app = document.getElementById('app');
   try {
-    const doc = await db.collection('characters').doc(id).get();
-    if (!doc.exists) {
+    const tree = await API.getCharacters();
+    setSyncStatus(true);
+    const found = findCharacterById(tree, id);
+    if (!found) {
       app.innerHTML = renderEmpty('캐릭터를 찾을 수 없어요', `ID: ${id}에 해당하는 캐릭터가 없습니다.`);
       return;
     }
-    window._charData = { id, ...doc.data() };
+    window._charData = { ...found.char, owner: found.ownerName, group: found.groupLabel };
     document.getElementById('editToggle').style.display = 'inline-flex';
     renderCharDetail(false);
   } catch (err) {
     console.error(err);
     app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+    setSyncStatus(false);
   }
 }
 
@@ -640,10 +638,10 @@ function renderCharDetail(editMode) {
   const d = window._charData;
   const info = d.info || {};
   const note = d.note || '';
-  const genderClass = d.g === 1 ? 'female' : 'male';
-  const genderText = GENDER_MAP[d.g] || '?';
-  const coupleClass = d.c === 1 ? 'couple' : 'solo';
-  const coupleText = COUPLE_MAP[d.c] || '?';
+  const genderClass = d.gender === 1 ? 'female' : 'male';
+  const genderText = GENDER_MAP[d.gender] || '?';
+  const coupleClass = d.isCouple === 1 ? 'couple' : 'solo';
+  const coupleText = COUPLE_MAP[d.isCouple] || '?';
   const customSections = d.customSections || [];
   const hasOldInfo = INFO_LABELS.some(item => info[item.key]);
   const hasInfo = customSections.length > 0 || hasOldInfo;
@@ -653,13 +651,13 @@ function renderCharDetail(editMode) {
   let html = `
     <div class="char-card">
       <div class="char-header">
-        <div class="char-avatar ${genderClass}">${esc((d.n || '?')[0])}</div>
-        <div class="char-name">${esc(d.n || '이름 없음')}</div>
+        <div class="char-avatar ${genderClass}">${esc((d.name || '?')[0])}</div>
+        <div class="char-name">${esc(d.name || '이름 없음')}</div>
         <div class="char-badges">
-          <span class="badge ${genderClass}">${d.g === 1 ? '♀' : '♂'} ${genderText}</span>
+          <span class="badge ${genderClass}">${d.gender === 1 ? '♀' : '♂'} ${genderText}</span>
           <span class="badge ${coupleClass}">${coupleText}</span>
         </div>
-        <div class="char-id">${esc(d.id)}</div>
+        <div class="char-id">${esc(d.publicCode || d.id)}</div>
         ${d.owner || d.group ? `
           <div class="char-meta">
             ${d.owner ? `<span>👤 ${esc(d.owner)}</span>` : ''}
@@ -677,7 +675,7 @@ function renderCharDetail(editMode) {
       <div class="info-row">
         <div class="info-label">이름</div>
         <div class="info-value">
-          <textarea class="info-textarea" id="edit_name" placeholder="캐릭터 이름" rows="1">${esc(d.n || '')}</textarea>
+          <textarea class="info-textarea" id="edit_name" placeholder="캐릭터 이름" rows="1">${esc(d.name || '')}</textarea>
         </div>
       </div>
       <div id="sections-container"></div>
@@ -805,15 +803,14 @@ async function loadCharsForImport() {
   const select = document.getElementById('importCharSelect');
   if (!select) return;
   try {
-    const doc = await db.collection('data').doc('characters').get();
-    const data = doc.exists ? doc.data() : {};
+    const data = await API.getCharacters();
     const currentId = window._charData?.id;
     let options = '<option value="">캐릭터 선택</option>';
-    for (const group of (data.groups || [])) {
-      for (const sub of (group.subs || [])) {
-        for (const item of (sub.items || [])) {
+    for (const owner of (data.owners || [])) {
+      for (const sub of (owner.subgroups || [])) {
+        for (const item of (sub.characters || [])) {
           if (!item.id || item.id === currentId) continue;
-          options += `<option value="${esc(item.id)}">${esc(group.owner)} - ${esc(item.n)}</option>`;
+          options += `<option value="${esc(item.id)}">${esc(owner.name)} - ${esc(item.name)}</option>`;
         }
       }
     }
@@ -831,9 +828,10 @@ async function confirmImportFormat() {
   if (!targetId) { showToast('캐릭터를 선택해주세요'); return; }
 
   try {
-    const doc = await db.collection('characters').doc(targetId).get();
-    if (!doc.exists) { showToast('캐릭터를 찾을 수 없어요'); return; }
-    const data = doc.data();
+    const tree = await API.getCharacters();
+    const found = findCharacterById(tree, targetId);
+    if (!found) { showToast('캐릭터를 찾을 수 없어요'); return; }
+    const data = found.char;
     const customSections = data.customSections || [];
     const info = data.info || {};
 
@@ -885,27 +883,9 @@ async function saveCharInfo() {
   const note = (document.getElementById('edit_note')?.value || '').trim();
 
   try {
-    await db.collection('characters').doc(d.id).update({ n: newName, customSections: newCustomSections, note });
+    await API.updateCharacter(d.id, { name: newName, customSections: newCustomSections, note });
 
-    if (newName !== d.n) {
-      const charsDoc = await db.collection('data').doc('characters').get();
-      if (charsDoc.exists) {
-        const chars = charsDoc.data();
-        let found = false;
-        for (const group of (chars.groups || [])) {
-          for (const sub of (group.subs || [])) {
-            for (const item of (sub.items || [])) {
-              if (item.id === d.id) { item.n = newName; found = true; break; }
-            }
-            if (found) break;
-          }
-          if (found) break;
-        }
-        if (found) await db.collection('data').doc('characters').set(chars);
-      }
-    }
-
-    window._charData.n = newName;
+    window._charData.name = newName;
     window._charData.customSections = newCustomSections;
     window._charData.note = note;
     renderCharDetail(false);
@@ -915,6 +895,7 @@ async function saveCharInfo() {
     saveBtn.disabled = false;
     saveBtn.textContent = '저장';
     showToast('저장 실패. 다시 시도해주세요.');
+    setSyncStatus(false);
   }
 }
 
@@ -926,22 +907,19 @@ let _listOwner = '';
 async function loadCharacterList() {
   const app = document.getElementById('app');
   try {
-    const doc = await db.collection('data').doc('characters').get();
-    if (!doc.exists) {
-      app.innerHTML = renderEmpty('데이터가 없어요', '아직 등록된 캐릭터가 없습니다.');
-      return;
-    }
-    _listData = doc.data();
+    _listData = await API.getCharacters();
+    setSyncStatus(true);
     renderList();
   } catch (err) {
     console.error(err);
     app.innerHTML = renderEmpty('오류가 발생했어요', '데이터를 불러올 수 없습니다.');
+    setSyncStatus(false);
   }
 }
 
 function renderList() {
-  const groups = _listData.groups || [];
-  const owners = groups.map(g => g.owner);
+  const groups = _listData.owners || [];
+  const owners = groups.map(g => g.name);
 
   const filterBar = `
     <div class="search-area">
@@ -961,37 +939,37 @@ function renderList() {
       </div>
     </div>`;
 
-  const filtered = _listOwner ? groups.filter(g => g.owner === _listOwner) : groups;
+  const filtered = _listOwner ? groups.filter(g => g.name === _listOwner) : groups;
   let listHtml = '';
 
   for (const ownerGroup of filtered) {
     let ownerContent = '';
-    for (const sub of (ownerGroup.subs || [])) {
-      let items = [...(sub.items || [])];
+    for (const sub of (ownerGroup.subgroups || [])) {
+      let items = [...(sub.characters || [])];
       if (_listSort === 'alpha') {
-        items.sort((a, b) => a.n.localeCompare(b.n, 'ko'));
+        items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
       } else {
-        items.sort((a, b) => (a.id || a.charCode || '').localeCompare(b.id || b.charCode || ''));
+        items.sort((a, b) => (a.publicCode || String(a.id) || '').localeCompare(b.publicCode || String(b.id) || ''));
       }
 
       const rowsHtml = items.map(it => {
-        const gBadge = it.g === 1 ? 'row-badge-f' : 'row-badge-m';
-        const gText = it.g === 1 ? '♀' : '♂';
-        const cBadge = it.c === 1 ? 'row-badge-couple' : 'row-badge-solo';
-        const cText = it.c === 1 ? '커플' : '솔로';
+        const gBadge = it.gender === 1 ? 'row-badge-f' : 'row-badge-m';
+        const gText = it.gender === 1 ? '♀' : '♂';
+        const cBadge = it.isCouple === 1 ? 'row-badge-couple' : 'row-badge-solo';
+        const cText = it.isCouple === 1 ? '커플' : '솔로';
         const badges = `<div class="char-row-badges">
           <span class="char-row-badge ${gBadge}">${gText}</span>
           <span class="char-row-badge ${cBadge}">${cText}</span>
         </div>`;
         if (it.id) {
           return `<a class="char-row" href="character.html?id=${esc(it.id)}">
-            <span class="char-row-name">${esc(it.n)}</span>
-            <span class="char-row-id">${esc(it.id)}</span>
+            <span class="char-row-name">${esc(it.name)}</span>
+            <span class="char-row-id">${esc(it.publicCode || it.id)}</span>
             ${badges}
           </a>`;
         }
         return `<div class="char-row no-id">
-          <span class="char-row-name">${esc(it.n)}</span>
+          <span class="char-row-name">${esc(it.name)}</span>
           ${badges}
         </div>`;
       }).join('');
@@ -1004,7 +982,7 @@ function renderList() {
     listHtml += `
       <div class="list-owner-section">
         <div class="list-owner-header">
-          <span class="list-owner-title">${esc(ownerGroup.owner)}</span>
+          <span class="list-owner-title">${esc(ownerGroup.name)}</span>
           ${ownerGroup.code ? `<span class="list-owner-code">${esc(ownerGroup.code)}</span>` : ''}
         </div>
         ${ownerContent}
@@ -1023,7 +1001,7 @@ function copyCharacter() {
   if (!d) return;
   const info = d.info || {};
   const customSections = d.customSections || [];
-  let text = `이름: ${d.n} (${GENDER_MAP[d.g] || '?'} / ${COUPLE_MAP[d.c] || '?'})\n`;
+  let text = `이름: ${d.name} (${GENDER_MAP[d.gender] || '?'} / ${COUPLE_MAP[d.isCouple] || '?'})\n`;
   if (customSections.length > 0) {
     for (const sec of customSections) {
       if (sec.title || sec.content) text += `${sec.title}: ${sec.content}\n`;

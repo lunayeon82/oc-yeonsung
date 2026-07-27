@@ -506,7 +506,7 @@
       <span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>
     </div>
     <div class="tag-picker collapsed" id="tagPicker">
-      <!-- Firestore에서 캐릭터 로드 -->
+      <!-- API에서 캐릭터 로드 -->
     </div>
   </div>
 
@@ -594,27 +594,13 @@
 <div class="toast" id="toast"></div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script>
-  // ★ firebaseConfig는 기존 프로젝트 파일에서 복사
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   // ── URL 파라미터 ──
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
-  const isNew = params.get('new') === '1';
+  let isNew = params.get('new') === '1';
 
   if (!pid) {
     alert('잘못된 접근입니다.');
@@ -663,15 +649,14 @@
   // ── 캐릭터 로드 ──
   async function loadCharacters() {
     try {
-      const charDoc = await db.collection('data').doc('characters').get();
-      if (!charDoc.exists) return;
+      const tree = await API.getCharacters();
 
       const groups = [];
-      (charDoc.data().groups || []).forEach(owner => {
-        (owner.subs || []).forEach(sub => {
-          const chars = (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n);
+      (tree.owners || []).forEach(owner => {
+        (owner.subgroups || []).forEach(sub => {
+          const chars = (sub.characters || []).map(ch => ch.name);
           if (chars.length > 0) {
-            groups.push({ label: `${owner.owner} — ${sub.label}`, chars });
+            groups.push({ label: `${owner.name} — ${sub.label}`, chars });
           }
         });
       });
@@ -748,18 +733,14 @@
   // ── 캐릭터 설정 / 관계성 로드 ──
   async function loadRolesAndAus() {
     try {
-      const [roleDoc, auDoc] = await Promise.all([
-        db.collection('data').doc('roles').get(),
-        db.collection('data').doc('aus').get()
+      const [roleTree, auTree] = await Promise.all([
+        API.getRoles(),
+        API.getAus()
       ]);
-      if (roleDoc.exists) {
-        allRoles = (roleDoc.data().groups || []).filter(g => (g.items || []).length > 0);
-        renderRolePicker();
-      }
-      if (auDoc.exists) {
-        allAus = (auDoc.data().groups || []).filter(g => (g.items || []).length > 0);
-        renderAuPicker();
-      }
+      allRoles = (roleTree.groups || []).filter(g => (g.items || []).length > 0);
+      renderRolePicker();
+      allAus = (auTree.groups || []).filter(g => (g.items || []).length > 0);
+      renderAuPicker();
     } catch (e) {
       console.error('설정/관계성 로드 실패:', e);
     }
@@ -988,55 +969,29 @@
     document.getElementById('saveStatus').textContent = '저장 중...';
 
     try {
-      // 기존 챕터 조회 (배치에 포함시키기 위해 미리 읽어둠)
-      const existing = await db.collection('chapters')
-        .where('storyId', '==', pid).get();
-
-      // stories 문서 갱신 + 챕터 삭제/재저장을 하나의 배치로 원자적 처리
-      const batch = db.batch();
-
-      const storyRef = db.collection('stories').doc(pid);
-      batch.set(storyRef, {
+      const body = {
+        pid,
         title,
         characters: selectedCharacters,
         roles: selectedRoles,
         aus: selectedAus,
         rating: selectedRating,
         loreRefs: selectedLoreRefs,
-        chapterCount: chapters.length,
-        theme: 'default',
-        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        chapters: chapters.map(ch => ({ pid: ch.chapterPid, title: ch.title || '', body: ch.body || '' }))
+      };
 
-      existing.forEach(doc => batch.delete(doc.ref));
-
-      chapters.forEach((ch, i) => {
-        const ref = db.collection('chapters').doc(ch.chapterPid);
-        batch.set(ref, {
-          storyId: pid,
-          order: i,
-          title: ch.title || '',
-          body: ch.body || '',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      });
-
-      const feedRef = db.collection('feed').doc(pid);
-      batch.set(feedRef, {
-        type: 'story',
-        refId: pid,
-        title,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      await batch.commit();
+      if (isNew) {
+        await API.createStory(body);
+      } else {
+        await API.updateStory(pid, body);
+      }
 
       document.getElementById('saveStatus').textContent = '저장됨';
       showToast('저장되었어요!');
 
       // new 파라미터 제거
       if (isNew) {
+        isNew = false;
         history.replaceState(null, '', `story-write.html?pid=${pid}`);
       }
     } catch (e) {
@@ -1056,13 +1011,8 @@
     }
 
     try {
-      const storyDoc = await db.collection('stories').doc(pid).get();
-      if (!storyDoc.exists) {
-        showToast('존재하지 않는 글이에요');
-        return;
-      }
+      const data = await API.getStory(pid);
 
-      const data = storyDoc.data();
       document.getElementById('storyTitle').value = data.title || '';
       selectedCharacters = data.characters || [];
       selectedRoles = data.roles || [];
@@ -1075,23 +1025,21 @@
       renderRatingPicker();
       renderSelectedLoreTags();
 
-      // 챕터 로드 (복합 인덱스 없이 JS 정렬)
-      const chapSnap = await db.collection('chapters')
-        .where('storyId', '==', pid)
-        .get();
-
-      if (!chapSnap.empty) {
-        chapters = chapSnap.docs.map(doc => ({
-          chapterPid: doc.id,
-          title: doc.data().title || '',
-          body: doc.data().body || '',
-          order: doc.data().order ?? 0
-        })).sort((a, b) => a.order - b.order);
+      if (Array.isArray(data.chapters) && data.chapters.length > 0) {
+        chapters = data.chapters.map(c => ({
+          chapterPid: c.pid,
+          title: c.title || '',
+          body: c.body || ''
+        }));
       }
 
       switchChapter(0, true);
       document.getElementById('bottomActions').style.display = 'flex';
     } catch (e) {
+      if (e.status === 404) {
+        showToast('존재하지 않는 글이에요');
+        return;
+      }
       console.error('로드 실패:', e);
     }
   }
@@ -1101,22 +1049,7 @@
     if (!(await customConfirm('이 글을 정말 삭제할까요? 모든 챕터가 함께 삭제됩니다.'))) return;
 
     try {
-      const batch = db.batch();
-
-      // 챕터 삭제
-      const chapSnap = await db.collection('chapters')
-        .where('storyId', '==', pid).get();
-      chapSnap.forEach(doc => batch.delete(doc.ref));
-
-      // 댓글 삭제
-      const commentSnap = await db.collection('comments')
-        .where('storyId', '==', pid).get();
-      commentSnap.forEach(doc => batch.delete(doc.ref));
-
-      // 스토리 삭제
-      batch.delete(db.collection('stories').doc(pid));
-      batch.delete(db.collection('feed').doc(pid));
-      await batch.commit();
+      await API.deleteStory(pid);
 
       showToast('삭제되었어요');
       setTimeout(() => location.href = 'story-list.html', 1000);
@@ -1139,9 +1072,16 @@
 
   async function loadLores() {
     try {
-      const snap = await db.collection('lores').get();
-      allLores = snap.docs
-        .map(doc => ({ id: doc.id, title: doc.data().title || '(제목 없음)' }))
+      let all = [];
+      let cursor;
+      for (;;) {
+        const res = await API.listLores({ limit: 100, cursor });
+        all = all.concat(res.items);
+        if (!res.nextCursor) break;
+        cursor = res.nextCursor;
+      }
+      allLores = all
+        .map(l => ({ id: l.pid, title: l.title || '(제목 없음)' }))
         .sort((a, b) => a.title.localeCompare(b.title, 'ko'));
       if (document.getElementById('loreDropdown').classList.contains('open')) {
         renderLoreDropdown(document.getElementById('loreSearchInput').value);

@@ -352,21 +352,8 @@
 <button class="new-image-btn" id="newImageBtn" title="새 그림 업로드">✎</button>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
     if (online) {
@@ -377,10 +364,6 @@
       badge.innerHTML = '<span class="dot"></span>오프라인';
     }
   }
-  db.collection('data').doc('characters').onSnapshot(
-    () => setSyncStatus(true),
-    () => setSyncStatus(false)
-  );
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -408,24 +391,23 @@
     charFilterMode = 'or';
     document.getElementById('charModeOr').classList.add('active');
     document.getElementById('charModeAnd').classList.remove('active');
-    refreshList();
+    loadImages();
   });
   document.getElementById('charModeAnd').addEventListener('click', () => {
     charFilterMode = 'and';
     document.getElementById('charModeAnd').classList.add('active');
     document.getElementById('charModeOr').classList.remove('active');
-    refreshList();
+    loadImages();
   });
 
   async function loadCharacters() {
     try {
-      const charDoc = await db.collection('data').doc('characters').get();
-      if (!charDoc.exists) return;
+      const tree = await API.getCharacters();
 
-      allCharacters = (charDoc.data().groups || []).map(owner => ({
-        owner: owner.owner,
-        names: (owner.subs || []).flatMap(sub =>
-          (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n)
+      allCharacters = (tree.owners || []).map(owner => ({
+        owner: owner.name,
+        names: (owner.subgroups || []).flatMap(sub =>
+          (sub.characters || []).filter(ch => ch && ch.name).map(ch => ch.name)
         )
       })).filter(g => g.names.length > 0);
 
@@ -458,7 +440,7 @@
         if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
         else { selectedChars.add(name); tag.classList.add('active'); }
         document.getElementById('clearCharFilter').style.display = selectedChars.size > 0 ? 'block' : 'none';
-        refreshList();
+        loadImages();
       });
     });
   }
@@ -470,7 +452,7 @@
     document.getElementById('charModeAnd').classList.remove('active');
     document.getElementById('clearCharFilter').style.display = 'none';
     document.querySelectorAll('#charFilter .char-tag.active').forEach(t => t.classList.remove('active'));
-    refreshList();
+    loadImages();
   });
 
   // ── 태그 필터 (지금까지 불러온 그림들의 태그 합집합에서 도출) ──
@@ -478,8 +460,7 @@
 
   function renderTagFilter() {
     const wrap = document.getElementById('tagFilter');
-    const source = allImagesFull || allImages;
-    const allTags = [...new Set(source.flatMap(img => img.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
+    const allTags = [...new Set(allImages.flatMap(img => img.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
 
     if (allTags.length === 0) {
       wrap.innerHTML = '<span style="font-size:0.75rem;color:#a99ab8;">태그 없음</span>';
@@ -495,7 +476,7 @@
         if (selectedTags.has(name)) { selectedTags.delete(name); tag.classList.remove('active'); }
         else { selectedTags.add(name); tag.classList.add('active'); }
         document.getElementById('clearTagFilter').style.display = selectedTags.size > 0 ? 'block' : 'none';
-        refreshList();
+        loadImages();
       });
     });
   }
@@ -504,33 +485,35 @@
     selectedTags.clear();
     document.getElementById('clearTagFilter').style.display = 'none';
     document.querySelectorAll('#tagFilter .char-tag.active').forEach(t => t.classList.remove('active'));
-    refreshList();
+    loadImages();
   });
 
-  function mapImageDoc(doc) {
-    const data = doc.data();
+  function mapImageItem(item) {
     return {
-      pid: doc.id,
-      title: data.title || '(제목 없음)',
-      description: data.description || '',
-      characters: data.characters || [],
-      tags: data.tags || [],
-      thumbUrl: data.thumbUrl || '',
-      chapterCount: data.chapterCount || 1,
-      commentCount: data.commentCount || 0
+      pid: item.pid,
+      title: item.title || '(제목 없음)',
+      description: item.description || '',
+      characters: item.characters || [],
+      tags: item.tags || [],
+      thumbUrl: item.thumbUrl || '',
+      chapterCount: item.chapterCount || 1,
+      commentCount: item.commentCount || 0
     };
   }
 
-  // ── 그림 목록 로드 (최근 수정순 페이지네이션) ──
+  function hasAnyFilterCriteria() {
+    return selectedChars.size > 0 || selectedTags.size > 0;
+  }
+
+  // ── 그림 목록 로드 (최근 수정순 페이지네이션, 필터는 서버에서 적용) ──
   let allImages = [];
-  let lastImageDoc = null;
+  let nextCursor = null;
   let noMoreImages = false;
   let isLoadingMoreImages = false;
-  let allImagesFull = null; // 필터 적용 시 1회 캐싱되는 전체 목록 (지연 로드)
 
   async function loadImages() {
     allImages = [];
-    lastImageDoc = null;
+    nextCursor = null;
     noMoreImages = false;
     await loadMoreImages();
   }
@@ -538,19 +521,25 @@
   async function loadMoreImages() {
     if (noMoreImages || isLoadingMoreImages) return;
     isLoadingMoreImages = true;
-    renderDefaultList();
+    renderImageList();
 
     try {
-      let query = db.collection('images').orderBy('updatedAt', 'desc').limit(IMAGE_PAGE_SIZE);
-      if (lastImageDoc) query = query.startAfter(lastImageDoc);
-      const snapshot = await query.get();
+      const res = await API.listImages({
+        characters: [...selectedChars].join(','),
+        charMode: charFilterMode,
+        tags: [...selectedTags].join(','),
+        cursor: nextCursor,
+        limit: IMAGE_PAGE_SIZE
+      });
 
-      const page = snapshot.docs.map(mapImageDoc);
+      const page = res.items.map(mapImageItem);
       allImages = allImages.concat(page);
-      lastImageDoc = snapshot.docs[snapshot.docs.length - 1] || lastImageDoc;
-      if (snapshot.docs.length < IMAGE_PAGE_SIZE) noMoreImages = true;
+      nextCursor = res.nextCursor;
+      if (!nextCursor) noMoreImages = true;
+      setSyncStatus(true);
     } catch (e) {
       console.error('그림 목록 로드 실패:', e);
+      setSyncStatus(false);
       if (allImages.length === 0) {
         isLoadingMoreImages = false;
         document.getElementById('imageList').innerHTML =
@@ -560,7 +549,7 @@
     }
 
     isLoadingMoreImages = false;
-    renderDefaultList();
+    renderImageList();
     renderTagFilter();
   }
 
@@ -613,66 +602,18 @@
     if (loadMoreBtn) loadMoreBtn.addEventListener('click', onLoadMore);
   }
 
-  // ── 기본 모드 렌더 (최근 수정순 페이지네이션) ──
-  function renderDefaultList() {
+  // ── 그림 목록 렌더 (최근 수정순 페이지네이션, 필터는 서버에서 적용됨) ──
+  function renderImageList() {
     renderList({
       items: allImages,
       visibleCount: allImages.length,
       hasMore: !noMoreImages,
       isLoadingMore: isLoadingMoreImages,
       onLoadMore: loadMoreImages,
-      emptyMessage: '아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!'
+      emptyMessage: hasAnyFilterCriteria()
+        ? '조건에 맞는 그림이 없어요'
+        : '아직 업로드된 그림이 없어요<br>첫 번째 그림을 올려보세요!'
     });
-  }
-
-  // ── 필터 일치 여부 판정 ──
-  function matchesFilters(img) {
-    const matchChar = selectedChars.size === 0 || (charFilterMode === 'and'
-      ? [...selectedChars].every(name => img.characters.includes(name))
-      : [...selectedChars].some(name => img.characters.includes(name)));
-    const matchTag = selectedTags.size === 0 || img.tags.some(t => selectedTags.has(t));
-    return matchChar && matchTag;
-  }
-
-  function hasAnyFilterCriteria() {
-    return selectedChars.size > 0 || selectedTags.size > 0;
-  }
-
-  // ── 필터 모드 렌더 (캐싱된 전체 목록에서 필터링, 캐시 내에서 더보기) ──
-  let filteredVisibleCount = IMAGE_PAGE_SIZE;
-
-  function renderFilteredList() {
-    const filtered = (allImagesFull || []).filter(matchesFilters);
-    renderList({
-      items: filtered,
-      visibleCount: filteredVisibleCount,
-      hasMore: filteredVisibleCount < filtered.length,
-      isLoadingMore: false,
-      onLoadMore: () => { filteredVisibleCount += IMAGE_PAGE_SIZE; renderFilteredList(); },
-      emptyMessage: '조건에 맞는 그림이 없어요'
-    });
-  }
-
-  // ── 전체 목록 캐싱 (필터 적용 시 1회만 로드) ──
-  async function ensureFullImagesLoaded() {
-    if (allImagesFull !== null) return;
-    const snapshot = await db.collection('images').orderBy('updatedAt', 'desc').get();
-    allImagesFull = snapshot.docs.map(mapImageDoc);
-    renderTagFilter();
-  }
-
-  // ── 필터 적용/해제 진입점: 기본(페이지네이션) ↔ 필터(전체 캐시) 전환 ──
-  async function refreshList() {
-    if (!hasAnyFilterCriteria()) {
-      renderDefaultList();
-      return;
-    }
-    if (allImagesFull === null) {
-      document.getElementById('imageList').innerHTML = '<div class="loading">불러오는 중<span class="dots"></span></div>';
-    }
-    await ensureFullImagesLoaded();
-    filteredVisibleCount = IMAGE_PAGE_SIZE;
-    renderFilteredList();
   }
 
   document.getElementById('newImageBtn').addEventListener('click', () => {

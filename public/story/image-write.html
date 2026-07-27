@@ -486,7 +486,7 @@
       <span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>
     </div>
     <div class="tag-picker collapsed" id="tagPicker">
-      <!-- Firestore에서 캐릭터 로드 -->
+      <!-- API에서 캐릭터 로드 -->
     </div>
   </div>
 
@@ -549,28 +549,13 @@
 <div class="toast" id="toast"></div>
 
 <script src="../assets/personal-nav.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV43y2kZnhgU7BhDlRg_r7IkeklidH6m8",
-    authDomain: "oc-yeonsung.firebaseapp.com",
-    projectId: "oc-yeonsung",
-    storageBucket: "oc-yeonsung.firebasestorage.app",
-    messagingSenderId: "145543545184",
-    appId: "1:145543545184:web:e7411754d99d8b04b5de05"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
   // ── URL 파라미터 ──
   const params = new URLSearchParams(location.search);
   const pid = params.get('pid');
-  const isNew = params.get('new') === '1';
+  let isNew = params.get('new') === '1';
 
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
@@ -582,10 +567,6 @@
       badge.innerHTML = '<span class="dot"></span>오프라인';
     }
   }
-  db.collection('data').doc('characters').onSnapshot(
-    () => setSyncStatus(true),
-    () => setSyncStatus(false)
-  );
 
   function showToast(msg) {
     const t = document.getElementById('toast');
@@ -615,23 +596,24 @@
 
   async function loadCharacters() {
     try {
-      const charDoc = await db.collection('data').doc('characters').get();
-      if (!charDoc.exists) return;
+      const tree = await API.getCharacters();
 
       const groups = [];
-      (charDoc.data().groups || []).forEach(owner => {
-        (owner.subs || []).forEach(sub => {
-          const chars = (sub.items || []).filter(ch => ch && ch.n).map(ch => ch.n);
+      (tree.owners || []).forEach(owner => {
+        (owner.subgroups || []).forEach(sub => {
+          const chars = (sub.characters || []).filter(ch => ch && ch.name).map(ch => ch.name);
           if (chars.length > 0) {
-            groups.push({ label: `${owner.owner} — ${sub.label}`, chars });
+            groups.push({ label: `${owner.name} — ${sub.label}`, chars });
           }
         });
       });
 
       allCharacters = groups;
       renderTagPicker();
+      setSyncStatus(true);
     } catch (e) {
       console.error('캐릭터 로드 실패:', e);
+      setSyncStatus(false);
     }
   }
 
@@ -742,11 +724,10 @@
   });
 
   // ── 그림(챕터) 관리 ──
-  let chapters = [{ chapterPid: generatePid(), file: null, imageUrl: null, previewUrl: null }];
+  let chapters = [{ chapterPid: generatePid(), file: null, imageUrl: null, imagePath: null, previewUrl: null }];
   let currentChapterIndex = 0;
   let thumbChapterId = null; // null이면 첫 번째 그림이 기본값
-  let originalChapterIds = [];
-  let loadedThumbUrl = null;
+  let loadedThumbPath = null;
   let loadedThumbChapterId = null;
 
   const fileInput = document.getElementById('fileInput');
@@ -812,7 +793,7 @@
   }
 
   document.getElementById('addChapterBtn').addEventListener('click', () => {
-    chapters.push({ chapterPid: generatePid(), file: null, imageUrl: null, previewUrl: null });
+    chapters.push({ chapterPid: generatePid(), file: null, imageUrl: null, imagePath: null, previewUrl: null });
     switchChapter(chapters.length - 1);
   });
 
@@ -871,11 +852,6 @@
     });
   }
 
-  function uploadBlob(path, blob) {
-    const ref = storage.ref(path);
-    return ref.put(blob, { contentType: 'image/webp' }).then(() => ref.getDownloadURL());
-  }
-
   // ── 진행 상태 표시 ──
   const progressWrap = document.getElementById('progressWrap');
   const progressText = document.getElementById('progressText');
@@ -892,7 +868,7 @@
   saveBtn.addEventListener('click', async () => {
     const title = document.getElementById('imageTitle').value.trim();
     if (!title) { showToast('제목을 입력해주세요'); return; }
-    if (!chapters.some(ch => ch.file || ch.imageUrl)) { showToast('그림을 최소 1개 선택해주세요'); return; }
+    if (!chapters.some(ch => ch.file || ch.imagePath)) { showToast('그림을 최소 1개 선택해주세요'); return; }
 
     saveBtn.disabled = true;
     document.getElementById('saveStatus').textContent = '저장 중...';
@@ -908,7 +884,9 @@
       for (const ch of chapters) {
         if (ch.file) {
           const fullBlob = await resizeToWebp(ch._img, 1600, 0.85);
-          ch.imageUrl = await uploadBlob(`images/${pid}/chapters/${ch.chapterPid}/full.webp`, fullBlob);
+          const uploaded = await API.uploadImage({ file: fullBlob, imagePid: pid, chapterPid: ch.chapterPid, kind: 'full' });
+          ch.imagePath = uploaded.path;
+          ch.imageUrl = uploaded.url;
         }
       }
 
@@ -919,61 +897,37 @@
       const thumbChapterIndex = chapters.findIndex(ch => ch.chapterPid === thumbId);
       const thumbChapter = chapters[thumbChapterIndex] || chapters[0];
 
-      let thumbUrl = loadedThumbUrl;
+      let thumbPath = loadedThumbPath;
       let finalThumbChapterId = thumbId;
       let thumbNote = '';
 
       if (thumbChapter._img) {
         const thumbBlob = await resizeToWebp(thumbChapter._img, 300, 0.8);
-        thumbUrl = await uploadBlob(`images/${pid}/thumb.webp`, thumbBlob);
+        const uploadedThumb = await API.uploadImage({ file: thumbBlob, imagePid: pid, kind: 'thumb' });
+        thumbPath = uploadedThumb.path;
       } else if (thumbId !== loadedThumbChapterId) {
         finalThumbChapterId = loadedThumbChapterId || thumbId;
         thumbNote = ' (썸네일을 바꾸려면 해당 그림을 다시 선택해주세요)';
       }
 
-      // 삭제된 그림 정리 대상
-      const removedChapterIds = originalChapterIds.filter(id => !chapters.some(ch => ch.chapterPid === id));
-
-      const batch = db.batch();
-      const imageRef = db.collection('images').doc(pid);
-      batch.set(imageRef, {
+      const body = {
         title,
         characters: selectedCharacters,
         tags: selectedTags,
         description: document.getElementById('imageDescription').value.trim(),
-        ...(thumbUrl ? { thumbUrl } : {}),
-        thumbChapterId: finalThumbChapterId,
-        chapterCount: chapters.length,
-        ...(isNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        thumbChapterPid: finalThumbChapterId,
+        thumbPath,
+        chapters: chapters.map(ch => ({ pid: ch.chapterPid, imagePath: ch.imagePath }))
+      };
 
-      chapters.forEach((ch, i) => {
-        const ref = db.collection('imageChapters').doc(ch.chapterPid);
-        batch.set(ref, { setId: pid, order: i, imageUrl: ch.imageUrl });
-      });
-      removedChapterIds.forEach(id => {
-        batch.delete(db.collection('imageChapters').doc(id));
-      });
+      if (isNew) {
+        await API.createImage({ pid, ...body });
+      } else {
+        await API.updateImage(pid, body);
+      }
 
-      const feedRef = db.collection('feed').doc(pid);
-      batch.set(feedRef, {
-        type: 'image',
-        refId: pid,
-        title,
-        ...(thumbUrl ? { thumb: thumbUrl } : {}),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      await batch.commit();
-
-      await Promise.all(removedChapterIds.map(id =>
-        storage.ref(`images/${pid}/chapters/${id}/full.webp`).delete().catch(() => {})
-      ));
-
-      originalChapterIds = chapters.map(ch => ch.chapterPid);
-      chapters.forEach(ch => { ch.file = null; ch.previewUrl = null; });
-      loadedThumbUrl = thumbUrl;
+      chapters.forEach(ch => { ch.file = null; ch.previewUrl = null; delete ch._img; });
+      loadedThumbPath = thumbPath;
       loadedThumbChapterId = finalThumbChapterId;
       thumbChapterId = finalThumbChapterId;
 
@@ -984,6 +938,7 @@
       renderChapterPanel();
 
       if (isNew) {
+        isNew = false;
         history.replaceState(null, '', `image-write.html?pid=${pid}`);
       }
     } catch (e) {
@@ -1004,33 +959,26 @@
     }
 
     try {
-      const doc = await db.collection('images').doc(pid).get();
-      if (!doc.exists) {
-        showToast('존재하지 않는 그림이에요');
-        return;
-      }
+      const data = await API.getImage(pid);
 
-      const data = doc.data();
       document.getElementById('imageTitle').value = data.title || '';
       document.getElementById('imageDescription').value = data.description || '';
       selectedCharacters = data.characters || [];
       selectedTags = data.tags || [];
-      thumbChapterId = data.thumbChapterId || null;
-      loadedThumbUrl = data.thumbUrl || null;
-      loadedThumbChapterId = data.thumbChapterId || null;
+      thumbChapterId = data.thumbChapterPid || null;
+      loadedThumbPath = data.thumbPath || null;
+      loadedThumbChapterId = data.thumbChapterPid || null;
       renderSelectedTags();
       renderFreeTags();
 
-      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
-      if (!chapSnap.empty) {
-        chapters = chapSnap.docs.map(cdoc => ({
-          chapterPid: cdoc.id,
-          imageUrl: cdoc.data().imageUrl || '',
+      if (data.chapters && data.chapters.length) {
+        chapters = data.chapters.map(c => ({
+          chapterPid: c.pid,
+          imageUrl: c.imageUrl || '',
+          imagePath: c.imagePath || null,
           file: null,
-          previewUrl: null,
-          order: cdoc.data().order ?? 0
-        })).sort((a, b) => a.order - b.order);
-        originalChapterIds = chapters.map(ch => ch.chapterPid);
+          previewUrl: null
+        }));
       }
 
       switchChapter(0);
@@ -1038,6 +986,7 @@
       document.getElementById('topBarTitle').textContent = '그림 수정';
     } catch (e) {
       console.error('로드 실패:', e);
+      if (e.status === 404) showToast('존재하지 않는 그림이에요');
     }
   }
 
@@ -1046,19 +995,7 @@
     if (!(await customConfirm('이 그림을 정말 삭제할까요? 모든 그림과 정보가 함께 삭제됩니다.'))) return;
 
     try {
-      const chapSnap = await db.collection('imageChapters').where('setId', '==', pid).get();
-      const commentSnap = await db.collection('comments').where('storyId', '==', pid).get();
-      const batch = db.batch();
-      chapSnap.forEach(doc => batch.delete(doc.ref));
-      commentSnap.forEach(doc => batch.delete(doc.ref));
-      batch.delete(db.collection('images').doc(pid));
-      batch.delete(db.collection('feed').doc(pid));
-      await batch.commit();
-
-      await Promise.all([
-        ...chapSnap.docs.map(doc => storage.ref(`images/${pid}/chapters/${doc.id}/full.webp`).delete().catch(() => {})),
-        storage.ref(`images/${pid}/thumb.webp`).delete().catch(() => {})
-      ]);
+      await API.deleteImage(pid);
 
       showToast('삭제되었어요');
       setTimeout(() => location.href = 'image-list.html', 1000);
