@@ -245,12 +245,21 @@
       loadingEl.textContent = '불러오지 못했어요';
     } finally {
       loading = false;
+      // A page of results doesn't always fill the viewport (fewer items, or a wide
+      // screen with many grid columns) — if the sentinel is still on-screen after this
+      // load, the IntersectionObserver won't fire again on its own (no state change),
+      // so keep pulling pages until either it scrolls off-screen or there's nothing left.
+      checkSentinel();
     }
   }
 
-  const observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) loadMore();
-  }, { rootMargin: '200px' });
+  function checkSentinel() {
+    if (loading || !hasMore) return;
+    const rect = document.getElementById('sentinel').getBoundingClientRect();
+    if (rect.top < window.innerHeight + 200) loadMore();
+  }
+
+  const observer = new IntersectionObserver(() => checkSentinel(), { rootMargin: '200px' });
   observer.observe(document.getElementById('sentinel'));
 </script>
 </body>
