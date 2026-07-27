@@ -20,7 +20,7 @@ async function regenerateImageThumbnail(pid) {
 
   try {
     const original = await r2.getObjectBuffer(source.image_path);
-    const thumbBuffer = await sharp(original).resize({ width: 300 }).webp({ quality: 80 }).toBuffer();
+    const thumbBuffer = await sharp(original).resize({ width: 640 }).webp({ quality: 82 }).toBuffer();
     const thumbPath = `images/${pid}/thumb.webp`;
     await r2.uploadObject(thumbPath, thumbBuffer, 'image/webp');
     db.prepare('UPDATE oc_images SET thumb_path = ?, thumb_chapter_pid = ? WHERE pid = ?').run(thumbPath, source.pid, pid);

@@ -29,12 +29,20 @@
   .container {
     position: relative;
     z-index: 1;
-    max-width: 640px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 0 1.2rem 3rem;
   }
 
-  .feed-list { display: flex; flex-direction: column; gap: 1.4rem; }
+  .feed-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+    align-items: start;
+  }
+  @media (min-width: 700px) {
+    .feed-list { grid-template-columns: 1fr 1fr; }
+  }
 
   .feed-card {
     display: block;
