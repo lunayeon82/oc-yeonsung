@@ -36,9 +36,15 @@ async function deleteObject(objectPath) {
   }
 }
 
-function toPublicUrl(objectPath) {
+function toPublicUrl(objectPath, version) {
   if (!objectPath) return null;
-  return `${publicBaseUrl}/${objectPath.replace(/^\/+/, '')}`;
+  const url = `${publicBaseUrl}/${objectPath.replace(/^\/+/, '')}`;
+  // Chapter/thumbnail objects live at a fixed key that gets overwritten in place on
+  // re-upload or thumbnail regeneration, so the URL itself never changes even when the
+  // underlying file does — browsers and R2's CDN happily cache that URL indefinitely.
+  // Appending the parent row's updated_at as a version param busts that cache exactly
+  // when the content actually changes, without needing a real cache-purge integration.
+  return version != null ? `${url}?v=${version}` : url;
 }
 
 module.exports = { uploadObject, getObjectBuffer, deleteObject, toPublicUrl };

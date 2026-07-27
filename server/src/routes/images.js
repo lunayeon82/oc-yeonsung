@@ -34,7 +34,7 @@ function toJson(row) {
     tags: row.tags,
     thumbChapterPid: row.thumb_chapter_pid,
     thumbPath: row.thumb_path,
-    thumbUrl: r2.toPublicUrl(row.thumb_path),
+    thumbUrl: r2.toPublicUrl(row.thumb_path, row.updated_at),
     chapterCount: row.chapter_count,
     commentCount: row.comment_count,
     createdAt: row.created_at,
@@ -95,7 +95,7 @@ router.get('/:pid', (req, res) => {
   const chapters = db.prepare('SELECT * FROM oc_image_chapters WHERE image_pid = ? ORDER BY sort_order').all(req.params.pid);
   res.json({
     ...toJson(withRelations),
-    chapters: chapters.map((c) => ({ pid: c.pid, imagePath: c.image_path, imageUrl: r2.toPublicUrl(c.image_path) })),
+    chapters: chapters.map((c) => ({ pid: c.pid, imagePath: c.image_path, imageUrl: r2.toPublicUrl(c.image_path, withRelations.updated_at) })),
   });
 });
 

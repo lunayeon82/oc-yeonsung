@@ -35,7 +35,7 @@ router.get('/', (req, res) => {
       pid: r.pid,
       title: r.title,
       excerpt: r.excerpt,
-      thumbUrl: r2.toPublicUrl(r.thumb_path),
+      thumbUrl: r2.toPublicUrl(r.thumb_path, r.updated_at),
       commentCount: r.comment_count,
       updatedAt: r.updated_at,
     })),
