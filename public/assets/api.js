@@ -52,6 +52,9 @@
     // 사용자 목록
     getUsers: () => request('GET', '/users'),
 
+    // 타임라인 피드 (연성 + 그림, 최근 수정순)
+    listFeed: (query) => request('GET', '/feed', { query }),
+
     // 연성(스토리)
     listStories: (query) => request('GET', '/stories', { query }),
     getStory: (pid) => request('GET', `/stories/${pid}`),
@@ -73,13 +76,13 @@
     updateImage: (pid, body) => request('PUT', `/images/${pid}`, { json: body }),
     deleteImage: (pid) => request('DELETE', `/images/${pid}`),
 
-    // 이미지 업로드 (webp Blob은 호출측에서 canvas로 이미 생성)
-    uploadImage: ({ file, imagePid, chapterPid, kind }) => {
+    // 이미지 업로드 (webp Blob은 호출측에서 canvas로 이미 생성). 썸네일은 서버가
+    // 지정된 챕터의 원본 이미지에서 자동으로 생성하므로 별도 업로드가 필요 없음.
+    uploadImage: ({ file, imagePid, chapterPid }) => {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('imagePid', imagePid);
-      if (chapterPid) fd.append('chapterPid', chapterPid);
-      fd.append('kind', kind);
+      fd.append('chapterPid', chapterPid);
       return request('POST', '/upload', { formData: fd });
     },
 

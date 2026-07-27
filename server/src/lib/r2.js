@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 const bucket = process.env.R2_BUCKET;
 const publicBaseUrl = (process.env.R2_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
@@ -22,6 +22,11 @@ async function uploadObject(objectPath, buffer, contentType) {
   return objectPath;
 }
 
+async function getObjectBuffer(objectPath) {
+  const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: objectPath }));
+  return Buffer.from(await res.Body.transformToByteArray());
+}
+
 async function deleteObject(objectPath) {
   if (!objectPath) return;
   try {
@@ -36,4 +41,4 @@ function toPublicUrl(objectPath) {
   return `${publicBaseUrl}/${objectPath.replace(/^\/+/, '')}`;
 }
 
-module.exports = { uploadObject, deleteObject, toPublicUrl };
+module.exports = { uploadObject, getObjectBuffer, deleteObject, toPublicUrl };

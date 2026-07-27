@@ -19,6 +19,7 @@ app.use('/api/users/:name/draw-box', require('./routes/drawBox'));
 app.use('/api/users/:name/read-later', require('./routes/readLater'));
 app.use('/api/users/:name/story-box', require('./routes/storyBox'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/feed', require('./routes/feed'));
 
 app.use((err, req, res, next) => {
   console.error(err);

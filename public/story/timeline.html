@@ -29,9 +29,86 @@
   .container {
     position: relative;
     z-index: 1;
-    max-width: 720px;
+    max-width: 640px;
     margin: 0 auto;
     padding: 0 1.2rem 3rem;
+  }
+
+  .feed-list { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .feed-card {
+    display: block;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(184,169,201,0.2);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    animation: fadeUp 0.4s ease both;
+  }
+  .feed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(90,74,107,0.1);
+    border-color: rgba(184,169,201,0.4);
+  }
+  .feed-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .feed-type-badge { font-size: 0.85rem; }
+  .feed-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #4a3a5b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .feed-card-excerpt {
+    font-size: 0.85rem;
+    color: #6a5a7a;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 0.6rem;
+  }
+  .feed-card-thumb {
+    width: 100%;
+    max-height: 260px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: rgba(184,169,201,0.12);
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+  .feed-card-thumb-empty {
+    width: 100%;
+    height: 120px;
+    border-radius: 10px;
+    background: rgba(184,169,201,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b8a9c9;
+    font-size: 0.78rem;
+    margin-bottom: 0.6rem;
+  }
+  .feed-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.72rem;
+    color: #a99ab8;
+  }
+  .feed-more {
+    margin-left: auto;
+    color: #8a6a9a;
+    font-weight: 700;
   }
 
   .empty-state {
@@ -48,6 +125,20 @@
     font-size: 0.9rem;
     line-height: 1.7;
   }
+
+  .loading {
+    text-align: center;
+    padding: 1.5rem;
+    color: #b8a9c9;
+    font-size: 0.85rem;
+  }
+
+  #sentinel { height: 1px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 </style>
 </head>
 <body>
@@ -59,12 +150,103 @@
 </header>
 
 <div class="container">
-  <div class="empty-state">
-    <div class="icon">🚧</div>
-    <p>타임라인 기능은 아직 준비 중이에요<br>조금만 기다려주세요!</p>
-  </div>
+  <div class="feed-list" id="feedList"></div>
+  <div id="sentinel"></div>
 </div>
 
 <script src="../assets/personal-nav.js"></script>
+<script src="../assets/api.js"></script>
+<script>
+  let cursor = null;
+  let hasMore = true;
+  let loading = false;
+  let loadedAny = false;
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  function formatDate(ms) {
+    const date = new Date(ms);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  }
+
+  function buildCardHtml(item) {
+    const dateStr = formatDate(item.updatedAt);
+    if (item.type === 'image') {
+      const thumb = item.thumbUrl
+        ? `<img class="feed-card-thumb" src="${escapeHtml(item.thumbUrl)}" alt="">`
+        : `<div class="feed-card-thumb-empty">이미지 없음</div>`;
+      return `
+        <a class="feed-card" href="image-view.html?pid=${escapeHtml(item.pid)}">
+          <div class="feed-card-head">
+            <span class="feed-type-badge">🖼</span>
+            <span class="feed-card-title">${escapeHtml(item.title)}</span>
+          </div>
+          ${thumb}
+          <div class="feed-card-meta">
+            <span>${dateStr}</span>
+            <span>💬 ${item.commentCount}개</span>
+            <span class="feed-more">더보기 →</span>
+          </div>
+        </a>`;
+    }
+    return `
+      <a class="feed-card" href="story-view.html?pid=${escapeHtml(item.pid)}">
+        <div class="feed-card-head">
+          <span class="feed-type-badge">📖</span>
+          <span class="feed-card-title">${escapeHtml(item.title)}</span>
+        </div>
+        ${item.excerpt ? `<div class="feed-card-excerpt">${escapeHtml(item.excerpt)}</div>` : ''}
+        <div class="feed-card-meta">
+          <span>${dateStr}</span>
+          <span>💬 ${item.commentCount}개</span>
+          <span class="feed-more">더보기 →</span>
+        </div>
+      </a>`;
+  }
+
+  async function loadMore() {
+    if (loading || !hasMore) return;
+    loading = true;
+
+    const list = document.getElementById('feedList');
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'loading';
+    loadingEl.textContent = '불러오는 중...';
+    list.appendChild(loadingEl);
+
+    try {
+      const res = await API.listFeed({ cursor, limit: 10 });
+      loadingEl.remove();
+
+      if (res.items.length === 0 && !loadedAny) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">🕊</div><p>아직 올라온 글이나 그림이 없어요</p></div>';
+        hasMore = false;
+        return;
+      }
+
+      loadedAny = true;
+      list.insertAdjacentHTML('beforeend', res.items.map(buildCardHtml).join(''));
+      cursor = res.nextCursor;
+      hasMore = Boolean(res.nextCursor);
+    } catch (e) {
+      console.error('타임라인 로드 실패:', e);
+      loadingEl.textContent = '불러오지 못했어요';
+    } finally {
+      loading = false;
+    }
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) loadMore();
+  }, { rootMargin: '200px' });
+  observer.observe(document.getElementById('sentinel'));
+</script>
 </body>
 </html>

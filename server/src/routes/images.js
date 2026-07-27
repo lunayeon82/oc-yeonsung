@@ -4,6 +4,7 @@ const { requireApiKey } = require('../middleware/auth');
 const { generatePid } = require('../lib/pid');
 const { encodeCursor, decodeCursor, placeholders, splitParam } = require('../lib/pagination');
 const r2 = require('../lib/r2');
+const { regenerateImageThumbnail } = require('../lib/thumbnail');
 
 const router = express.Router();
 
@@ -98,15 +99,14 @@ const saveImageTx = db.transaction((pid, body, isNew) => {
   const chapters = Array.isArray(body.chapters) ? body.chapters : [];
 
   const oldChapters = isNew ? [] : db.prepare('SELECT pid, image_path FROM oc_image_chapters WHERE image_pid = ?').all(pid);
-  const oldThumbPath = isNew ? null : (db.prepare('SELECT thumb_path FROM oc_images WHERE pid = ?').get(pid) || {}).thumb_path;
 
   if (isNew) {
-    db.prepare(`INSERT INTO oc_images (pid, title, description, thumb_chapter_pid, thumb_path, chapter_count, comment_count, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`)
-      .run(pid, body.title || '', body.description || '', body.thumbChapterPid || null, body.thumbPath || null, chapters.length, now, now);
+    db.prepare(`INSERT INTO oc_images (pid, title, description, thumb_chapter_pid, chapter_count, comment_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?, ?)`)
+      .run(pid, body.title || '', body.description || '', body.thumbChapterPid || null, chapters.length, now, now);
   } else {
-    db.prepare(`UPDATE oc_images SET title = ?, description = ?, thumb_chapter_pid = ?, thumb_path = ?, chapter_count = ?, updated_at = ? WHERE pid = ?`)
-      .run(body.title || '', body.description || '', body.thumbChapterPid || null, body.thumbPath || oldThumbPath || null, chapters.length, now, pid);
+    db.prepare(`UPDATE oc_images SET title = ?, description = ?, thumb_chapter_pid = ?, chapter_count = ?, updated_at = ? WHERE pid = ?`)
+      .run(body.title || '', body.description || '', body.thumbChapterPid || null, chapters.length, now, pid);
   }
 
   db.prepare('DELETE FROM oc_image_characters WHERE image_pid = ?').run(pid);
@@ -122,9 +122,7 @@ const saveImageTx = db.transaction((pid, body, isNew) => {
   chapters.forEach((c, i) => insChapter.run(c.pid || generatePid(), pid, i, c.imagePath));
 
   const newPaths = new Set(chapters.map((c) => c.imagePath));
-  const newThumbPath = body.thumbPath || oldThumbPath || null;
   const orphanedPaths = oldChapters.filter((c) => !newPaths.has(c.image_path)).map((c) => c.image_path);
-  if (oldThumbPath && oldThumbPath !== newThumbPath) orphanedPaths.push(oldThumbPath);
 
   return { pid, orphanedPaths };
 });
@@ -139,6 +137,7 @@ router.post('/', requireApiKey, async (req, res) => {
   const pid = requestedPid || generatePid();
   const { orphanedPaths } = saveImageTx(pid, req.body || {}, true);
   await Promise.all(orphanedPaths.map((p) => r2.deleteObject(p)));
+  await regenerateImageThumbnail(pid);
   res.status(201).json({ pid });
 });
 
@@ -147,6 +146,7 @@ router.put('/:pid', requireApiKey, async (req, res) => {
   if (!existing) return res.status(404).json({ error: 'not_found' });
   const { orphanedPaths } = saveImageTx(req.params.pid, req.body || {}, false);
   await Promise.all(orphanedPaths.map((p) => r2.deleteObject(p)));
+  await regenerateImageThumbnail(req.params.pid);
   res.json({ pid: req.params.pid });
 });
 

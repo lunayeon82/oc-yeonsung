@@ -34,6 +34,7 @@ function toJson(row) {
     pid: row.pid,
     title: row.title,
     rating: row.rating,
+    excerpt: row.excerpt,
     characters: row.characters,
     roles: row.roles,
     aus: row.aus,
@@ -43,6 +44,15 @@ function toJson(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+const EXCERPT_LENGTH = 150;
+
+function extractExcerpt(chapters) {
+  const firstBody = (chapters[0] && chapters[0].body) || '';
+  const text = firstBody.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (text.length <= EXCERPT_LENGTH) return text;
+  return `${text.slice(0, EXCERPT_LENGTH)}…`;
 }
 
 router.get('/', (req, res) => {
@@ -119,13 +129,14 @@ router.get('/:pid', (req, res) => {
 const saveStoryTx = db.transaction((pid, body, isNew) => {
   const now = Date.now();
   const chapters = Array.isArray(body.chapters) ? body.chapters : [];
+  const excerpt = extractExcerpt(chapters);
 
   if (isNew) {
-    db.prepare(`INSERT INTO oc_stories (pid, title, rating, chapter_count, comment_count, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 0, ?, ?)`).run(pid, body.title || '', body.rating || '', chapters.length, now, now);
+    db.prepare(`INSERT INTO oc_stories (pid, title, rating, excerpt, chapter_count, comment_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?, ?)`).run(pid, body.title || '', body.rating || '', excerpt, chapters.length, now, now);
   } else {
-    db.prepare(`UPDATE oc_stories SET title = ?, rating = ?, chapter_count = ?, updated_at = ? WHERE pid = ?`)
-      .run(body.title || '', body.rating || '', chapters.length, now, pid);
+    db.prepare(`UPDATE oc_stories SET title = ?, rating = ?, excerpt = ?, chapter_count = ?, updated_at = ? WHERE pid = ?`)
+      .run(body.title || '', body.rating || '', excerpt, chapters.length, now, pid);
   }
 
   db.prepare('DELETE FROM oc_story_characters WHERE story_pid = ?').run(pid);

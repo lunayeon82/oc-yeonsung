@@ -727,8 +727,6 @@
   let chapters = [{ chapterPid: generatePid(), file: null, imageUrl: null, imagePath: null, previewUrl: null }];
   let currentChapterIndex = 0;
   let thumbChapterId = null; // null이면 첫 번째 그림이 기본값
-  let loadedThumbPath = null;
-  let loadedThumbChapterId = null;
 
   const fileInput = document.getElementById('fileInput');
   const dropZone = document.getElementById('dropZone');
@@ -884,31 +882,14 @@
       for (const ch of chapters) {
         if (ch.file) {
           const fullBlob = await resizeToWebp(ch._img, 1600, 0.85);
-          const uploaded = await API.uploadImage({ file: fullBlob, imagePid: pid, chapterPid: ch.chapterPid, kind: 'full' });
+          const uploaded = await API.uploadImage({ file: fullBlob, imagePid: pid, chapterPid: ch.chapterPid });
           ch.imagePath = uploaded.path;
           ch.imageUrl = uploaded.url;
         }
       }
 
-      // 썸네일: 지정된 그림(없으면 첫 번째 그림)에서 새로 생성.
-      // 이미 업로드되어 있는(새로 선택하지 않은) 그림에서는 브라우저 보안 정책상 다시 축소본을
-      // 만들 수 없어서, 이 경우엔 그 그림을 다시 선택해야 썸네일이 바뀐다.
-      const thumbId = thumbChapterId || chapters[0].chapterPid;
-      const thumbChapterIndex = chapters.findIndex(ch => ch.chapterPid === thumbId);
-      const thumbChapter = chapters[thumbChapterIndex] || chapters[0];
-
-      let thumbPath = loadedThumbPath;
-      let finalThumbChapterId = thumbId;
-      let thumbNote = '';
-
-      if (thumbChapter._img) {
-        const thumbBlob = await resizeToWebp(thumbChapter._img, 300, 0.8);
-        const uploadedThumb = await API.uploadImage({ file: thumbBlob, imagePid: pid, kind: 'thumb' });
-        thumbPath = uploadedThumb.path;
-      } else if (thumbId !== loadedThumbChapterId) {
-        finalThumbChapterId = loadedThumbChapterId || thumbId;
-        thumbNote = ' (썸네일을 바꾸려면 해당 그림을 다시 선택해주세요)';
-      }
+      // 썸네일은 서버가 지정된 그림(없으면 첫 번째 그림)의 원본에서 자동으로 생성한다.
+      const finalThumbChapterId = thumbChapterId || chapters[0].chapterPid;
 
       const body = {
         title,
@@ -916,7 +897,6 @@
         tags: selectedTags,
         description: document.getElementById('imageDescription').value.trim(),
         thumbChapterPid: finalThumbChapterId,
-        thumbPath,
         chapters: chapters.map(ch => ({ pid: ch.chapterPid, imagePath: ch.imagePath }))
       };
 
@@ -927,13 +907,11 @@
       }
 
       chapters.forEach(ch => { ch.file = null; ch.previewUrl = null; delete ch._img; });
-      loadedThumbPath = thumbPath;
-      loadedThumbChapterId = finalThumbChapterId;
       thumbChapterId = finalThumbChapterId;
 
       const finalThumbIndex = chapters.findIndex(ch => ch.chapterPid === finalThumbChapterId);
       document.getElementById('saveStatus').textContent = '저장됨';
-      showToast(`저장됐어요! (${finalThumbIndex >= 0 ? finalThumbIndex + 1 : 1}번째 그림이 썸네일)${thumbNote}`);
+      showToast(`저장됐어요! (${finalThumbIndex >= 0 ? finalThumbIndex + 1 : 1}번째 그림이 썸네일)`);
       hideProgress();
       renderChapterPanel();
 
@@ -966,8 +944,6 @@
       selectedCharacters = data.characters || [];
       selectedTags = data.tags || [];
       thumbChapterId = data.thumbChapterPid || null;
-      loadedThumbPath = data.thumbPath || null;
-      loadedThumbChapterId = data.thumbChapterPid || null;
       renderSelectedTags();
       renderFreeTags();
 

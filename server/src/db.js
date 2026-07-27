@@ -12,6 +12,16 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+// `CREATE TABLE IF NOT EXISTS` doesn't add columns to a table that already exists,
+// so columns added after a DB has already been created need an explicit ALTER TABLE.
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+ensureColumn('oc_stories', 'excerpt', "TEXT NOT NULL DEFAULT ''");
+
 const SEED_USERS = ['김굥', '하지', '예밍'];
 const insertUser = db.prepare('INSERT OR IGNORE INTO oc_users (name, sort_order) VALUES (?, ?)');
 const seedUsers = db.transaction((names) => {
