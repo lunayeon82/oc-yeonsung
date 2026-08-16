@@ -563,7 +563,8 @@
   </div>
 
   <div class="upload-info">
-    각 그림은 감상용(최대 1600px)으로 자동 변환되어 업로드돼요. 목록에 보이는 썸네일(최대 300px)은 지정한 그림 1장에서만 만들어져요. 원본 파일은 저장되지 않아요.
+    각 그림은 감상용(최대 1600px)으로 자동 변환되어 업로드돼요. 목록에 보이는 썸네일(최대 300px)은 지정한 그림 1장에서만 만들어져요. 원본 파일은 저장되지 않아요.<br>
+    Ctrl+V(붙여넣기)로도 그림을 추가할 수 있어요.
   </div>
 
   <div class="progress-wrap" id="progressWrap">
@@ -878,6 +879,27 @@
     chapters[currentChapterIndex].file = file;
     chapters[currentChapterIndex].previewUrl = URL.createObjectURL(file);
     renderChapterPanel();
+  });
+
+  // ── 클립보드 붙여넣기로 그림 추가 ──
+  // 클립보드에 이미지가 없으면(텍스트만 있으면) 가로채지 않고 그대로 통과시켜
+  // 제목/내용 입력창의 일반 텍스트 붙여넣기는 영향받지 않는다.
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    let imageFile = null;
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        imageFile = item.getAsFile();
+        break;
+      }
+    }
+    if (!imageFile) return;
+    e.preventDefault();
+    chapters[currentChapterIndex].file = imageFile;
+    chapters[currentChapterIndex].previewUrl = URL.createObjectURL(imageFile);
+    renderChapterPanel();
+    showToast('클립보드의 그림을 붙여넣었어요');
   });
 
   renderChapterTabs();
