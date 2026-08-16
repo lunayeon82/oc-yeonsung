@@ -311,6 +311,39 @@
     margin: 1.2rem auto 0;
   }
 
+  /* ── 태그된 캐릭터 이미지 (설명과 본문 사이, LUNA pair notes 이미지와 동일 사이즈 160x160) ── */
+  .story-char-portraits {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 28px;
+    margin: 1.8rem 0 2.2rem;
+  }
+  .story-char-portrait-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+  }
+  .story-char-portrait-item:hover { transform: translateY(-2px); }
+  .story-char-portrait-img-wrap {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(184,169,201,0.25);
+    box-shadow: 0 4px 14px rgba(90,74,107,0.12);
+  }
+  .story-char-portrait-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .story-char-portrait-name {
+    font-size: 0.78rem;
+    color: #7a6a8a;
+    letter-spacing: 0.02em;
+  }
+  .story-char-portrait-item:hover .story-char-portrait-name { color: #4a3a5b; }
+
   /* ── 챕터 헤더 ── */
   .chapter-header {
     text-align: center;
@@ -853,6 +886,31 @@
   let currentChapterIndex = 0;
   let comments = [];
   let USER_NAMES = ['김굥', '하지', '예밍'];
+  let charPortraitMap = new Map(); // 캐릭터 이름 -> { id, portraitUrl }
+
+  function buildCharPortraitMap(tree) {
+    const map = new Map();
+    for (const owner of (tree.owners || [])) {
+      for (const sub of (owner.subgroups || [])) {
+        for (const ch of (sub.characters || [])) {
+          if (ch.portraitUrl) map.set(ch.name, { id: ch.id, portraitUrl: ch.portraitUrl });
+        }
+      }
+    }
+    return map;
+  }
+
+  function buildCharPortraitsHtml(names) {
+    const items = (names || []).map(n => ({ name: n, info: charPortraitMap.get(n) })).filter(x => x.info);
+    if (!items.length) return '';
+    return '<div class="story-char-portraits">' + items.map(x => `
+      <a class="story-char-portrait-item" href="../character.html?id=${x.info.id}">
+        <div class="story-char-portrait-img-wrap">
+          <img class="story-char-portrait-img" src="${escapeHtml(x.info.portraitUrl)}" alt="${escapeHtml(x.name)}">
+        </div>
+        <span class="story-char-portrait-name">${escapeHtml(x.name)}</span>
+      </a>`).join('') + '</div>';
+  }
 
   function setSyncStatus(online) {
     const badge = document.getElementById('syncBadge');
@@ -868,8 +926,10 @@
   // ── 로드 ──
   async function loadStory() {
     try {
-      // 스토리 메타 + 챕터 (한 번의 요청으로 함께 옴)
-      storyData = await API.getStory(pid);
+      // 스토리 메타 + 챕터 (한 번의 요청으로 함께 옴), 태그된 캐릭터 이미지 조회용 캐릭터 트리도 병렬로 로드
+      const [story, charTree] = await Promise.all([API.getStory(pid), API.getCharacters()]);
+      storyData = story;
+      charPortraitMap = buildCharPortraitMap(charTree);
 
       chapters = (storyData.chapters || []).map(c => ({
         chapterPid: c.pid,
@@ -934,6 +994,7 @@
           </div>` : ''}
         <div class="header-divider"></div>
       </div>
+      ${buildCharPortraitsHtml(storyData.characters)}
       ${chapters.length > 1 ? `<div class="ch-tab-strip" id="chTabStrip"></div>` : ''}
       <div class="ch-body" id="chBody"></div>
       ${chapters.length > 1 ? `<div id="chNav"></div>` : ''}
