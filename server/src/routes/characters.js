@@ -165,9 +165,14 @@ router.post('/:id/portrait', requireApiKey, uploadPortraitFile, async (req, res)
   if (!ext) return res.status(400).json({ error: 'unsupported_type' });
 
   const path = `images/portraits/${id}.${ext}`;
-  await r2.uploadObject(path, req.file.buffer, req.file.mimetype);
-  if (existing.portrait_path && existing.portrait_path !== path) {
-    await r2.deleteObject(existing.portrait_path);
+  try {
+    await r2.uploadObject(path, req.file.buffer, req.file.mimetype);
+    if (existing.portrait_path && existing.portrait_path !== path) {
+      await r2.deleteObject(existing.portrait_path);
+    }
+  } catch (err) {
+    console.error('portrait upload failed:', err);
+    return res.status(502).json({ error: 'upload_failed' });
   }
   const updatedAt = Date.now();
   db.prepare('UPDATE oc_characters SET portrait_path = ?, portrait_updated_at = ? WHERE id = ?').run(path, updatedAt, id);
