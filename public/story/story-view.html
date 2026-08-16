@@ -337,6 +337,19 @@
     box-shadow: 0 4px 14px rgba(90,74,107,0.12);
   }
   .story-char-portrait-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .story-char-portrait-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'ko-font', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .story-char-portrait-avatar.female { background: linear-gradient(135deg, #d4889e, #c0899e); }
+  .story-char-portrait-avatar.male { background: linear-gradient(135deg, #7ba0c4, #5a82a8); }
   .story-char-portrait-name {
     font-size: 0.78rem;
     color: #7a6a8a;
@@ -886,14 +899,14 @@
   let currentChapterIndex = 0;
   let comments = [];
   let USER_NAMES = ['김굥', '하지', '예밍'];
-  let charPortraitMap = new Map(); // 캐릭터 이름 -> { id, portraitUrl }
+  let charPortraitMap = new Map(); // 캐릭터 이름 -> { id, portraitUrl, gender }
 
   function buildCharPortraitMap(tree) {
     const map = new Map();
     for (const owner of (tree.owners || [])) {
       for (const sub of (owner.subgroups || [])) {
         for (const ch of (sub.characters || [])) {
-          if (ch.portraitUrl) map.set(ch.name, { id: ch.id, portraitUrl: ch.portraitUrl });
+          map.set(ch.name, { id: ch.id, portraitUrl: ch.portraitUrl, gender: ch.gender });
         }
       }
     }
@@ -903,13 +916,17 @@
   function buildCharPortraitsHtml(names) {
     const items = (names || []).map(n => ({ name: n, info: charPortraitMap.get(n) })).filter(x => x.info);
     if (!items.length) return '';
-    return '<div class="story-char-portraits">' + items.map(x => `
+    return '<div class="story-char-portraits">' + items.map(x => {
+      const genderClass = x.info.gender === 1 ? 'female' : 'male';
+      const img = x.info.portraitUrl
+        ? `<img class="story-char-portrait-img" src="${escapeHtml(x.info.portraitUrl)}" alt="${escapeHtml(x.name)}">`
+        : `<span class="story-char-portrait-avatar ${genderClass}">${escapeHtml((x.name || '?')[0])}</span>`;
+      return `
       <a class="story-char-portrait-item" href="../character.html?id=${x.info.id}">
-        <div class="story-char-portrait-img-wrap">
-          <img class="story-char-portrait-img" src="${escapeHtml(x.info.portraitUrl)}" alt="${escapeHtml(x.name)}">
-        </div>
+        <div class="story-char-portrait-img-wrap">${img}</div>
         <span class="story-char-portrait-name">${escapeHtml(x.name)}</span>
-      </a>`).join('') + '</div>';
+      </a>`;
+    }).join('') + '</div>';
   }
 
   function setSyncStatus(online) {
