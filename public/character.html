@@ -58,6 +58,42 @@
   }
   .char-avatar.female { background: linear-gradient(135deg, #d4889e, #c0899e); }
   .char-avatar.male { background: linear-gradient(135deg, #7ba0c4, #5a82a8); }
+  .char-portrait-wrap {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-block;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .char-portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .portrait-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .portrait-btn {
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-family: 'ko-font', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid rgba(180,160,130,0.3);
+    background: transparent;
+    color: #8a7e6b;
+    transition: all 0.2s;
+  }
+  .portrait-btn:hover { background: rgba(180,160,130,0.1); }
+  .portrait-btn.portrait-del { color: #a05046; border-color: rgba(180,100,90,0.35); }
+  .portrait-btn.portrait-del:hover { background: rgba(180,100,90,0.1); }
   .char-name {
     font-family: 'ko-font', serif;
     font-size: 24px;
@@ -548,6 +584,7 @@
 
 <script src="assets/personal-nav.js"></script>
 <script src="assets/api.js"></script>
+<script src="assets/confirm-modal.js"></script>
 <script>
 const INFO_LABELS = [
   { key: 'look', label: '외형' },
@@ -651,7 +688,13 @@ function renderCharDetail(editMode) {
   let html = `
     <div class="char-card">
       <div class="char-header">
-        <div class="char-avatar ${genderClass}">${esc((d.name || '?')[0])}</div>
+        <div id="portraitBox">${portraitBoxHtml(d)}</div>
+        ${editMode ? `
+        <div class="portrait-actions">
+          <label class="portrait-btn" for="portraitFile">&#8593; 이미지 업로드</label>
+          <input type="file" id="portraitFile" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+          ${d.portraitUrl ? `<button type="button" class="portrait-btn portrait-del" onclick="deletePortrait()">이미지 삭제</button>` : ''}
+        </div>` : ''}
         <div class="char-name">${esc(d.name || '이름 없음')}</div>
         <div class="char-badges">
           <span class="badge ${genderClass}">${d.gender === 1 ? '♀' : '♂'} ${genderText}</span>
@@ -745,7 +788,53 @@ function renderCharDetail(editMode) {
   }
 
   document.getElementById('app').innerHTML = html;
-  if (editMode) renderSections();
+  if (editMode) {
+    renderSections();
+    wirePortraitInput();
+  }
+}
+
+// ============ PORTRAIT (캐릭터 대표 이미지) ============
+function portraitBoxHtml(d) {
+  if (d.portraitUrl) {
+    return `<div class="char-portrait-wrap"><img class="char-portrait-img" src="${esc(d.portraitUrl)}" alt="${esc(d.name || '')}"></div>`;
+  }
+  const genderClass = d.gender === 1 ? 'female' : 'male';
+  return `<div class="char-avatar ${genderClass}">${esc((d.name || '?')[0])}</div>`;
+}
+
+function wirePortraitInput() {
+  const input = document.getElementById('portraitFile');
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      showToast('업로드 중...');
+      const result = await API.uploadCharacterPortrait(window._charData.id, file);
+      window._charData.portraitUrl = result.portraitUrl;
+      renderCharDetail(true);
+      showToast('이미지를 업로드했어요');
+    } catch (err) {
+      console.error(err);
+      showToast('업로드 실패. 다시 시도해주세요.');
+    } finally {
+      input.value = '';
+    }
+  });
+}
+
+async function deletePortrait() {
+  if (!(await customConfirm('대표 이미지를 삭제할까요?'))) return;
+  try {
+    await API.deleteCharacterPortrait(window._charData.id);
+    window._charData.portraitUrl = null;
+    renderCharDetail(true);
+    showToast('이미지를 삭제했어요');
+  } catch (err) {
+    console.error(err);
+    showToast('삭제 실패. 다시 시도해주세요.');
+  }
 }
 
 function renderSections() {

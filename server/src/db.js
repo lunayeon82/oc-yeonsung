@@ -21,6 +21,8 @@ function ensureColumn(table, column, definition) {
   }
 }
 ensureColumn('oc_stories', 'excerpt', "TEXT NOT NULL DEFAULT ''");
+ensureColumn('oc_characters', 'portrait_path', 'TEXT');
+ensureColumn('oc_characters', 'portrait_updated_at', 'INTEGER');
 
 const SEED_USERS = ['김굥', '하지', '예밍'];
 const insertUser = db.prepare('INSERT OR IGNORE INTO oc_users (name, sort_order) VALUES (?, ?)');

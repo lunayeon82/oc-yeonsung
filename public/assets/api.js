@@ -42,6 +42,12 @@
     getCharacters: () => request('GET', '/characters'),
     saveCharacterTree: (tree) => request('PUT', '/characters', { json: tree }),
     updateCharacter: (id, patch) => request('PUT', `/characters/${id}`, { json: patch }),
+    uploadCharacterPortrait: (id, file) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return request('POST', `/characters/${id}/portrait`, { formData: fd });
+    },
+    deleteCharacterPortrait: (id) => request('DELETE', `/characters/${id}/portrait`),
 
     // 태그 어휘(캐릭터 설정/관계성)
     getRoles: () => request('GET', '/roles'),

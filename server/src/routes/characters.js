@@ -1,8 +1,22 @@
 const express = require('express');
+const multer = require('multer');
 const db = require('../db');
 const { requireApiKey } = require('../middleware/auth');
+const r2 = require('../lib/r2');
 
 const router = express.Router();
+
+// 캐릭터 대표 이미지(portrait) — LUNA 프로젝트의 캐릭터 초상화 기능과 동일한 저장 방식/제한을 따름:
+// R2 images/portraits/{id}.{ext} 경로, png/jpeg/webp/gif만 허용, 15MB 제한.
+const PORTRAIT_EXTS = { 'image/png': 'png', 'image/jpeg': 'jpeg', 'image/webp': 'webp', 'image/gif': 'gif' };
+const portraitUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+function uploadPortraitFile(req, res, next) {
+  portraitUpload.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'file_too_large' });
+    return res.status(400).json({ error: 'upload_failed' });
+  });
+}
 
 function loadTree() {
   const owners = db.prepare('SELECT * FROM oc_owners ORDER BY sort_order').all();
@@ -26,6 +40,7 @@ function loadTree() {
       gender: c.gender,
       isCouple: c.is_couple,
       note: c.note,
+      portraitUrl: r2.toPublicUrl(c.portrait_path, c.portrait_updated_at),
       info: {
         look: c.info_look || '',
         vibe: c.info_vibe || '',
@@ -139,6 +154,33 @@ router.put('/:id', requireApiKey, (req, res) => {
   }
 
   res.json(loadTree());
+});
+
+router.post('/:id/portrait', requireApiKey, uploadPortraitFile, async (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT portrait_path FROM oc_characters WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+  if (!req.file) return res.status(400).json({ error: 'bad_request' });
+  const ext = PORTRAIT_EXTS[req.file.mimetype];
+  if (!ext) return res.status(400).json({ error: 'unsupported_type' });
+
+  const path = `images/portraits/${id}.${ext}`;
+  await r2.uploadObject(path, req.file.buffer, req.file.mimetype);
+  if (existing.portrait_path && existing.portrait_path !== path) {
+    await r2.deleteObject(existing.portrait_path);
+  }
+  const updatedAt = Date.now();
+  db.prepare('UPDATE oc_characters SET portrait_path = ?, portrait_updated_at = ? WHERE id = ?').run(path, updatedAt, id);
+  res.status(201).json({ portraitUrl: r2.toPublicUrl(path, updatedAt) });
+});
+
+router.delete('/:id/portrait', requireApiKey, async (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT portrait_path FROM oc_characters WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+  if (existing.portrait_path) await r2.deleteObject(existing.portrait_path);
+  db.prepare('UPDATE oc_characters SET portrait_path = NULL, portrait_updated_at = NULL WHERE id = ?').run(id);
+  res.status(204).end();
 });
 
 module.exports = router;
