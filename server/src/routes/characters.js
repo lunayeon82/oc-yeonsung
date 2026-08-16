@@ -73,12 +73,21 @@ function loadTree() {
 }
 
 const replaceTree = db.transaction((tree) => {
+  // PUT /characters replaces the whole owners/subgroups/characters tree (and thus every
+  // row's id) on each save, but portrait_path/portrait_updated_at aren't part of that
+  // client-side tree — without carrying them over here, any admin edit (reorder, add,
+  // rename, ...) would silently blank out every character's portrait on the next save.
+  const portraitById = new Map(
+    db.prepare('SELECT id, portrait_path, portrait_updated_at FROM oc_characters').all()
+      .map((r) => [r.id, { path: r.portrait_path, updatedAt: r.portrait_updated_at }])
+  );
+
   db.exec('DELETE FROM oc_owners');
   const insertOwner = db.prepare('INSERT INTO oc_owners (name, code, sort_order) VALUES (?, ?, ?)');
   const insertSub = db.prepare('INSERT INTO oc_subgroups (owner_id, label, code, sort_order) VALUES (?, ?, ?, ?)');
   const insertChar = db.prepare(`INSERT INTO oc_characters
-    (public_code, subgroup_id, name, gender, is_couple, sort_order, note, info_look, info_vibe, info_speech, info_speech_ex, info_personality, info_habits)
-    VALUES (@publicCode, @subgroupId, @name, @gender, @isCouple, @sortOrder, @note, @look, @vibe, @speech, @speechEx, @personality, @habits)`);
+    (public_code, subgroup_id, name, gender, is_couple, sort_order, note, info_look, info_vibe, info_speech, info_speech_ex, info_personality, info_habits, portrait_path, portrait_updated_at)
+    VALUES (@publicCode, @subgroupId, @name, @gender, @isCouple, @sortOrder, @note, @look, @vibe, @speech, @speechEx, @personality, @habits, @portraitPath, @portraitUpdatedAt)`);
   const insertSection = db.prepare('INSERT INTO oc_character_sections (character_id, title, content, sort_order) VALUES (?, ?, ?, ?)');
 
   (tree.owners || []).forEach((owner, oi) => {
@@ -87,6 +96,7 @@ const replaceTree = db.transaction((tree) => {
       const subId = insertSub.run(ownerId, sub.label, sub.code || null, si).lastInsertRowid;
       (sub.characters || []).forEach((ch, ci) => {
         const info = ch.info || {};
+        const portrait = ch.id != null ? portraitById.get(ch.id) : undefined;
         const charId = insertChar.run({
           publicCode: ch.publicCode || null,
           subgroupId: subId,
@@ -101,6 +111,8 @@ const replaceTree = db.transaction((tree) => {
           speechEx: info.speechEx || null,
           personality: info.personality || null,
           habits: info.habits || null,
+          portraitPath: portrait ? portrait.path : null,
+          portraitUpdatedAt: portrait ? portrait.updatedAt : null,
         }).lastInsertRowid;
         (ch.customSections || []).forEach((sec, secIdx) => {
           insertSection.run(charId, sec.title || '', sec.content || '', secIdx);

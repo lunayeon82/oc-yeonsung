@@ -1220,6 +1220,10 @@ function renderChars() {
       return `
         <div class="group-section">
           <div class="group-header">
+            <div class="item-actions">
+              <button class="item-arrow" onclick="moveGroup(${gi},${si},-1)" ${si===0?'disabled':''} title="위로">▲</button>
+              <button class="item-arrow" onclick="moveGroup(${gi},${si},1)" ${si===g.subgroups.length-1?'disabled':''} title="아래로">▼</button>
+            </div>
             <span class="group-label">${esc(s.label)}</span>
             ${s.code ? `<span style="font-size:0.6rem;color:var(--text-muted);font-family:monospace">${esc(s.code)}</span>` : ''}
             <span class="group-count">${s.characters.length}명</span>
@@ -1349,6 +1353,14 @@ function moveChar(gi, si, ii, dir) {
   const target = ii + dir;
   if (target < 0 || target >= items.length) return;
   [items[ii], items[target]] = [items[target], items[ii]];
+  saveChars();
+}
+
+function moveGroup(gi, si, dir) {
+  const subs = CHARS.owners[gi].subgroups;
+  const target = si + dir;
+  if (target < 0 || target >= subs.length) return;
+  [subs[si], subs[target]] = [subs[target], subs[si]];
   saveChars();
 }
 
