@@ -69,3 +69,28 @@ public/
 `better-sqlite3` 바인딩까지 억지로 맞춰서 `GET /api/characters`가 새 스키마로 정상 기동하는 것만
 확인했고, 수정한 모든 HTML의 인라인 `<script>`는 `node --check`로 문법 검증함. **실제 배포 후
 캐릭터 이미지 업로드/삭제와 연성 글 페이지 표시를 브라우저에서 한 번 확인해볼 것.**
+
+**2026.08.16 (후속) — 캐릭터 대표 이미지 모양 수정 + 업로드 실패 원인 조사 (미해결) (Claude Code)**
+
+사용자가 배포 후 확인해보니 ① 대표 이미지 박스가 LUNA(200×200px, 둥근 네모)와 다르게 96px 원형이었고
+② 업로드 자체가 실패한다고 보고.
+
+- **①은 확인·수정 완료**: `character.html`의 `.char-portrait-wrap`(초상화 있을 때)과 `.char-avatar`
+  (없을 때 이니셜 폴백, 기존 72px)를 LUNA와 동일하게 200×200px / `border-radius: 20px`로 통일.
+- **② 업로드 실패는 원인 미파악, 재현도 못 함**: `characters.js`의 portrait 라우트를 `node:sqlite`
+  (Node 24 내장)로 만든 better-sqlite3 셔임 + R2 모킹으로 감싸서 Express 앱 전체(멀터 파싱 → DB
+  저장 → 응답)를 로컬에서 그대로 실행해봤는데 로직 자체는 정상 동작(업로드 201/`portraitUrl` 정상
+  반영/삭제 204 모두 확인) — 라우트·멀터 설정·DB 레이어엔 버그가 없어 보임. R2 호출에 `try/catch`가
+  없어서 실패 시 조용히 멈추던 것(Express 4는 async 핸들러의 reject를 자동으로 안 잡음)만 고쳐서
+  502 + 서버 로그(`portrait upload failed: ...`)로 드러나게 함. **이 수정을 배포한 뒤에도 사용자가
+  다시 시도했을 때 여전히 업로드가 실패한다고 확인** — 로컬에서 R2 실제 자격증명 없이는 더 이상
+  못 좁힘.
+- 확인한 바로는 이 프로젝트 자체 R2 버킷(`R2_BUCKET=oc-yeonsung`, `img.lunayeon.com` 커스텀 도메인)을
+  다른 이미지 기능(`upload.js`, `thumbnail.js`)과 동일한 `lib/r2.js` 클라이언트로 그대로 쓰고 있어서
+  LUNA 버킷을 잘못 참조하는 것도 아님. 다음에 이어서 볼 사람은 **실제 서버의 `pm2 logs`에서
+  `portrait upload failed:` 로그**(에러 원문이 그대로 찍힘) 또는 **브라우저 개발자도구 네트워크 탭에서
+  `POST /api/characters/:id/portrait` 응답 상태코드/본문**을 먼저 확보할 것 — 502면 R2 쪽(자격증명/
+  버킷 권한/계정ID), 401이면 API_KEY 불일치, 400/`unsupported_type`이면 클라이언트가 보낸 파일의
+  mimetype이 png/jpeg/webp/gif 중 하나가 아닌 경우(예: iPhone HEIC), 아예 응답이 없으면(요청이
+  hang) nginx `client_max_body_size`/프록시 설정이나 서버가 재시작 안 된 상태(구 코드로 떠 있음)를
+  의심할 것.
