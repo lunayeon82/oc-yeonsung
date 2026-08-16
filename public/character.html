@@ -512,12 +512,19 @@
     letter-spacing: 0.8px;
     padding: 14px 2px 6px;
   }
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 6px;
+  }
   .char-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 10px 14px;
-    border-radius: 10px;
-    margin-bottom: 4px;
+    text-align: center;
+    padding: 10px 6px 12px;
+    border-radius: 14px;
     background: rgba(255,255,255,0.5);
     border: 1px solid rgba(180,160,130,0.1);
     text-decoration: none;
@@ -527,26 +534,46 @@
   .char-row:hover {
     background: rgba(255,255,255,0.85);
     border-color: rgba(180,160,130,0.28);
-    transform: translateX(2px);
+    transform: translateY(-2px);
   }
   .char-row.no-id { opacity: 0.55; cursor: default; }
   .char-row.no-id:hover { transform: none; background: rgba(255,255,255,0.5); }
-  .char-row-name {
-    flex: 1;
-    font-family: 'ko-font', serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: #3a3530;
-  }
-  .char-row-id {
-    font-family: monospace;
-    font-size: 10px;
-    color: #c0b5a5;
-    letter-spacing: 0.5px;
-    margin-right: 8px;
+  .char-row-portrait {
+    width: 76px;
+    height: 76px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     flex-shrink: 0;
   }
-  .char-row-badges { display: flex; gap: 4px; }
+  .char-row-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .char-row-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'ko-font', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .char-row-avatar.female { background: linear-gradient(135deg, #d4889e, #c0899e); }
+  .char-row-avatar.male { background: linear-gradient(135deg, #7ba0c4, #5a82a8); }
+  .char-row-name {
+    font-family: 'ko-font', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3a3530;
+    margin-bottom: 6px;
+  }
+  .char-row-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
   .char-row-badge {
     padding: 2px 8px;
     border-radius: 100px;
@@ -554,6 +581,7 @@
     font-weight: 500;
     white-space: nowrap;
   }
+  .row-badge-id { background: rgba(180,160,130,0.14); color: #a89d8e; }
   .row-badge-f { background: #f3dde3; color: #8e3a56; }
   .row-badge-m { background: #dce8f3; color: #3a6591; }
   .row-badge-couple { background: #f0e4ce; color: #7a5c2e; }
@@ -1042,22 +1070,28 @@ function renderList() {
       // — 뽑기 관리자(random-admin.html)에서 드래그로 정한 순서와 동일함.
 
       const rowsHtml = items.map(it => {
+        const genderClass = it.gender === 1 ? 'female' : 'male';
         const gBadge = it.gender === 1 ? 'row-badge-f' : 'row-badge-m';
         const gText = it.gender === 1 ? '♀' : '♂';
         const cBadge = it.isCouple === 1 ? 'row-badge-couple' : 'row-badge-solo';
         const cText = it.isCouple === 1 ? '커플' : '솔로';
+        const portrait = it.portraitUrl
+          ? `<img src="${esc(it.portraitUrl)}" alt="${esc(it.name || '')}">`
+          : `<span class="char-row-avatar ${genderClass}">${esc((it.name || '?')[0])}</span>`;
         const badges = `<div class="char-row-badges">
+          <span class="char-row-badge row-badge-id">${esc(it.publicCode || it.id)}</span>
           <span class="char-row-badge ${gBadge}">${gText}</span>
           <span class="char-row-badge ${cBadge}">${cText}</span>
         </div>`;
         if (it.id) {
           return `<a class="char-row" href="character.html?id=${esc(it.id)}">
+            <div class="char-row-portrait">${portrait}</div>
             <span class="char-row-name">${esc(it.name)}</span>
-            <span class="char-row-id">${esc(it.publicCode || it.id)}</span>
             ${badges}
           </a>`;
         }
         return `<div class="char-row no-id">
+          <div class="char-row-portrait">${portrait}</div>
           <span class="char-row-name">${esc(it.name)}</span>
           ${badges}
         </div>`;
@@ -1065,7 +1099,7 @@ function renderList() {
 
       ownerContent += `
         <div class="list-group-header">${esc(sub.label)}</div>
-        ${rowsHtml}`;
+        <div class="char-grid">${rowsHtml}</div>`;
     }
 
     listHtml += `
