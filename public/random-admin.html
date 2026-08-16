@@ -1016,6 +1016,14 @@
       <input class="modal-input" id="editName" placeholder="캐릭터 이름">
     </div>
     <div class="modal-field">
+      <label class="modal-label">오너</label>
+      <select class="modal-select" id="editOwnerSelect" onchange="updateEditGroupSelect()"></select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">그룹</label>
+      <select class="modal-select" id="editGroupSelect"></select>
+    </div>
+    <div class="modal-field">
       <label class="modal-label">성별</label>
       <select class="modal-select" id="editGender">
         <option value="0">♂ 남성</option>
@@ -1373,7 +1381,21 @@ function openEditModal(gi, si, ii) {
   document.getElementById('editGender').value = it.gender;
   document.getElementById('editCouple').value = it.isCouple;
   document.getElementById('editNote').value = it.note || '';
+
+  const ownerSel = document.getElementById('editOwnerSelect');
+  ownerSel.innerHTML = CHARS.owners.map(g => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join('');
+  ownerSel.value = CHARS.owners[gi].name;
+  updateEditGroupSelect();
+  document.getElementById('editGroupSelect').value = CHARS.owners[gi].subgroups[si].label;
+
   document.getElementById('editModal').classList.add('open');
+}
+
+function updateEditGroupSelect() {
+  const ownerName = document.getElementById('editOwnerSelect').value;
+  const group = CHARS.owners.find(g => g.name === ownerName);
+  const sel = document.getElementById('editGroupSelect');
+  sel.innerHTML = group ? group.subgroups.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('') : '';
 }
 
 function closeEditModal() {
@@ -1389,8 +1411,14 @@ function saveEdit() {
   const newName = document.getElementById('editName').value.trim();
   if (!newName) { toast('이름을 입력해주세요'); return; }
 
-  const siblings = CHARS.owners[gi].subgroups[si].characters;
-  if (siblings.some((item, idx) => idx !== ii && item.name === newName)) {
+  const ownerName = document.getElementById('editOwnerSelect').value;
+  const groupLabel = document.getElementById('editGroupSelect').value;
+  const targetOwner = CHARS.owners.find(g => g.name === ownerName);
+  const targetSub = targetOwner && targetOwner.subgroups.find(s => s.label === groupLabel);
+  if (!targetOwner || !targetSub) { toast('그룹을 선택해주세요'); return; }
+
+  const siblings = targetSub.characters;
+  if (siblings.some(item => item !== it && item.name === newName)) {
     toast('같은 그룹에 동일한 이름이 이미 있어요'); return;
   }
 
@@ -1398,6 +1426,13 @@ function saveEdit() {
   it.gender = parseInt(document.getElementById('editGender').value);
   it.isCouple = parseInt(document.getElementById('editCouple').value);
   it.note = document.getElementById('editNote').value.trim();
+
+  // 오너/그룹이 바뀌었으면 기존 그룹에서 빼고 새 그룹으로 옮김 (캐릭터 객체 자체를 그대로
+  // 옮기는 거라 info/customSections 등 나머지 내용은 그대로 보존됨).
+  if (siblings !== CHARS.owners[gi].subgroups[si].characters) {
+    CHARS.owners[gi].subgroups[si].characters.splice(ii, 1);
+    siblings.push(it);
+  }
 
   closeEditModal();
   saveChars();
