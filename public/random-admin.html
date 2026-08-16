@@ -1245,8 +1245,16 @@ function updateSelects() {
   const owners = CHARS.owners.map(g => g.name);
   const opts = owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
 
-  document.getElementById('groupOwnerSelect').innerHTML = opts;
-  document.getElementById('charOwnerSelect').innerHTML = opts;
+  const groupOwnerSel = document.getElementById('groupOwnerSelect');
+  const charOwnerSel = document.getElementById('charOwnerSelect');
+  const prevGroupOwner = groupOwnerSel.value;
+  const prevCharOwner = charOwnerSel.value;
+
+  groupOwnerSel.innerHTML = opts;
+  charOwnerSel.innerHTML = opts;
+  if (owners.includes(prevGroupOwner)) groupOwnerSel.value = prevGroupOwner;
+  if (owners.includes(prevCharOwner)) charOwnerSel.value = prevCharOwner;
+
   updateCharGroupSelect();
 }
 
@@ -1254,8 +1262,10 @@ function updateCharGroupSelect() {
   const ownerName = document.getElementById('charOwnerSelect').value;
   const group = CHARS.owners.find(g => g.name === ownerName);
   const sel = document.getElementById('charGroupSelect');
+  const prevGroupLabel = sel.value;
   if (group) {
     sel.innerHTML = group.subgroups.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('');
+    if (group.subgroups.some(s => s.label === prevGroupLabel)) sel.value = prevGroupLabel;
   } else {
     sel.innerHTML = '';
   }
