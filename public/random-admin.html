@@ -287,8 +287,9 @@
 
     <!-- ===== Characters Panel ===== -->
     <div class="tab-panel visible" id="panel-chars">
-      <!-- Add Owner -->
-      <div class="card">
+      <!-- Add Owner: 기능(addOwner())은 남겨두되 UI에서 숨김 — 오너는 3명 고정 운영이라
+           실수로 새 오너를 만들거나 지우는 걸 막기 위함. 필요해지면 이 display:none만 지우면 됨. -->
+      <div class="card" style="display:none">
         <div class="card-header">
           <span class="card-title">오너 추가</span>
         </div>
@@ -348,7 +349,6 @@
       <div class="card owner-section">
         <div class="owner-header">
           <span class="owner-title">김굥</span>
-          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(0)">오너 삭제</button>
         </div>
         
         <div class="group-section">
@@ -535,7 +535,6 @@
       <div class="card owner-section">
         <div class="owner-header">
           <span class="owner-title">하지</span>
-          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(1)">오너 삭제</button>
         </div>
         
         <div class="group-section">
@@ -675,7 +674,6 @@
       <div class="card owner-section">
         <div class="owner-header">
           <span class="owner-title">예밍</span>
-          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(2)">오너 삭제</button>
         </div>
         
         <div class="group-section">
@@ -1246,7 +1244,6 @@ function renderChars() {
         <div class="owner-header">
           <span class="owner-title">${esc(g.name)}</span>
           ${g.code ? `<span class="owner-code">${esc(g.code)}</span>` : ''}
-          <button class="danger-btn" style="margin-left:auto" onclick="delOwner(${gi})">오너 삭제</button>
         </div>
         ${groupsHtml}
       </div>`;
