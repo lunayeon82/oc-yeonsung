@@ -1022,7 +1022,7 @@ function renderList() {
       <div class="search-row">
         <span class="filter-label">정렬</span>
         <div class="sort-btns">
-          <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">ID순</button>
+          <button class="sort-btn ${_listSort === 'id' ? 'active' : ''}" onclick="setSort('id')">설정순</button>
           <button class="sort-btn ${_listSort === 'alpha' ? 'active' : ''}" onclick="setSort('alpha')">가나다순</button>
         </div>
       </div>
@@ -1037,9 +1037,9 @@ function renderList() {
       let items = [...(sub.characters || [])];
       if (_listSort === 'alpha') {
         items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-      } else {
-        items.sort((a, b) => (a.publicCode || String(a.id) || '').localeCompare(b.publicCode || String(b.id) || ''));
       }
+      // _listSort === 'id' (설정순): 서버가 sort_order로 정렬해 내려준 순서를 그대로 사용
+      // — 뽑기 관리자(random-admin.html)에서 드래그로 정한 순서와 동일함.
 
       const rowsHtml = items.map(it => {
         const gBadge = it.gender === 1 ? 'row-badge-f' : 'row-badge-m';
