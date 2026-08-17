@@ -311,12 +311,13 @@
     margin: 1.2rem auto 0;
   }
 
-  /* ── 태그된 캐릭터 이미지 (설명과 본문 사이, LUNA pair notes 이미지와 동일 사이즈 160x160) ── */
+  /* ── 태그된 캐릭터 이미지 (설명과 본문 사이, LUNA pair notes 이미지 기준 최대 160x160,
+        모바일에서 폭에 비해 너무 크지 않도록 vw 기준으로 축소되는 원형) ── */
   .story-char-portraits {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 28px;
+    gap: clamp(14px, 5vw, 28px);
     margin: 1.8rem 0 2.2rem;
   }
   .story-char-portrait-item {
@@ -329,8 +330,8 @@
   }
   .story-char-portrait-item:hover { transform: translateY(-2px); }
   .story-char-portrait-img-wrap {
-    width: 160px;
-    height: 160px;
+    width: clamp(64px, 24vw, 160px);
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     overflow: hidden;
     border: 1px solid rgba(184,169,201,0.25);
@@ -344,7 +345,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'ko-font', serif;
-    font-size: 2.4rem;
+    font-size: clamp(1.1rem, 6vw, 2.4rem);
     font-weight: 700;
     color: #fff;
   }
