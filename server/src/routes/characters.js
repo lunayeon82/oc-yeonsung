@@ -73,22 +73,41 @@ function loadTree() {
 }
 
 const replaceTree = db.transaction((tree) => {
-  // PUT /characters replaces the whole owners/subgroups/characters tree (and thus every
-  // row's id) on each save, but portrait_path/portrait_updated_at aren't part of that
-  // client-side tree — without carrying them over here, any admin edit (reorder, add,
-  // rename, ...) would silently blank out every character's portrait on the next save.
-  const portraitById = new Map(
-    db.prepare('SELECT id, portrait_path, portrait_updated_at FROM oc_characters').all()
-      .map((r) => [r.id, { path: r.portrait_path, updatedAt: r.portrait_updated_at }])
-  );
+  // PUT /characters used to just DELETE the whole owners/subgroups/characters tree and
+  // re-INSERT it from scratch on every save. Since oc_characters.id is a plain
+  // INTEGER PRIMARY KEY (not AUTOINCREMENT), that reassigned — and silently reused —
+  // every character's id on every admin edit (add/reorder/move), even though
+  // portrait_path (images/portraits/{id}.ext), the /:id/portrait routes, and
+  // character.html's ?id= URL all key directly off that id. A client with a
+  // still-open character page (or a stale URL) would then upload/edit onto whatever
+  // *other* character had been reassigned its old id. See CLAUDE.md 2026-08-17 entry.
+  //
+  // So: characters that already exist are UPDATEd in place (id — and thus portrait —
+  // never moves), only genuinely new characters get INSERTed, and only characters
+  // actually removed from the tree get DELETEd. Owners/subgroups have no client-held
+  // references anywhere else, so they're still simply replaced each save; the new
+  // subgroups are created *before* the old ones are dropped so every kept character
+  // gets repointed to its new subgroup_id before the old subgroup (and the cascade
+  // that would otherwise take the character down with it) is deleted.
+  const oldOwnerIds = db.prepare('SELECT id FROM oc_owners').all().map((r) => r.id);
+  const oldSubgroupIds = db.prepare('SELECT id FROM oc_subgroups').all().map((r) => r.id);
+  const existingCharIds = new Set(db.prepare('SELECT id FROM oc_characters').all().map((r) => r.id));
 
-  db.exec('DELETE FROM oc_owners');
   const insertOwner = db.prepare('INSERT INTO oc_owners (name, code, sort_order) VALUES (?, ?, ?)');
   const insertSub = db.prepare('INSERT INTO oc_subgroups (owner_id, label, code, sort_order) VALUES (?, ?, ?, ?)');
   const insertChar = db.prepare(`INSERT INTO oc_characters
-    (public_code, subgroup_id, name, gender, is_couple, sort_order, note, info_look, info_vibe, info_speech, info_speech_ex, info_personality, info_habits, portrait_path, portrait_updated_at)
-    VALUES (@publicCode, @subgroupId, @name, @gender, @isCouple, @sortOrder, @note, @look, @vibe, @speech, @speechEx, @personality, @habits, @portraitPath, @portraitUpdatedAt)`);
+    (public_code, subgroup_id, name, gender, is_couple, sort_order, note, info_look, info_vibe, info_speech, info_speech_ex, info_personality, info_habits)
+    VALUES (@publicCode, @subgroupId, @name, @gender, @isCouple, @sortOrder, @note, @look, @vibe, @speech, @speechEx, @personality, @habits)`);
+  const updateChar = db.prepare(`UPDATE oc_characters SET
+    public_code = @publicCode, subgroup_id = @subgroupId, name = @name, gender = @gender,
+    is_couple = @isCouple, sort_order = @sortOrder, note = @note, info_look = @look,
+    info_vibe = @vibe, info_speech = @speech, info_speech_ex = @speechEx,
+    info_personality = @personality, info_habits = @habits
+    WHERE id = @id`);
+  const deleteSections = db.prepare('DELETE FROM oc_character_sections WHERE character_id = ?');
   const insertSection = db.prepare('INSERT INTO oc_character_sections (character_id, title, content, sort_order) VALUES (?, ?, ?, ?)');
+
+  const keptCharIds = new Set();
 
   (tree.owners || []).forEach((owner, oi) => {
     const ownerId = insertOwner.run(owner.name, owner.code || null, oi).lastInsertRowid;
@@ -96,8 +115,7 @@ const replaceTree = db.transaction((tree) => {
       const subId = insertSub.run(ownerId, sub.label, sub.code || null, si).lastInsertRowid;
       (sub.characters || []).forEach((ch, ci) => {
         const info = ch.info || {};
-        const portrait = ch.id != null ? portraitById.get(ch.id) : undefined;
-        const charId = insertChar.run({
+        const fields = {
           publicCode: ch.publicCode || null,
           subgroupId: subId,
           name: ch.name,
@@ -111,15 +129,42 @@ const replaceTree = db.transaction((tree) => {
           speechEx: info.speechEx || null,
           personality: info.personality || null,
           habits: info.habits || null,
-          portraitPath: portrait ? portrait.path : null,
-          portraitUpdatedAt: portrait ? portrait.updatedAt : null,
-        }).lastInsertRowid;
+        };
+
+        let charId;
+        if (ch.id != null && existingCharIds.has(ch.id)) {
+          updateChar.run({ ...fields, id: ch.id });
+          charId = ch.id;
+        } else {
+          charId = insertChar.run(fields).lastInsertRowid;
+        }
+        keptCharIds.add(charId);
+
+        deleteSections.run(charId);
         (ch.customSections || []).forEach((sec, secIdx) => {
           insertSection.run(charId, sec.title || '', sec.content || '', secIdx);
         });
       });
     });
   });
+
+  // Characters that existed before but weren't in the new tree were removed via the
+  // admin UI — drop them now (their sections cascade-delete with them).
+  for (const oldId of existingCharIds) {
+    if (!keptCharIds.has(oldId)) {
+      db.prepare('DELETE FROM oc_characters WHERE id = ?').run(oldId);
+    }
+  }
+
+  // Every kept character has already been repointed to a freshly inserted subgroup
+  // above, so the old subgroups (and owners) are now safe to drop with no cascade
+  // touching anything we meant to keep.
+  if (oldSubgroupIds.length) {
+    db.prepare(`DELETE FROM oc_subgroups WHERE id IN (${oldSubgroupIds.map(() => '?').join(',')})`).run(...oldSubgroupIds);
+  }
+  if (oldOwnerIds.length) {
+    db.prepare(`DELETE FROM oc_owners WHERE id IN (${oldOwnerIds.map(() => '?').join(',')})`).run(...oldOwnerIds);
+  }
 });
 
 router.get('/', (req, res) => {
