@@ -107,4 +107,34 @@
       popup.classList.remove('show');
     }
   });
+
+  // ── 하단 콘텐츠 가림 방지 ──
+  // 이 위젯(원형 버튼)이 화면 좌하단에 항상 떠 있다 보니, 페이지마다 따로 여백을
+  // 안 맞춰두면 마지막 콘텐츠가 그 밑에 가려진다. 위젯의 실제 높이 + 여유(120px)만큼
+  // body에 padding-bottom을 자동으로 확보해서 페이지별로 신경 쓸 필요가 없게 한다.
+  // 이미 그보다 큰 padding-bottom을 갖고 있는 페이지는 그대로 둔다.
+  function ensureBottomClearance() {
+    var clearance = btn.offsetHeight + 120;
+    var current = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    if (current < clearance) {
+      document.body.style.paddingBottom = clearance + 'px';
+    }
+  }
+
+  // sync-badge(실시간 연결 표시)가 이 위젯과 겹치지 않도록, 위젯 바로 위 자리로
+  // 옮긴다. theme.css의 기본 위치(bottom: 3%)는 이 위젯을 모르므로 여기서 위젯의
+  // 실제 화면 좌표를 기준으로 계산해 덮어쓴다.
+  function repositionSyncBadge() {
+    var badge = document.getElementById('syncBadge');
+    if (!badge) return;
+    var top = btn.getBoundingClientRect().top;
+    badge.style.bottom = (window.innerHeight - top + 8) + 'px';
+  }
+
+  function layout() {
+    ensureBottomClearance();
+    repositionSyncBadge();
+  }
+  layout();
+  window.addEventListener('resize', layout);
 })();
