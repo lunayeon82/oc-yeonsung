@@ -680,7 +680,7 @@ function toggleFilter(btn) {
   if(k==='solo'&&f.has('couple')) f.delete('couple');
   if(k==='couple'&&f.has('solo')) f.delete('solo');
   if(f.has(k)) f.delete(k); else f.add(k);
-  syncFilterBtns(); applyFiltersToSection(); renderPoolCounter();
+  syncFilterBtns(); applyFiltersToSection(); renderPoolCounter(); updateResultBadges();
 }
 
 function passesFilter(name, fs) {
@@ -751,6 +751,7 @@ async function setOverrideMode(custom) {
   renderPoolSection();
   renderPoolTabs();
   updCounts();
+  updateResultBadges();
 }
 
 function importIntoActive(src) {
@@ -761,6 +762,7 @@ function importIntoActive(src) {
   renderPoolTabs();
   updCounts();
   renderOverrideBar();
+  updateResultBadges();
   toast('선택을 복사했어요');
 }
 
@@ -847,6 +849,7 @@ function togPool(btn, name) {
   renderPoolSection();
   updCounts();
   renderPoolTabs();
+  updateResultBadges();
 }
 
 function getVisibleNamesForActive(owner) {
@@ -863,7 +866,7 @@ function togOwnerPool(owner) {
   if (!names.length) return;
   const allOn = names.every(n=>set.has(n));
   names.forEach(n=>{ if(allOn) set.delete(n); else set.add(n); });
-  renderPoolSection(); updCounts(); renderPoolTabs();
+  renderPoolSection(); updCounts(); renderPoolTabs(); updateResultBadges();
   toast(allOn?`${owner} 전체 해제`:`${owner} 전체 선택`);
 }
 
@@ -874,7 +877,7 @@ function togAllPool() {
   if (!names.length) return;
   const allOn = names.every(n=>set.has(n));
   names.forEach(n=>{ if(allOn) set.delete(n); else set.add(n); });
-  renderPoolSection(); updCounts(); renderPoolTabs();
+  renderPoolSection(); updCounts(); renderPoolTabs(); updateResultBadges();
   toast(allOn?'전체 해제':'전체 선택');
 }
 
@@ -915,7 +918,20 @@ function filteredPoolCount(i) {
 function resultBadgeHtml(i) {
   const isCustom = !!overrides[i];
   const n = filteredPoolCount(i);
-  return `<span class="result-badge${isCustom?' is-custom':''}">${isCustom?'직접':'공통'} ${n}</span>`;
+  return `<span class="result-badge${isCustom?' is-custom':''}" id="resultBadge${i}">${isCustom?'직접':'공통'} ${n}</span>`;
+}
+
+// Pool composition (selection/filters/override) can change after the result
+// skeleton is already on screen — keep each slot's badge live rather than
+// frozen at whatever it read when renderResultPlaceholder() last ran.
+function updateResultBadges() {
+  for (let i=0;i<participantCount;i++) {
+    const el = document.getElementById('resultBadge'+i);
+    if (!el) continue;
+    const isCustom = !!overrides[i];
+    el.className = 'result-badge' + (isCustom?' is-custom':'');
+    el.textContent = `${isCustom?'직접':'공통'} ${filteredPoolCount(i)}`;
+  }
 }
 
 function updateMainBtnLabel() {
