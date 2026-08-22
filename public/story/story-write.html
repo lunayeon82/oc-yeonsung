@@ -918,17 +918,11 @@
 
       document.getElementById('saveStatus').textContent = '저장됨';
       showToast('저장되었어요!');
-
-      // new 파라미터 제거
-      if (isNew) {
-        isNew = false;
-        history.replaceState(null, '', `story-write.html?pid=${pid}`);
-      }
+      setTimeout(() => { location.href = `story-view.html?pid=${pid}`; }, 600);
     } catch (e) {
       console.error('저장 실패:', e);
       showToast('저장에 실패했어요');
       document.getElementById('saveStatus').textContent = '';
-    } finally {
       saveBtn.disabled = false;
     }
   });

@@ -991,25 +991,16 @@
         await API.updateImage(pid, body);
       }
 
-      chapters.forEach(ch => { ch.file = null; ch.previewUrl = null; delete ch._img; });
-      thumbChapterId = finalThumbChapterId;
-
       const finalThumbIndex = chapters.findIndex(ch => ch.chapterPid === finalThumbChapterId);
       document.getElementById('saveStatus').textContent = '저장됨';
       showToast(`저장됐어요! (${finalThumbIndex >= 0 ? finalThumbIndex + 1 : 1}번째 그림이 썸네일)`);
       hideProgress();
-      renderChapterPanel();
-
-      if (isNew) {
-        isNew = false;
-        history.replaceState(null, '', `image-write.html?pid=${pid}`);
-      }
+      setTimeout(() => { location.href = `image-view.html?pid=${pid}`; }, 600);
     } catch (e) {
       console.error('저장 실패:', e);
       showToast('저장에 실패했어요');
       document.getElementById('saveStatus').textContent = '';
       hideProgress();
-    } finally {
       saveBtn.disabled = false;
     }
   });
