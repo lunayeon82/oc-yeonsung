@@ -106,14 +106,6 @@ CREATE TABLE IF NOT EXISTS oc_story_aus (
   PRIMARY KEY (story_pid, au)
 );
 
-CREATE TABLE IF NOT EXISTS oc_story_lore_refs (
-  story_pid TEXT NOT NULL REFERENCES oc_stories(pid) ON DELETE CASCADE,
-  lore_pid TEXT NOT NULL,
-  lore_title_snapshot TEXT,
-  sort_order INTEGER NOT NULL DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS idx_oc_story_lore_refs_story ON oc_story_lore_refs(story_pid);
-
 CREATE TABLE IF NOT EXISTS oc_chapters (
   pid TEXT PRIMARY KEY,
   story_pid TEXT NOT NULL REFERENCES oc_stories(pid) ON DELETE CASCADE,
@@ -123,25 +115,6 @@ CREATE TABLE IF NOT EXISTS oc_chapters (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_oc_chapters_story ON oc_chapters(story_pid);
-
-CREATE TABLE IF NOT EXISTS oc_lores (
-  pid TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  chapter_count INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_oc_lores_created ON oc_lores(created_at DESC);
-
-CREATE TABLE IF NOT EXISTS oc_lore_chapters (
-  pid TEXT PRIMARY KEY,
-  lore_pid TEXT NOT NULL REFERENCES oc_lores(pid) ON DELETE CASCADE,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  title TEXT,
-  body TEXT NOT NULL DEFAULT '',
-  created_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_oc_lore_chapters_lore ON oc_lore_chapters(lore_pid);
 
 CREATE TABLE IF NOT EXISTS oc_images (
   pid TEXT PRIMARY KEY,

@@ -13,7 +13,6 @@ app.use('/api/roles', require('./routes/roles'));
 app.use('/api/aus', require('./routes/aus'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/stories', require('./routes/stories'));
-app.use('/api/lores', require('./routes/lores'));
 app.use('/api/images', require('./routes/images'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/users/:name/draw-box', require('./routes/drawBox'));

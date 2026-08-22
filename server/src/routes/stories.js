@@ -13,19 +13,16 @@ function attachRelations(stories) {
   const chars = db.prepare(`SELECT * FROM oc_story_characters WHERE story_pid IN (${ph})`).all(...pids);
   const roles = db.prepare(`SELECT * FROM oc_story_roles WHERE story_pid IN (${ph})`).all(...pids);
   const aus = db.prepare(`SELECT * FROM oc_story_aus WHERE story_pid IN (${ph})`).all(...pids);
-  const loreRefs = db.prepare(`SELECT * FROM oc_story_lore_refs WHERE story_pid IN (${ph}) ORDER BY sort_order`).all(...pids);
 
   const byPid = new Map(stories.map((s) => [s.pid, s]));
   for (const s of stories) {
     s.characters = [];
     s.roles = [];
     s.aus = [];
-    s.loreRefs = [];
   }
   for (const c of chars) byPid.get(c.story_pid).characters.push(c.character_name);
   for (const r of roles) byPid.get(r.story_pid).roles.push(r.role);
   for (const a of aus) byPid.get(a.story_pid).aus.push(a.au);
-  for (const l of loreRefs) byPid.get(l.story_pid).loreRefs.push({ id: l.lore_pid, title: l.lore_title_snapshot });
   return stories;
 }
 
@@ -38,7 +35,6 @@ function toJson(row) {
     characters: row.characters,
     roles: row.roles,
     aus: row.aus,
-    loreRefs: row.loreRefs,
     chapterCount: row.chapter_count,
     commentCount: row.comment_count,
     createdAt: row.created_at,
@@ -142,7 +138,6 @@ const saveStoryTx = db.transaction((pid, body, isNew) => {
   db.prepare('DELETE FROM oc_story_characters WHERE story_pid = ?').run(pid);
   db.prepare('DELETE FROM oc_story_roles WHERE story_pid = ?').run(pid);
   db.prepare('DELETE FROM oc_story_aus WHERE story_pid = ?').run(pid);
-  db.prepare('DELETE FROM oc_story_lore_refs WHERE story_pid = ?').run(pid);
   db.prepare('DELETE FROM oc_chapters WHERE story_pid = ?').run(pid);
 
   const insChar = db.prepare('INSERT OR IGNORE INTO oc_story_characters (story_pid, character_name) VALUES (?, ?)');
@@ -151,8 +146,6 @@ const saveStoryTx = db.transaction((pid, body, isNew) => {
   (body.roles || []).forEach((r) => insRole.run(pid, r));
   const insAu = db.prepare('INSERT OR IGNORE INTO oc_story_aus (story_pid, au) VALUES (?, ?)');
   (body.aus || []).forEach((a) => insAu.run(pid, a));
-  const insLore = db.prepare('INSERT INTO oc_story_lore_refs (story_pid, lore_pid, lore_title_snapshot, sort_order) VALUES (?, ?, ?, ?)');
-  (body.loreRefs || []).forEach((l, i) => insLore.run(pid, l.id, l.title || '', i));
 
   const insChapter = db.prepare('INSERT INTO oc_chapters (pid, story_pid, sort_order, title, body, created_at) VALUES (?, ?, ?, ?, ?, ?)');
   chapters.forEach((c, i) => insChapter.run(c.pid || generatePid(), pid, i, c.title || '', c.body || '', now));
@@ -182,7 +175,7 @@ router.put('/:pid', requireApiKey, (req, res) => {
 
 const deleteStoryTx = db.transaction((pid) => {
   db.prepare("DELETE FROM oc_comments WHERE parent_type = 'story' AND parent_pid = ?").run(pid);
-  db.prepare('DELETE FROM oc_stories WHERE pid = ?').run(pid); // cascades chapters/characters/roles/aus/loreRefs
+  db.prepare('DELETE FROM oc_stories WHERE pid = ?').run(pid); // cascades chapters/characters/roles/aus
 });
 
 router.delete('/:pid', requireApiKey, (req, res) => {

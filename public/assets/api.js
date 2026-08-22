@@ -68,13 +68,6 @@
     updateStory: (pid, body) => request('PUT', `/stories/${pid}`, { json: body }),
     deleteStory: (pid) => request('DELETE', `/stories/${pid}`),
 
-    // 설정(로어)
-    listLores: (query) => request('GET', '/lores', { query }),
-    getLore: (pid) => request('GET', `/lores/${pid}`),
-    createLore: (body) => request('POST', '/lores', { json: body }),
-    updateLore: (pid, body) => request('PUT', `/lores/${pid}`, { json: body }),
-    deleteLore: (pid) => request('DELETE', `/lores/${pid}`),
-
     // 이미지
     listImages: (query) => request('GET', '/images', { query }),
     getImage: (pid) => request('GET', `/images/${pid}`),
