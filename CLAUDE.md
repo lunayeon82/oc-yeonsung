@@ -1,6 +1,6 @@
 # CLAUDE.md — oc-yeonsung 프로젝트 현황
 
-> 이 파일은 Claude Code가 상황 파악용으로 읽는 문서다. 최종 갱신: 2026.08.17.
+> 이 파일은 Claude Code가 상황 파악용으로 읽는 문서다. 최종 갱신: 2026.08.23.
 
 ## 프로젝트가 뭔가
 
@@ -305,3 +305,59 @@ UTC에 47번(한나봄)이 자기 포트레이트를 올리자 47번의 DB 행�
 자체는 고립 사고로 보이지만, 8/17 오전 id 재배정 버그 수정 이전에 발생한 다른 조용한 포트레이트
 오염이 더 있었을 가능성은 완전히 배제 못 함(이번 전수조사 시점 기준으로는 48번 외엔 전부 정상
 이었음). 한여름(48번)에게 포트레이트 재업로드해달라고 안내 필요.
+
+**2026.08.23 — 구조 정리 1단계: 제거와 안전장치만(기능 추가 없이) (Claude Code)**
+
+사용자가 명시적으로 순서를 지정한 4단계 정리 작업. 각 단계 커밋 분리, 로컬 7개 커밋으로 완료
+(`33983d9`~`d894085`).
+
+1. **`express-async-errors` 도입** — `app.js`에 한 줄 추가로 Express 4의 async 핸들러 reject
+   미전달 문제를 전역 해결. `characters.js`(포트레이트 업로드)·`upload.js`의 개별 try/catch(502
+   `upload_failed`) 제거, 공용 에러 핸들러(500 `internal_error`)로 위임 — 이 문제로 인한 사고가
+   이미 두 번(8/17 이전 항목들) 있었는데, 그때마다 라우트별로 땜빵했던 걸 이번에 한 번에 정리.
+2. **`AUTOINCREMENT` + `tagVocab` UPSERT** — `schema.sql`의 9개 테이블(`oc_owners`,
+   `oc_subgroups`, `oc_characters`, `oc_character_sections`, `oc_role_groups`, `oc_roles`,
+   `oc_au_groups`, `oc_aus`, `oc_users`)에 `AUTOINCREMENT` 추가(`oc_comments`/`oc_draw_box`/
+   `oc_read_later`/`oc_story_box`는 이미 있었음). 캐릭터 id 재배정 버그(8/17 항목)와 동일한
+   구조적 취약점이 다른 테이블에도 남아있던 걸 선제적으로 막은 것 — 지금 당장 외부에서 참조하는
+   곳이 없어서 사고로 이어진 적은 없음. `server/migrate/add-autoincrement.js`로 기존 DB용 마이그
+   레이션 준비(SQLite 공식 테이블 재생성 절차, id 보존) — **아직 프로덕션 미실행, 사용자가 실행
+   시각을 직접 정하기로 함**.
+
+   `lib/tagVocab.js`(roles/aus 공용)의 `replaceTree`도 delete-all-reinsert에서 UPSERT로 변경.
+   **다만 캐릭터 트리와 달리 roles/aus의 GET 응답에는 id가 없고 라벨 문자열만 내려가므로, 매칭
+   기준이 "클라이언트가 들고 있던 id"가 아니라 "라벨 텍스트"임** — 그룹/항목 순서 변경·추가·삭제는
+   id가 그대로 보존되지만, **이름 변경(관리자 페이지의 "변경" 모달로 라벨 자체를 바꾸는 경우)은
+   여전히 새 id를 받음**(라벨이 유일한 식별자라 "이름이 바뀐 기존 항목"과 "새 항목"을 서버가 구분
+   할 방법이 없음). 지금은 `oc_roles`/`oc_aus`의 id를 외부에서 참조하는 곳이 전혀 없어서(연성 글은
+   역할/AU를 라벨 텍스트로 참조함, `oc_story_roles.role`/`oc_story_aus.au`) 문제가 안 되지만,
+   **향후 역할/AU id를 외부에서 참조하게 되면 `GET /api/roles`·`GET /api/aus` 응답에 항목별 id를
+   포함시키고, `tagVocab.js`의 매칭 로직을 캐릭터 트리처럼 id 기반으로 전환할 것.**
+3. **Firebase 잔재 제거** — `firebase.json`, `public/404.html`(Firebase Hosting가 자동 생성한
+   죽은 페이지, 샘플·실제 nginx 설정 둘 다 `error_page 404` 없어서 애초에 서빙된 적 없음) 삭제,
+   `.gitignore`의 Firebase CLI 관련 항목 정리. 겸사겸사 `index.html`의 `og:image`가 옛 Firebase
+   Hosting 도메인(`oc-yeonsung.web.app`)을 가리키던 것도 실제 도메인으로 수정. `migrate/` 스크립트
+   와 `firebase-admin` devDependency는 의도된 이관 도구라 그대로 둠.
+4. **로어(lore) 기능 전체 제거** — 작업 전 프로덕션 DB를 SSH로 읽기 전용 조회해 `oc_lores`/
+   `oc_lore_chapters`/`oc_story_lore_refs`를 `server/backup/`에 JSON으로 백업(`server/backup/
+   README.md` 참고) — **셋 다 0행이었음, 로어 글이 실제로는 단 한 건도 만들어진 적이 없었던 걸로
+   확인됨**. 이후 `stories.js`의 로어 참조 로직 → `routes/lores.js`/`app.js` 마운트 → `story/
+   lore-*.html` 3파일과 `story-list.html`의 진입 링크·`story-view.html`의 로어 태그 표시·
+   `story-write.html`의 로어 검색 피커 → `api.js`의 lore 관련 메서드 5개 → `schema.sql`의 테이블
+   정의 순서로 제거. `server/migrate/drop-lore-tables.js`(실행 전 0행 재확인 후 드롭, 아니면 자동
+   중단)를 준비해뒀다가 **사용자 승인 후 실제 프로덕션에 실행 완료** — 실행 전 `shared.db`를
+   타임스탬프 파일로 백업(`shared.db.bak-20260822154334`), 0행 재확인 후 3개 테이블 모두 드롭,
+   `PRAGMA integrity_check` `ok` 확인. **로어 기능은 이제 코드·스키마·데이터 전부 제거된 상태.**
+   ⚠️ 이 드롭은 서버 코드 배포 없이 DB만 직접 손댄 것이라, **아직 프로덕션에 배포되지 않은 구
+   `routes/lores.js`가 여전히 떠 있는 동안 `/api/lores`를 누가 호출하면 "no such table" 에러가
+   남**(프론트 `lore-*.html`도 아직 안 지워짐, 실제로 그 페이지에 들어가야 호출됨 — 고정 3인
+   운영이라 발생 가능성은 낮다고 판단해 진행함). 다음 배포(`git pull`) 시 이 코드도 함께 나가면
+   이 창은 완전히 닫힘.
+
+**공유 DB 참고**: `shared.db`는 이 앱과 PocketRisu(pm2 프로세스명 `risu`, `/home/ubuntu/
+PocketRisu`, `rl_` 프리픽스 테이블들)가 같이 씀. `add-autoincrement.js`처럼 테이블을 재생성하는
+마이그레이션을 돌릴 땐 두 pm2 프로세스(`oc-yeonsung-api`, `risu`) 둘 다 내려야 함.
+
+**미실행 항목**: `server/migrate/add-autoincrement.js` — 사용자가 정한 절차(백업 → 두 pm2 프로세스
+정지 → 스크립트 실행 → integrity_check + row count 대조 → 재기동 → 뽑기/캐릭터 페이지 육안 확인)
+대로, 사용자가 실행 시각을 알려주면 진행 예정.
