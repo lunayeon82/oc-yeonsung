@@ -1,96 +1,48 @@
-// 핑크·보라·아이보리 톤의 공용 확인 모달 — window.customConfirm(message)는 Promise<boolean>을 반환합니다.
+// 공용 확인 모달 — window.customConfirm(message)는 Promise<boolean>을 반환합니다.
+// random.html/random-admin.html과 같은 리본 모달 껍데기(assets/modal.css)를 그대로 씀.
 (function () {
   if (window.customConfirm) return;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'cc-overlay';
+  var nested = /\/story\//.test(location.pathname);
+  var prefix = nested ? '../' : '';
+
+  function ensureModalCss() {
+    if (document.querySelector('link[href$="assets/modal.css"]')) return;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = prefix + 'assets/modal.css';
+    document.head.appendChild(link);
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
   overlay.innerHTML = `
-    <div class="cc-modal">
-      <p class="cc-message"></p>
-      <div class="cc-actions">
-        <button type="button" class="cc-btn cc-cancel">취소</button>
-        <button type="button" class="cc-btn cc-confirm">확인</button>
+    <div class="modal">
+      <button type="button" class="modal-exit"><img src="${prefix}assets/modal/exit.png" alt="닫기"></button>
+      <img class="modal-ribbon" src="${prefix}assets/modal/ribbon.png" alt="">
+      <p class="modal-message"></p>
+      <div class="modal-actions stretch">
+        <button type="button" class="modal-cancel">취소</button>
+        <button type="button" class="modal-save">확인</button>
       </div>
     </div>
-  `;
-
-  const style = document.createElement('style');
-  style.textContent = `
-    .cc-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(58,53,48,0.45);
-      backdrop-filter: blur(3px);
-      opacity: 0; visibility: hidden;
-      transition: opacity 0.2s ease, visibility 0.2s ease;
-      padding: 20px;
-    }
-    .cc-overlay.show { opacity: 1; visibility: visible; }
-    .cc-modal {
-      width: 100%; max-width: 320px;
-      background: linear-gradient(160deg, #fdf9f3, #f6efe5);
-      border: 1px solid #e6dccb;
-      border-radius: 16px;
-      padding: 28px 24px 20px;
-      text-align: center;
-      box-shadow: 0 16px 48px rgba(90,74,107,0.22);
-      transform: translateY(16px) scale(0.97);
-      transition: transform 0.25s ease;
-    }
-    .cc-overlay.show .cc-modal { transform: translateY(0) scale(1); }
-    .cc-modal::before {
-      content: '';
-      display: block;
-      width: 48px; height: 3px;
-      margin: 0 auto 16px;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #c0899e, #a89ec4);
-    }
-    .cc-message {
-      font-family: 'ko-font', sans-serif;
-      font-size: 0.92rem;
-      color: #4a3a5b;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: keep-all;
-      margin-bottom: 22px;
-    }
-    .cc-actions { display: flex; gap: 10px; }
-    .cc-btn {
-      flex: 1;
-      padding: 11px 0;
-      border: none;
-      border-radius: 10px;
-      font-family: 'ko-font', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.18s ease;
-    }
-    .cc-cancel { background: #f0ebe0; color: #8a7e6b; }
-    .cc-cancel:hover { background: #e6dccb; }
-    .cc-confirm {
-      background: linear-gradient(135deg, #c0899e, #a89ec4);
-      color: #fff;
-      box-shadow: 0 4px 16px rgba(192,137,158,0.3);
-    }
-    .cc-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,137,158,0.4); }
   `;
 
   let activeResolve = null;
 
   function close(result) {
-    overlay.classList.remove('show');
+    overlay.classList.remove('open');
     if (activeResolve) { activeResolve(result); activeResolve = null; }
   }
 
-  overlay.querySelector('.cc-cancel').addEventListener('click', () => close(false));
-  overlay.querySelector('.cc-confirm').addEventListener('click', () => close(true));
+  overlay.querySelector('.modal-exit').addEventListener('click', () => close(false));
+  overlay.querySelector('.modal-cancel').addEventListener('click', () => close(false));
+  overlay.querySelector('.modal-save').addEventListener('click', () => close(true));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
 
   function mount() {
+    ensureModalCss();
     if (!overlay.isConnected) {
-      document.head.appendChild(style);
       document.body.appendChild(overlay);
     }
   }
@@ -99,8 +51,8 @@
     mount();
     return new Promise((resolve) => {
       activeResolve = resolve;
-      overlay.querySelector('.cc-message').textContent = message;
-      overlay.classList.add('show');
+      overlay.querySelector('.modal-message').textContent = message;
+      overlay.classList.add('open');
     });
   };
 })();

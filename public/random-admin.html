@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/pwa.js" defer></script>
 <link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/modal.css">
 <style>
   @font-face {
     font-family: 'ko-font';
@@ -138,59 +139,7 @@
   }
   .item-edit:hover { border-color: var(--violet); color: var(--violet); }
 
-  /* Edit modal */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px); z-index: 150;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: #f7f2ec; border: 1px solid #e5ddd3;
-    border-radius: 14px; padding: 24px; width: 100%; max-width: 380px;
-    transform: translateY(20px); transition: transform 0.25s;
-    position: relative;
-  }
-  .modal-ribbon {
-    display: block; margin: 0 auto 12px;
-    max-height: 36px; width: auto;
-  }
-  .modal-exit {
-    position: absolute; top: 12px; right: 12px;
-    background: none; border: none; cursor: pointer;
-    padding: 0; line-height: 0;
-  }
-  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
-  .modal-exit:hover img { opacity: 1; }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.05rem; }
-  .modal-field { margin-bottom: 14px; }
-  .modal-label { display: block; font-size: 0.73rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; }
-  .modal-input {
-    width: 100%; padding: 9px 12px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--bg);
-    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none;
-  }
-  .modal-input:focus { border-color: var(--violet); }
-  .modal-select {
-    width: 100%; padding: 9px 12px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--bg);
-    color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none; cursor: pointer;
-  }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-  .modal-cancel {
-    padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 10px;
-    background: none; color: var(--text-dim); cursor: pointer;
-    font-family: var(--font-body); font-size: 0.85rem;
-  }
-  .modal-cancel:hover { border-color: var(--text-dim); color: var(--text); }
-  .modal-save {
-    padding: 8px 16px; border: none; border-radius: 10px;
-    background: var(--violet); color: #fff; font-weight: 600; cursor: pointer;
-    font-family: var(--font-body); font-size: 0.85rem;
-  }
-  .modal-save:hover { filter: brightness(1.15); }
+  /* Edit modal — shell/form styles now live in assets/modal.css */
 
   /* Owner code badge */
   .owner-code {

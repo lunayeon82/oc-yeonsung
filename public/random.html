@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/pwa.js" defer></script>
 <link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/modal.css">
 <style>
   @font-face {
     font-family: 'ko-font';
@@ -228,53 +229,6 @@
   .ch-readonly:hover { border-color: var(--border); color: var(--text-dim); }
 
   .empty { color: var(--text-muted); font-size: 0.8rem; padding: 8px 0 0 4px; }
-
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px); z-index: 100;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: #f7f2ec; border: 1px solid #e5ddd3;
-    border-radius: 14px; padding: 24px; width: 100%; max-width: 400px;
-    max-height: 70vh; overflow-y: auto;
-    transform: translateY(20px); transition: transform 0.25s;
-    position: relative;
-  }
-  .modal-ribbon {
-    display: block; margin: 0 auto 12px;
-    max-height: 36px; width: auto;
-  }
-  .modal-exit {
-    position: absolute; top: 12px; right: 12px;
-    background: none; border: none; cursor: pointer;
-    padding: 0; line-height: 0;
-  }
-  .modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
-  .modal-exit:hover img { opacity: 1; }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.1rem; }
-  .modal-list { list-style: none; }
-  .modal-list li {
-    padding: 8px 12px; border-bottom: 1px solid var(--border);
-    font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
-  }
-  .modal-list li:last-child { border-bottom: none; }
-  .modal-list .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
-  .modal-list .group-label {
-    padding: 10px 12px 6px; font-size: 0.7rem; font-weight: 700;
-    color: var(--violet); letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-  .modal-close {
-    margin-top: 16px; width: 100%; padding: 10px;
-    border: none; border-radius: 10px; background: var(--surface2);
-    color: var(--text); font-weight: 600; cursor: pointer;
-    font-family: var(--font-body); font-size: 0.85rem;
-  }
-  .modal-close:hover { background: var(--border); }
 
   .ptcl { position: fixed; width: 5px; height: 5px; border-radius: 50%; pointer-events: none; z-index: 200; animation: fly 0.7s ease-out forwards; }
   @keyframes fly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }

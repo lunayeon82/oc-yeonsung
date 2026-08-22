@@ -1,0 +1,133 @@
+/* 공용 리본 모달 껍데기 — random.html/random-admin.html의 자체 모달 CSS를 그대로 가져와 공용화한
+   것(외형은 그 두 페이지 기준). 아래 두 이미지가 필요함: assets/modal/ribbon.png, assets/modal/exit.png.
+   confirm-modal.js/storage-modal.js도 같은 클래스를 씀 — 새 모달을 추가할 때도 이 셋만 조합하면 된다:
+     ① 껍데기(.modal-overlay > .modal > .modal-exit + .modal-ribbon + (.modal h3 또는 .modal-message))
+     ② 폼 내용(.modal-field/.modal-label/.modal-input/.modal-select + .modal-actions/.modal-cancel/.modal-save)
+     ③ 목록 내용 — 읽기 전용이면 .modal-list, 클릭 가능한 선택지면 .modal-options/.modal-option(+.modal-back) */
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); z-index: 250;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: #f7f2ec; border: 1px solid #e5ddd3;
+  border-radius: 14px; padding: 24px; width: 100%; max-width: 400px;
+  max-height: 70vh; overflow-y: auto;
+  transform: translateY(20px); transition: transform 0.25s;
+  position: relative;
+}
+.modal-ribbon {
+  display: block; margin: 0 auto 12px;
+  max-height: 36px; width: auto;
+}
+.modal-exit {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  padding: 0; line-height: 0;
+}
+.modal-exit img { width: 22px; height: 22px; opacity: 0.55; transition: opacity 0.15s; }
+.modal-exit:hover img { opacity: 1; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal h3 { font-family: var(--font-title); font-weight: 700; margin-bottom: 16px; font-size: 1.1rem; text-align: center; }
+
+/* 안내 문구/메시지 한 단락짜리 모달용 (h3 대신) */
+.modal-message {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* ── 폼 내용 ── */
+.modal-field { margin-bottom: 14px; }
+.modal-label { display: block; font-size: 0.73rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; }
+.modal-input {
+  width: 100%; padding: 9px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none;
+}
+.modal-input:focus { border-color: var(--violet); }
+.modal-select {
+  width: 100%; padding: 9px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.85rem; font-family: var(--font-body); outline: none; cursor: pointer;
+}
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.modal-actions.stretch .modal-cancel,
+.modal-actions.stretch .modal-save { flex: 1; }
+.modal-cancel {
+  padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+  background: none; color: var(--text-dim); cursor: pointer;
+  font-family: var(--font-body); font-size: 0.85rem;
+}
+.modal-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+.modal-save {
+  padding: 8px 16px; border: none; border-radius: 10px;
+  background: var(--violet); color: #fff; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.85rem;
+}
+.modal-save:hover { filter: brightness(1.15); }
+
+/* ── 읽기 전용 목록 (예: random.html의 "캐릭터 설정/관계성 전체 확인") ── */
+.modal-list { list-style: none; }
+.modal-list li {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+}
+.modal-list li:last-child { border-bottom: none; }
+.modal-list .idx { color: var(--text-muted); font-size: 0.7rem; min-width: 20px; }
+.modal-list .group-label {
+  padding: 10px 12px 6px; font-size: 0.7rem; font-weight: 700;
+  color: var(--violet); letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.modal-close {
+  margin-top: 16px; width: 100%; padding: 10px;
+  border: none; border-radius: 10px; background: var(--surface2);
+  color: var(--text); font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.85rem;
+}
+.modal-close:hover { background: var(--border); }
+
+/* ── 클릭 가능한 선택지 목록 (예: storage-modal.js의 유저/보관함 선택) ── */
+.modal-back {
+  display: block;
+  margin: -8px auto 12px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.modal-back:hover { color: var(--text); }
+.modal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.modal-option {
+  padding: 12px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.modal-option:hover {
+  border-color: var(--violet);
+  background: var(--violet-dim);
+  transform: translateY(-1px);
+}
