@@ -51,8 +51,11 @@
     padding: 0.7rem 1.2rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
+  /* .nav-corner defaults to z-index:10 (theme.css), below this sticky .top-bar (100) —
+     bump it so the back link stays clickable/visible once the bar is stuck to the top. */
+  .nav-corner { z-index: 101; }
 
   .top-bar-actions {
     display: flex;
@@ -808,9 +811,10 @@
 <!-- 실시간 연결 표시 -->
 <div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
+<a href="story-list.html" class="nav-link nav-corner">← 목록</a>
+
 <!-- 상단 바 -->
 <div class="top-bar">
-  <a href="story-list.html" class="nav-link">← 목록</a>
   <div class="top-bar-actions">
     <div class="font-picker-wrap">
       <button class="font-picker-btn" id="fontPickerBtn" title="폰트 설정">가</button>

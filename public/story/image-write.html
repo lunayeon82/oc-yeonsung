@@ -39,6 +39,9 @@
     align-items: center;
     justify-content: space-between;
   }
+  /* .nav-corner defaults to z-index:10 (theme.css), below this sticky .top-bar (100) —
+     bump it so the back link stays clickable/visible once the bar is stuck to the top. */
+  .nav-corner { z-index: 101; }
 
   .top-bar-title {
     font-size: 0.95rem;
@@ -491,9 +494,10 @@
 <!-- 실시간 연결 표시 -->
 <div class="sync-badge" id="syncBadge"><span class="dot"></span>실시간 연결됨</div>
 
+<button class="nav-link nav-corner" id="backBtn">← 목록</button>
+
 <!-- 상단 바 -->
 <div class="top-bar">
-  <button class="nav-link" id="backBtn">← 목록</button>
   <span class="top-bar-title" id="topBarTitle">그림 업로드</span>
   <div class="top-bar-actions">
     <span class="save-status" id="saveStatus"></span>
