@@ -3,13 +3,13 @@
   if (window.__personalNavMounted) return;
   window.__personalNavMounted = true;
 
-  var nested = /\/(story|personal)\//.test(location.pathname);
+  var nested = /\/story\//.test(location.pathname);
   var prefix = nested ? '../' : '';
 
   var USERS = [
-    { name: '김굥', file: 'kimgyong.html', icon: 'hedgehog-v0.png' },
-    { name: '하지', file: 'haji.html', icon: 'ferret-v0.png' },
-    { name: '예밍', file: 'yeming.html', icon: 'chick-v0.png' }
+    { name: '김굥', slug: 'kimgyong', icon: 'hedgehog-v0.png' },
+    { name: '하지', slug: 'haji', icon: 'ferret-v0.png' },
+    { name: '예밍', slug: 'yeming', icon: 'chick-v0.png' }
   ];
 
   var style = document.createElement('style');
@@ -92,7 +92,7 @@
   var popup = document.createElement('div');
   popup.className = 'pn-popup';
   popup.innerHTML = USERS.map(function (u) {
-    return '<a href="' + prefix + 'personal/' + u.file + '"><img src="' + prefix + 'assets/icon/' + u.icon + '" alt="">' + u.name + '</a>';
+    return '<a href="' + prefix + 'personal.html?user=' + u.slug + '"><img src="' + prefix + 'assets/icon/' + u.icon + '" alt="">' + u.name + '</a>';
   }).join('');
 
   document.body.appendChild(btn);
