@@ -18,6 +18,12 @@
  * run once, manually, against the target database, and the database should be
  * backed up first (see the printed instructions below).
  *
+ * `PRAGMA legacy_alter_table = ON` and the pre-commit foreign_key_check (with an
+ * automatic rollback on violation) are both load-bearing, not defensive filler — the
+ * first production run of this script, before they were added, silently corrupted 7
+ * unrelated tables' FK reference text and had to be repaired by hand afterward. See
+ * CLAUDE.md (2026-08-23) for the incident writeup.
+ *
  * Run from server/: node migrate/add-autoincrement.js
  */
 require('dotenv').config();
@@ -127,16 +133,7 @@ const TABLES = [
   },
 ];
 
-function alreadyHasAutoincrement(tableName) {
-  const row = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`).get(tableName);
-  return !!(row && /AUTOINCREMENT/i.test(row.sql));
-}
-
 function rebuildTable({ name, create, indexes }) {
-  if (alreadyHasAutoincrement(name)) {
-    console.log(`skip ${name} (already AUTOINCREMENT)`);
-    return;
-  }
   const before = db.prepare(`SELECT COUNT(*) AS n FROM ${name}`).get().n;
   const tmp = `${name}_pre_autoincrement`;
   db.exec(`ALTER TABLE ${name} RENAME TO ${tmp}`);
@@ -163,20 +160,44 @@ function main() {
   console.log(`  cp "${db.name}" "${db.name}.bak-$(date +%Y%m%d%H%M%S)"`);
   console.log('');
 
+  // Without this, SQLite's own "smart" ALTER TABLE RENAME silently rewrites every
+  // *other* table's stored FK reference text to follow the rename (e.g. oc_subgroups'
+  // `REFERENCES oc_owners(id)` becomes `REFERENCES oc_owners_pre_autoincrement(id)`
+  // the moment oc_owners is renamed away) — corrupting any table that references one
+  // being rebuilt here but isn't itself in TABLES (oc_draw_box/oc_read_later/
+  // oc_story_box reference oc_users; oc_subgroups/oc_characters/oc_roles/oc_aus
+  // reference each other within this same list). legacy_alter_table=ON disables that
+  // rewrite, so a table recreated under its original name is transparently valid
+  // again to everything that already referenced that name. This is not hypothetical:
+  // the first production run of this script (before this fix) did exactly this and
+  // had to be repaired by hand — see CLAUDE.md.
+  db.exec('PRAGMA legacy_alter_table = ON');
   db.pragma('foreign_keys = OFF');
+
+  let violations = [];
   const run = db.transaction(() => {
     for (const t of TABLES) rebuildTable(t);
+    // Checked *inside* the transaction, before commit, specifically so that finding a
+    // violation throws here and better-sqlite3 rolls the whole transaction back —
+    // checking after commit (as this script originally did) can't undo anything.
+    violations = db.pragma('foreign_key_check');
+    if (violations.length) {
+      throw new Error(`foreign_key_check found ${violations.length} violation(s) — rolling back`);
+    }
   });
-  run();
 
-  const violations = db.pragma('foreign_key_check');
-  db.pragma('foreign_keys = ON');
-
-  if (violations.length) {
-    console.error('foreign_key_check found violations after migration:', violations);
+  try {
+    run();
+  } catch (err) {
+    db.pragma('foreign_keys = ON');
+    db.exec('PRAGMA legacy_alter_table = OFF');
+    console.error(err.message, violations);
     process.exitCode = 1;
     return;
   }
+
+  db.pragma('foreign_keys = ON');
+  db.exec('PRAGMA legacy_alter_table = OFF');
   console.log('foreign_key_check: OK, no violations.');
   console.log('Done.');
 }

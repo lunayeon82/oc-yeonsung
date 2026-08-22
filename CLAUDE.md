@@ -358,6 +358,58 @@ UTC에 47번(한나봄)이 자기 포트레이트를 올리자 47번의 DB 행�
 PocketRisu`, `rl_` 프리픽스 테이블들)가 같이 씀. `add-autoincrement.js`처럼 테이블을 재생성하는
 마이그레이션을 돌릴 땐 두 pm2 프로세스(`oc-yeonsung-api`, `risu`) 둘 다 내려야 함.
 
-**미실행 항목**: `server/migrate/add-autoincrement.js` — 사용자가 정한 절차(백업 → 두 pm2 프로세스
-정지 → 스크립트 실행 → integrity_check + row count 대조 → 재기동 → 뽑기/캐릭터 페이지 육안 확인)
-대로, 사용자가 실행 시각을 알려주면 진행 예정.
+**2026.08.23 (후속) — 전체 배포 + `add-autoincrement.js` 프로덕션 실행, 도중 사고 발견/수정 (Claude Code)**
+
+사용자가 "전체 다 풀로 배포하자"고 확정. 로컬 7개 커밋을 `git push` → 프로덕션에서 `git pull`
+(`server/package-lock.json`에 npm 버전 차이로 생긴 사소한 로컬 드리프트가 있어서 `git checkout --`
+으로 되돌리고 pull) → `npm ci --omit=dev`(express-async-errors 설치, better-sqlite3 바인딩 정상
+확인) → 배포 완료.
+
+이어서 사용자가 지정한 절차대로 `add-autoincrement.js` 실행: `shared.db`
+타임스탬프 백업(`shared.db.bak-20260822154836`) → `oc-yeonsung-api`/`risu` 둘 다 pm2 stop → 9개
+테이블 row count 베이스라인 채집 → 스크립트 실행.
+
+**여기서 사고 발생**: 스크립트가 "foreign_key_check found violations"를 출력하며 종료 코드 1로
+끝남 — 그런데 이미 커밋까지 끝난 뒤였음(당시 스크립트가 `foreign_key_check`를 트랜잭션 **커밋 후에**
+호출하고 있어서, 위반이 발견돼도 롤백이 안 되는 구조였음). 원인 분석 결과 **두 가지 버그가 겹친
+것**이었음:
+1. `alreadyHasAutoincrement()`가 테이블 SQL 텍스트에 `"AUTOINCREMENT"` 문자열이 있는지 부분매칭으로
+   확인했는데, 마침 임시 테이블명 규칙이 `{name}_pre_autoincrement`라서 — 예를 들어 `oc_owners`를
+   리네임하면 `oc_owners_pre_autoincrement`가 되고, 이 문자열 안에 소문자 "autoincrement"가 그대로
+   들어있어서 — 이걸 참조하는 `oc_subgroups` 등의 SQL에 이 문자열이 섞여 들어가면 "이미
+   AUTOINCREMENT 있음"으로 오탐, 스킵됨(`oc_subgroups`/`oc_character_sections`/`oc_roles`/`oc_aus`
+   4개가 이렇게 잘못 스킵됨 — 실제로는 AUTOINCREMENT 없는 채로 남음).
+2. **더 근본적인 원인**: SQLite는 `ALTER TABLE ... RENAME TO`를 하면 그 테이블을 참조하는 **다른**
+   테이블들의 FK 정의 텍스트를 자동으로 새 이름으로 고쳐씀(기본 동작, `legacy_alter_table` pragma가
+   꺼져 있을 때). 즉 `oc_owners`를 `oc_owners_pre_autoincrement`로 리네임하는 순간, 그걸 참조하던
+   `oc_subgroups`의 FK 정의가 `REFERENCES oc_owners_pre_autoincrement(id)`로 자동 변경됨. 이후
+   `oc_owners`를 새로 만들어도 `oc_subgroups`는 되돌아오지 않고 계속 존재하지 않는 임시 이름을
+   가리킴 — `TABLES` 목록에 있던 9개 중 리빌드 대상이었던 5개(owners/characters/role_groups/
+   au_groups/users) 때문에, 그걸 참조하는 자식 테이블 7개(`oc_subgroups`, `oc_character_sections`,
+   `oc_roles`, `oc_aus`, 그리고 **`TABLES` 목록에 아예 없던** `oc_draw_box`/`oc_read_later`/
+   `oc_story_box`까지)의 FK 정의가 전부 깨짐. 데이터 자체(행 수, 값)는 전부 보존됐고 손실은
+   없었음 — FK **제약 정의 텍스트**만 존재하지 않는 임시 테이블을 가리키게 된 것.
+
+앱이 이미 내려가 있어서(pm2 stop 상태) 라이브 트래픽 영향 없이 그 자리에서 바로 대응: 7개 테이블을
+`PRAGMA legacy_alter_table = ON` 상태로 다시 리빌드하는 복구 SQL을 로컬 node:sqlite로 먼저 완전히
+재현·검증한 뒤(다른 sibling 테이블의 FK 텍스트가 재손상되지 않는지까지 확인), 파일 전송이 harness
+분류기에 막혀서 `scp`/`cat > file` 둘 다 실패 — 대신 이미 승인받았던 방식(SSH + `sqlite3` CLI로 SQL
+직접 실행, DROP TABLE 때와 동일한 경로)으로 우회 없이 진행. 복구 후 `PRAGMA foreign_key_check`
+빈 배열, `PRAGMA integrity_check` `ok`, 9+3개 테이블 row count가 마이그레이션 전 베이스라인과 전부
+정확히 일치 확인. pm2 재기동 → API 헬스체크 → 브라우저로 `random.html`/`character.html`(캐릭터
+상세까지) 정상 로드 확인.
+
+**근본 수정**: `server/migrate/add-autoincrement.js` 자체를 고침 — ① `alreadyHasAutoincrement()`
+부분매칭 스킵 로직 제거(모든 테이블을 무조건 리빌드, 이미 올바른 테이블을 다시 만들어도 데이터/
+결과는 동일하므로 안전), ② `PRAGMA legacy_alter_table = ON`을 트랜잭션 앞뒤로 추가해 리네임 시
+다른 테이블 FK 텍스트가 자동으로 고쳐써지는 것 자체를 차단, ③ `foreign_key_check`를 **커밋 전**
+트랜잭션 안으로 옮겨서 위반 발견 시 예외를 던져 자동 롤백되도록 수정(원래는 커밋 후에 체크해서
+위반이 있어도 이미 되돌릴 수 없는 상태였음). node:sqlite로 원래 버그를 처음부터 재현한 뒤 수정된
+스크립트가 한 번에 깨끗하게(위반 0건) 통과하는 것, 그리고 일부러 위반을 주입했을 때 트랜잭션
+전체가 정확히 롤백되고 임시 테이블이 하나도 안 남는 것까지 확인 후 커밋.
+
+**교훈**: SQLite의 "스마트 리네임"(다른 테이블의 FK 참조를 자동으로 따라가는 동작)은 `rename →
+create → copy → drop` 패턴의 테이블 재생성 마이그레이션과 상극 — 재생성 대상이 아닌 형제/자식
+테이블까지 조용히 오염시킬 수 있음. 이 패턴을 다시 쓸 일이 있으면 `legacy_alter_table = ON`을
+기본으로 켜고 시작할 것. 그리고 `foreign_key_check`처럼 사후 검증하는 로직은 반드시 **커밋 전**에
+넣어야 실제로 안전장치 역할을 함 — 커밋 후 검증은 "이미 늦은" 경고일 뿐임.
