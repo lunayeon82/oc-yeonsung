@@ -231,24 +231,6 @@
         <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
         <span>캐릭터 목록</span>
       </a>
-      <div class="modal-card" id="myStorageCard">
-        <img src="assets/icon/all-v0.png" alt="" class="modal-card-icon">
-        <span>나만의 저장소</span>
-      </div>
-    </div>
-    <div class="enter-modal-links" id="userLinks" style="display:none">
-      <a class="modal-card" href="personal/kimgyong.html">
-        <img src="assets/icon/hedgehog-v0.png" alt="" class="modal-card-icon">
-        <span>김굥</span>
-      </a>
-      <a class="modal-card" href="personal/haji.html">
-        <img src="assets/icon/ferret-v0.png" alt="" class="modal-card-icon">
-        <span>하지</span>
-      </a>
-      <a class="modal-card" href="personal/yeming.html">
-        <img src="assets/icon/chick-v0.png" alt="" class="modal-card-icon">
-        <span>예밍</span>
-      </a>
     </div>
     <div class="enter-modal-links" id="storyLinks" style="display:none">
       <a class="modal-card" href="story/story-list.html">
@@ -275,30 +257,19 @@
 
   const enterModalTitle = document.getElementById('enterModalTitle');
   const mainLinks = document.getElementById('mainLinks');
-  const userLinks = document.getElementById('userLinks');
   const storyLinks = document.getElementById('storyLinks');
-  const myStorageCard = document.getElementById('myStorageCard');
   const storyCard = document.getElementById('storyCard');
   const modalBackBtn = document.getElementById('modalBackBtn');
 
   function showMainLinks() {
     enterModalTitle.textContent = '어디로 가시겠어요?';
     mainLinks.style.display = '';
-    userLinks.style.display = 'none';
     storyLinks.style.display = 'none';
     modalBackBtn.style.display = 'none';
-  }
-  function showUserLinks() {
-    enterModalTitle.textContent = '누구의 저장소로 가시겠어요?';
-    mainLinks.style.display = 'none';
-    userLinks.style.display = '';
-    storyLinks.style.display = 'none';
-    modalBackBtn.style.display = '';
   }
   function showStoryLinks() {
     enterModalTitle.textContent = '무엇을 보러 가시겠어요?';
     mainLinks.style.display = 'none';
-    userLinks.style.display = 'none';
     storyLinks.style.display = '';
     modalBackBtn.style.display = '';
   }
@@ -308,7 +279,6 @@
   enterOverlay.addEventListener('click', (e) => {
     if (e.target === enterOverlay) enterOverlay.classList.remove('show');
   });
-  myStorageCard.addEventListener('click', showUserLinks);
   storyCard.addEventListener('click', showStoryLinks);
   modalBackBtn.addEventListener('click', showMainLinks);
 
