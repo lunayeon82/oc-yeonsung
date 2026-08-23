@@ -23,8 +23,10 @@ server/
 │   ├── lib/thumbnail.js    sharp로 썸네일 생성
 │   └── middleware/auth.js  requireApiKey — X-API-Key 헤더 검사 (LUNA의 X-LUNA-Token과 동격)
 public/
-├── character.html          캐릭터 설정(상세/편집) 페이지
-├── random-admin.html       오너/그룹/캐릭터 트리 관리자 페이지 (역할/관계성 탭도 같이 있음)
+├── character.html          캐릭터 목록/상세/편집 페이지 — 오너·서브그룹·캐릭터 CRUD(추가/삭제/순서
+│                          변경/소속이동)까지 전부 여기서 함(4단계 이관 완료)
+├── random-admin.html       "뽑기 설정" — 역할/관계성(AU) 어휘 관리 전용(캐릭터 트리 관리 기능은
+│                          4단계에서 character.html로 이관되고 제거됨)
 ├── story/story-view.html   연성 글 읽기 페이지
 ├── story/story-write.html  연성 글 작성(캐릭터 태그는 실제 캐릭터 이름 중에서 선택)
 └── assets/api.js           전체 백엔드 API 클라이언트 (window.API)
@@ -55,9 +57,12 @@ public/
 - **3단계 (뽑기 UI 재구성)** — `random.html`을 `docs/RANDOM-UI-REDESIGN.md` 스펙대로 재구성
   (PC 2단 그리드/모바일 바텀시트, 위치별 오버라이드 UI 전면화, 히스토리에 리롤도 기록, 이모지 전부
   SVG 아이콘화). 커밋 `2adf5cc`~`86bf899`. 완료·배포됨.
-- **4단계 (예정, 아직 착수 전)** — 캐릭터 관리를 `random-admin.html`에서 `character.html` 편집
-  모드로 이관하고, `random-admin.html`은 역할/AU 어휘 관리만 남겨 "뽑기 설정"으로 개편. 캐릭터 편집은
-  기존 단건 patch API(`PUT /api/characters/:id`) 기반 전환을 검토 중.
+- **4단계 (캐릭터 관리 이관)** — 캐릭터 트리 관리(추가/삭제/순서변경/소속이동, 서브그룹 추가/삭제/
+  순서변경)를 `random-admin.html`에서 `character.html`로 이관하고, `random-admin.html`은 역할/AU
+  어휘 관리만 남겨 "뽑기 설정"으로 개편. 새 REST 엔드포인트 없이 기존 두 경로(단순 필드 편집은
+  `PUT /api/characters/:id`, 구조 변경은 전체교체 `PUT /api/characters`)만 재사용 — 자세한 배경은
+  아래 작업 로그(2026.08.23 4단계 항목) 참고. 커밋 `870d4c3`~`4a1c4ac`. 완료, **로컬 커밋까지만
+  — 미배포**.
 
 ## 문서 인덱스 (`docs/`)
 
@@ -467,3 +472,69 @@ create → copy → drop` 패턴의 테이블 재생성 마이그레이션과 �
 테이블까지 조용히 오염시킬 수 있음. 이 패턴을 다시 쓸 일이 있으면 `legacy_alter_table = ON`을
 기본으로 켜고 시작할 것. 그리고 `foreign_key_check`처럼 사후 검증하는 로직은 반드시 **커밋 전**에
 넣어야 실제로 안전장치 역할을 함 — 커밋 후 검증은 "이미 늦은" 경고일 뿐임.
+
+**2026.08.23 — `random.html` override "직접 고르기→공통 따르기" 되돌리기 실패 수정 (Claude Code)**
+
+사용자가 위치별 오버라이드에서 "직접 고르기"로 바꾼 뒤 "공통 따르기"로 되돌릴 수 없다고 보고.
+원인은 단순: `setOverrideMode()`가 되돌릴 때 `customConfirm()`을 호출하는데, `random.html`이
+`assets/confirm-modal.js`(그 함수를 정의하는 스크립트)를 로드하지 않고 있었음 — `random-admin.html`
+등 다른 페이지엔 이미 있던 스크립트 태그가 이 파일에만 빠져 있었음. ReferenceError가 나면서 그
+분기가 조용히 끊겨서, "직접 고르기"로 가는 방향(확인 모달 안 거침)은 멀쩡한데 되돌아오는 방향
+(확인 모달 거침)만 고장 나 있었던 것 — 증상이 딱 이 원인을 가리켰음.
+
+`<script src="assets/confirm-modal.js"></script>` 한 줄 추가로 수정. 로컬에 Node 기반 정적
+서버(`public/`만 서빙, 실제 서버는 안 띄움 — `random.html`이 API 실패 시 오프라인 폴백 데이터로
+동작하게 되어 있어서 이 버그 재현엔 백엔드가 필요 없었음)를 띄우고 Claude in Chrome으로 직접
+"직접 고르기" → 후보 선택 → "공통 따르기" → 확인 모달 → 확인까지 실제로 클릭해서 정상 전환되는
+것과 콘솔에 에러가 없는 것 확인 후 커밋(`3973e80`)·푸시·배포(서버가 거의 동시에 이미
+`git pull`돼 있었음 — 자동 배포 메커니즘은 못 찾음, 참고용으로만 기록) 완료.
+
+**2026.08.23 — 구조 정리 4단계: 캐릭터 관리를 `character.html`로 이관 (Claude Code)**
+
+CLAUDE.md 로드맵의 4단계 항목 착수. 사용자에게 계획을 먼저 제시하고 승인받은 뒤 진행(계획 문서는
+세션 로컬 plan 파일이라 리포엔 없음).
+
+**설계**: 새 REST 엔드포인트(캐릭터 단건 생성/삭제, 순서변경용 PATCH 등)를 만드는 대신 기존 두
+경로만 재사용하기로 결정 — ① 단순 필드 편집(이름/gender/isCouple/메모/customSections)은 기존
+`PUT /api/characters/:id`를 그대로 씀(서버가 이미 gender/isCouple을 받게 돼 있었는데
+`character.html`이 안 보내고 있었을 뿐이라 서버 변경 전혀 불필요), ② 구조 변경(캐릭터 추가/삭제/
+순서변경/소속이동, 서브그룹 추가/삭제/순서변경)은 `random-admin.html`이 쓰던 것과 똑같이 트리
+전체를 받아 JS에서 mutate하고 `PUT /api/characters`(전체교체)로 저장 — 이 경로는 8/17에 UPSERT
+기반으로 이미 안전성이 검증됐고(캐릭터 id·포트레이트가 저장마다 보존됨), 오너/서브그룹은 애초에
+클라이언트에 id가 노출되지도 않는 구조라(트리 응답에 자체가 없음) 별도 안정 id를 유지하려는 시도
+자체가 데이터 모델과 안 맞음. 이 사고 많은 영역(id 재배정 유실 8/17, 캐릭터48 교차오염 8/17,
+AUTOINCREMENT FK 손상 8/23)에 새 코드 경로를 늘리는 것보다, 이미 검증된 경로를 다른 페이지에서
+재사용하는 쪽이 훨씬 안전하다고 판단.
+
+**`character.html` 변경**: 상세뷰 편집모드에 gender/isCouple `<select>` 추가, "소속 이동"
+오너/서브그룹 `<select>` 2개 추가(`random-admin.html`의 `saveEdit()` splice-out/push-in 패턴
+포팅 — 같은 캐릭터 객체를 옮기는 거라 id/포트레이트/note/customSections 전부 보존됨), "캐릭터
+삭제" 버튼 추가(삭제 후 목록으로 이동). 리스트뷰엔 상세뷰의 "편집" 토글과 같은 패턴으로 "관리"
+토글을 추가(기본 꺼짐 — 실수 방지, 오너 추가/삭제 버튼을 애초에 숨겨둔 것과 같은 이유) — 켜면
+서브그룹 헤더에 ▲▼/그룹삭제/그룹추가, 캐릭터 카드에 ▲▼/삭제, 서브그룹마다 "+ 추가" 인라인 폼이
+나타남. 전부 `random-admin.html`의 `addChar`/`delChar`/`moveChar`/`moveGroup`/`addGroup`/
+`delGroup` 로직을 그대로 포팅(publicCode 계산 로직 포함). 오너 추가/삭제는 이관하지 않음 — 원래
+UI에서 숨겨져 있던 기능이라(3명 고정 정책) 그냥 옮기지 않고 끝냄.
+
+**`random-admin.html` 변경**: "🎭 캐릭터" 탭 전체 제거 — 패널 마크업(예전 세션에 렌더된 DOM이
+그대로 소스에 굳어있던 정적 스냅샷 잔재, `CLAUDE.md` 8/17 항목에서 "다음에 크게 손볼 일 있으면
+정리할 것"이라고 남겨뒀던 바로 그 부분 포함), `editModal`, 관련 JS(`renderChars`/`addChar`/
+`moveChar`/`moveGroup`/`saveEdit`/`delChar`/`delGroup`/`delOwner`/`migrateIds`/`saveChars` 등)
+전부 삭제. 탭바 2개(역할/관계성)로 축소, 페이지 타이틀·헤딩을 "뽑기 설정"으로 변경. 캐릭터 트리
+전용 CSS(`.item-row`/`.group-header`/`.tag-*` 등)도 같이 정리하되, roles/aus 코드가 공유해서
+쓰는 클래스(`.item-list`/`.item-edit`/`.item-del`/`.owner-*`)는 실제 사용처를 grep으로 재확인한
+뒤 그대로 남김.
+
+**검증**: 이 환경엔 여전히 `server/node_modules`의 better-sqlite3 네이티브 바인딩과 R2 자격증명이
+없어서, 이번 세션 초반(위 `random.html` 항목)에 만든 `node:sqlite` 기반 better-sqlite3 호환
+셔임을 확장해 실제 `server/src/app.js`를 그대로 로컬에 띄우고(정적 파일도 같은 오리진에서 서빙),
+캐릭터 추가/삭제/순서변경/소속이동/서브그룹 추가·삭제 시나리오 22개를 실제 HTTP 라운드트립으로
+검증(id·포트레이트가 이동/무관한 삭제를 거쳐도 보존되는 것, 새 캐릭터가 서버 id를 정상 발급받는
+것, 삭제된 서브그룹의 멤버가 실제로 DB에서 사라지는 것 등). 이어서 Claude in Chrome으로 두 파일
+모두 실제 클릭 시나리오(캐릭터 추가→그리드 반영, 삭제 확인모달→목록에서 제거, 상세뷰에서 성별+소속
+변경→저장→새로고침 후 유지, `random-admin.html` 2탭 렌더링과 역할 태그 추가)까지 확인하고 콘솔
+에러 없음 확인. `node --check`로 두 파일의 인라인 `<script>` 문법도 검증.
+
+로컬 2개 커밋(`870d4c3` character.html, `4a1c4ac` random-admin.html)으로 완료. **작업 규칙대로
+로컬 커밋까지만 — 아직 미배포**, 다음에 배포할 때 브라우저로 최소 캐릭터 추가/삭제/소속이동과
+`random-admin.html`이 2탭으로만 보이는지 실데이터로 한 번 확인할 것.
