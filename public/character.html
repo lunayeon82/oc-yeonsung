@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/pwa.js" defer></script>
 <link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/modal.css">
 <style>
   @font-face {
     font-family: 'ko-font';
@@ -653,6 +654,17 @@
     flex-shrink: 0;
   }
   .mgmt-del-btn:hover { background: rgba(180,100,90,0.1); }
+  .mgmt-edit-btn {
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 10px;
+    border: 1px solid rgba(180,160,130,0.3);
+    background: transparent;
+    color: #8a7e6b;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .mgmt-edit-btn:hover { background: rgba(180,160,130,0.1); }
   .char-cell { display: flex; flex-direction: column; gap: 4px; }
   .char-manage-bar { display: flex; gap: 4px; justify-content: center; }
   .mgmt-add-row {
@@ -724,6 +736,48 @@
 </div>
 
 <div class="toast" id="toast">복사되었습니다</div>
+
+<div class="modal-overlay" id="quickEditModal" onclick="if(event.target===this)closeQuickEditModal()">
+  <div class="modal">
+    <button class="modal-exit" onclick="closeQuickEditModal()"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
+    <h3>캐릭터 빠른 편집</h3>
+    <div class="modal-field">
+      <label class="modal-label">이름</label>
+      <input class="modal-input" id="qeName" placeholder="캐릭터 이름">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">오너</label>
+      <select class="modal-select" id="qeOwnerSelect" onchange="updateQuickEditGroupSelect()"></select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">그룹</label>
+      <select class="modal-select" id="qeGroupSelect"></select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">성별</label>
+      <select class="modal-select" id="qeGender">
+        <option value="0">♂ 남성</option>
+        <option value="1">♀ 여성</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">커플 여부</label>
+      <select class="modal-select" id="qeCouple">
+        <option value="0">솔로</option>
+        <option value="1">커플</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">메모</label>
+      <textarea class="modal-input" id="qeNote" rows="3" style="resize:vertical" placeholder="짧은 메모 (선택 사항)"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeQuickEditModal()">취소</button>
+      <button class="modal-save" onclick="saveQuickEdit()">저장</button>
+    </div>
+  </div>
+</div>
 
 <script src="assets/personal-nav.js"></script>
 <script src="assets/api.js"></script>
@@ -1325,6 +1379,7 @@ function renderList() {
           <div class="char-manage-bar">
             <button class="mgmt-arrow-btn" onclick="moveCharacterInList(${oi},${si},${ii},-1)" ${ii === 0 ? 'disabled' : ''} title="위로">▲</button>
             <button class="mgmt-arrow-btn" onclick="moveCharacterInList(${oi},${si},${ii},1)" ${ii === sub.characters.length - 1 ? 'disabled' : ''} title="아래로">▼</button>
+            <button class="mgmt-edit-btn" onclick="openQuickEditModal(${oi},${si},${ii})">변경</button>
             <button class="mgmt-del-btn" onclick="deleteCharacterInList(${oi},${si},${ii})">삭제</button>
           </div>` : '';
         return `<div class="char-cell">${card}${manageBar}</div>`;
@@ -1471,6 +1526,75 @@ function addGroupInList(oi) {
   const code = String(maxCode + 1).padStart(2, '0');
 
   ownerGroup.subgroups.push({ label, code, characters: [] });
+  saveListTree();
+}
+
+// ============ QUICK EDIT MODAL (관리 모드의 "변경" 버튼) ============
+// random-admin.html의 editModal/openEditModal/saveEdit()과 동일한 필드·로직을 그대로 옮긴 것.
+let _quickEditTarget = null; // { oi, si, ii }
+
+function openQuickEditModal(oi, si, ii) {
+  _quickEditTarget = { oi, si, ii };
+  const it = _listData.owners[oi].subgroups[si].characters[ii];
+  document.getElementById('qeName').value = it.name;
+  document.getElementById('qeGender').value = it.gender;
+  document.getElementById('qeCouple').value = it.isCouple;
+  document.getElementById('qeNote').value = it.note || '';
+
+  const ownerSel = document.getElementById('qeOwnerSelect');
+  ownerSel.innerHTML = _listData.owners.map(o => `<option value="${esc(o.name)}">${esc(o.name)}</option>`).join('');
+  ownerSel.value = _listData.owners[oi].name;
+  updateQuickEditGroupSelect();
+  document.getElementById('qeGroupSelect').value = _listData.owners[oi].subgroups[si].label;
+
+  document.getElementById('quickEditModal').classList.add('open');
+}
+
+function updateQuickEditGroupSelect() {
+  const ownerName = document.getElementById('qeOwnerSelect').value;
+  const owner = _listData.owners.find(o => o.name === ownerName);
+  const sel = document.getElementById('qeGroupSelect');
+  sel.innerHTML = owner ? owner.subgroups.map(s => `<option value="${esc(s.label)}">${esc(s.label)}</option>`).join('') : '';
+}
+
+function closeQuickEditModal() {
+  document.getElementById('quickEditModal').classList.remove('open');
+  _quickEditTarget = null;
+}
+
+function saveQuickEdit() {
+  if (!_quickEditTarget) return;
+  const { oi, si, ii } = _quickEditTarget;
+  const it = _listData.owners[oi].subgroups[si].characters[ii];
+
+  const newName = document.getElementById('qeName').value.trim();
+  if (!newName) { showToast('이름을 입력해주세요'); return; }
+
+  const ownerName = document.getElementById('qeOwnerSelect').value;
+  const groupLabel = document.getElementById('qeGroupSelect').value;
+  const targetOwner = _listData.owners.find(o => o.name === ownerName);
+  const targetSub = targetOwner && targetOwner.subgroups.find(s => s.label === groupLabel);
+  if (!targetOwner || !targetSub) { showToast('그룹을 선택해주세요'); return; }
+
+  const siblings = targetSub.characters;
+  if (siblings.some(item => item !== it && item.name === newName)) {
+    showToast('같은 그룹에 동일한 이름이 이미 있어요');
+    return;
+  }
+
+  it.name = newName;
+  it.gender = parseInt(document.getElementById('qeGender').value);
+  it.isCouple = parseInt(document.getElementById('qeCouple').value);
+  it.note = document.getElementById('qeNote').value.trim();
+
+  // 오너/그룹이 바뀌었으면 기존 그룹에서 빼고 새 그룹으로 옮김 (캐릭터 객체 자체를 그대로
+  // 옮기는 거라 id/포트레이트/customSections 등 나머지 내용은 그대로 보존됨).
+  if (siblings !== _listData.owners[oi].subgroups[si].characters) {
+    _listData.owners[oi].subgroups[si].characters.splice(ii, 1);
+    siblings.push(it);
+  }
+
+  closeQuickEditModal();
   saveListTree();
 }
 
