@@ -8,8 +8,13 @@ OC(창작 캐릭터) 연성(팬픽)·설정 공유 웹앱. 정적 프론트(`pub
 Express/better-sqlite3 백엔드(`server/`). 이미지는 Cloudflare R2(`img.lunayeon.com` 커스텀 도메인)에
 저장하고 공개 URL로 직접 서빙(LUNA와 달리 프록시 없이 R2 URL이 그대로 노출됨). 사용자는 김굥/하지/예밍
 3명 고정(`server/src/db.js` SEED_USERS). 원래 Firebase(Firestore)였다가 SQLite+R2로 이관 완료
-(`server/migrate/` 스크립트, `server/DEPLOY.md` 참고). 배포는 Lightsail + nginx + pm2, 서버에서
-직접 `git pull` (LUNA처럼 GitHub Actions 자동 배포 아님 — `DEPLOY.md`가 수동 런북).
+(`server/migrate/` 스크립트, `server/DEPLOY.md` 참고). 배포는 Lightsail + nginx + pm2 — **그리고
+`.github/workflows/deploy.yml`이 `main` push마다 자동으로 실행됨**(SSH로 서버 접속 →
+`git pull` → `npm install` → `pm2 restart oc-yeonsung-api`). 즉 **`git push`가 곧 배포**다.
+2026.08.23까지 이 문서에 "LUNA처럼 자동 배포 아님, `DEPLOY.md`가 수동 런북"이라고 잘못 적혀
+있었음(2026.08.23 세션 중 실제로는 매 push마다 자동 배포되고 있었다는 게 드러나서 정정 —
+아래 작업 로그 참고). `DEPLOY.md`는 최초 서버 세팅·마이그레이션·nginx 설정 변경 같은 수동
+작업에만 유효하고, 평상시 코드 배포는 이 워크플로우가 전부 처리함.
 
 ## 리포 구조
 
@@ -34,9 +39,10 @@ public/
 
 ## 작업 규칙
 
-- **로컬 커밋까지만.** `git push`·프로덕션 배포(서버에서 `git pull`)·DB 변경(마이그레이션 실행 등)은
+- **로컬 커밋까지만.** `git push`(= 자동 배포 트리거, 위 참고)·DB 변경(마이그레이션 실행 등)은
   사용자가 명시적으로 지시할 때만 진행한다. 사용자가 "대기"라고 하면 그 자리에서 멈추고 다음 지시를
-  기다린다 — 실행하지 않는다.
+  기다린다 — 실행하지 않는다. **`git push` 자체가 프로덕션 배포이니, push 승인 = 배포 승인이다** —
+  push 따로, "배포"라는 별도 수동 단계 따로가 아님.
 - **마이그레이션 검증은 실제 프로덕션 스키마 복사본(FK 포함)으로 할 것.** 로컬에서 즉석으로 만든
   단순화된 스키마로 검증하면 실제 FK 관계를 놓쳐서 8/23 `add-autoincrement.js` 사고 같은 문제를
   못 잡는다.
@@ -61,8 +67,7 @@ public/
   순서변경)를 `random-admin.html`에서 `character.html`로 이관하고, `random-admin.html`은 역할/AU
   어휘 관리만 남겨 "뽑기 설정"으로 개편. 새 REST 엔드포인트 없이 기존 두 경로(단순 필드 편집은
   `PUT /api/characters/:id`, 구조 변경은 전체교체 `PUT /api/characters`)만 재사용 — 자세한 배경은
-  아래 작업 로그(2026.08.23 4단계 항목) 참고. 커밋 `870d4c3`~`4a1c4ac`. 완료, **로컬 커밋까지만
-  — 미배포**.
+  아래 작업 로그(2026.08.23 4단계 항목) 참고. 커밋 `870d4c3`~`4a1c4ac`. 완료·배포됨.
 
 ## 문서 인덱스 (`docs/`)
 
@@ -535,6 +540,19 @@ UI에서 숨겨져 있던 기능이라(3명 고정 정책) 그냥 옮기지 않�
 변경→저장→새로고침 후 유지, `random-admin.html` 2탭 렌더링과 역할 태그 추가)까지 확인하고 콘솔
 에러 없음 확인. `node --check`로 두 파일의 인라인 `<script>` 문법도 검증.
 
-로컬 2개 커밋(`870d4c3` character.html, `4a1c4ac` random-admin.html)으로 완료. **작업 규칙대로
-로컬 커밋까지만 — 아직 미배포**, 다음에 배포할 때 브라우저로 최소 캐릭터 추가/삭제/소속이동과
-`random-admin.html`이 2탭으로만 보이는지 실데이터로 한 번 확인할 것.
+로컬 3개 커밋(`870d4c3` character.html, `4a1c4ac` random-admin.html, `2330cbd` 이 문서)으로 완료,
+사용자 승인 후 `git push` → GitHub Actions(`deploy.yml`, run #42)가 자동으로 배포 완료(`pm2
+status` uptime 갱신·에러 로그 없음·`/api/health` 200 확인). 다음에 이어서 볼 사람은 브라우저로
+실데이터 기준 캐릭터 추가/삭제/소속이동과 `random-admin.html`이 2탭으로만 보이는지 한 번 더
+확인해볼 것.
+
+**같은 세션에서 배포 프로세스 서술 오류 발견/정정**: 이 문서 맨 위 "프로젝트가 뭔가" 절이 그동안
+"LUNA처럼 GitHub Actions 자동 배포 아님, `DEPLOY.md`가 수동 런북"이라고 적혀 있었는데, 실제로는
+`.github/workflows/deploy.yml`이 이미 존재해서 `main` push마다 자동으로 SSH 배포(`git pull` →
+`npm install` → `pm2 restart`)가 실행되고 있었음 — GitHub Actions API로 실행 이력을 확인해보니
+41번 전부 성공, 이 리포의 모든 최근 push가 예외 없이 자동 배포되고 있었던 것으로 확인됨(정확히
+언제부터 이 워크플로우가 있었는지, 언제 이 문서 서술이 틀리게 됐는지는 미확인). 실제로 직전 세션
+(위 `random.html` customConfirm 항목)에서 "커밋 후 서버에 이미 pull이 돼 있던" 게 바로 이 자동
+배포였음 — 당시엔 원인을 못 찾고 참고용으로만 남겨뒀었음. 문서의 배포 관련 서술(맨 위 요약,
+작업 규칙 절)을 실제 동작에 맞게 정정함. **결론: 이 리포에서 `git push`는 사실상 배포 버튼이다
+— push 승인은 곧 배포 승인으로 취급할 것.**
