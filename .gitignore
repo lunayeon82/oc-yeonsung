@@ -60,3 +60,6 @@ server/data/*.db-shm
 server/data/*.db-wal
 server/migrate/dump/
 server/migrate/serviceAccountKey.json
+
+# Claude Code 작업용 스크래치패드 (테스트 하니스, 임시 이미지 등)
+.scratch/

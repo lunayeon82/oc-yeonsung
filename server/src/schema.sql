@@ -196,3 +196,20 @@ CREATE TABLE IF NOT EXISTS oc_meta (
   key TEXT PRIMARY KEY,
   value TEXT
 );
+
+-- 연성 글 본문에 <img="Do A-rang acting coy"> 형태로 삽입하는 감정 에셋.
+-- lookup_key는 본문 토큰과 대조하기 위한 정규화 키(영숫자만 남기고 소문자화)로,
+-- 이름/감정의 언더바·점·띄어쓰기 표기가 달라도 같은 이미지를 찾을 수 있게 한다.
+CREATE TABLE IF NOT EXISTS oc_emotes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  char_name TEXT NOT NULL,
+  emotion TEXT NOT NULL,
+  variant INTEGER NOT NULL DEFAULT 1,
+  lookup_key TEXT NOT NULL,
+  image_path TEXT NOT NULL,
+  thumb_path TEXT,
+  created_at INTEGER NOT NULL,
+  UNIQUE (char_name, emotion, variant)
+);
+CREATE INDEX IF NOT EXISTS idx_oc_emotes_lookup ON oc_emotes(lookup_key);
+CREATE INDEX IF NOT EXISTS idx_oc_emotes_char ON oc_emotes(char_name, emotion, variant);

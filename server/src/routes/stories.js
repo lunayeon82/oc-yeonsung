@@ -3,6 +3,7 @@ const db = require('../db');
 const { requireApiKey } = require('../middleware/auth');
 const { generatePid } = require('../lib/pid');
 const { encodeCursor, decodeCursor, placeholders, splitParam } = require('../lib/pagination');
+const { stripTokens } = require('../lib/emoteToken');
 
 const router = express.Router();
 
@@ -46,7 +47,9 @@ const EXCERPT_LENGTH = 150;
 
 function extractExcerpt(chapters) {
   const firstBody = (chapters[0] && chapters[0].body) || '';
-  const text = firstBody.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  // 감정 에셋 토큰은 이스케이프된 형태(&lt;img=...&gt;)로 저장돼 아래 태그 제거에 안 걸리므로
+  // 먼저 없앤다. 안 그러면 목록 미리보기에 토큰 원문이 그대로 노출된다.
+  const text = stripTokens(firstBody).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   if (text.length <= EXCERPT_LENGTH) return text;
   return `${text.slice(0, EXCERPT_LENGTH)}…`;
 }
