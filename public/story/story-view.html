@@ -619,6 +619,31 @@
     border-color: #b8a9c9;
   }
 
+  /* 글 전체(모든 챕터) 댓글 수 — 목록에서는 보이는데 글 안에서는 안 보여서 추가했다. */
+  .comment-toggle-btn { position: relative; }
+  .comment-count-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: #b8a9c9;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+    display: none;
+  }
+  .comment-count-badge.show { display: block; }
+  .comment-toggle-btn.active .comment-count-badge {
+    background: #fff;
+    color: #8a7a9a;
+  }
+
   .bookmark-btn {
     width: 34px;
     height: 34px;
@@ -877,7 +902,7 @@
       </div>
     </div>
     <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
-    <button class="comment-toggle-btn" id="commentToggleBtn" title="댓글" style="display:none;">💬</button>
+    <button class="comment-toggle-btn" id="commentToggleBtn" title="댓글" style="display:none;">💬<span class="comment-count-badge" id="commentCountBadge"></span></button>
 
     <div class="settings-wrap" id="settingsWrap" style="display:none;">
       <button class="settings-btn" id="settingsBtn" title="설정">⚙</button>
@@ -1317,10 +1342,18 @@
     return ch.title ? `${idx + 1}화 · ${ch.title}` : `${idx + 1}화`;
   }
 
+  // 챕터별이 아니라 글 전체 댓글 수 — comments에는 모든 챕터의 댓글이 들어있다.
+  function updateCommentCount() {
+    const badge = document.getElementById('commentCountBadge');
+    badge.textContent = comments.length > 99 ? '99+' : String(comments.length);
+    badge.classList.toggle('show', comments.length > 0);
+  }
+
   async function loadComments() {
     try {
       comments = await API.listComments('story', pid);
       renderComments();
+      updateCommentCount();
     } catch (e) {
       console.error('댓글 로드 실패:', e);
     }
