@@ -97,6 +97,7 @@
       fd.append('variant', String(variant || 1));
       return request('POST', '/emotes', { formData: fd });
     },
+    renameEmote: (id, body) => request('PATCH', `/emotes/${id}`, { json: body }),
     deleteEmote: (id) => request('DELETE', `/emotes/${id}`),
 
     // 댓글

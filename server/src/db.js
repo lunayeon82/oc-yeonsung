@@ -23,6 +23,8 @@ function ensureColumn(table, column, definition) {
 ensureColumn('oc_stories', 'excerpt', "TEXT NOT NULL DEFAULT ''");
 ensureColumn('oc_characters', 'portrait_path', 'TEXT');
 ensureColumn('oc_characters', 'portrait_updated_at', 'INTEGER');
+// 감정 에셋은 같은 파일명으로 덮어쓰며 교체하므로(URL이 안 바뀜) 캐시버스팅용 버전이 필요하다.
+ensureColumn('oc_emotes', 'updated_at', 'INTEGER');
 
 const SEED_USERS = ['김굥', '하지', '예밍'];
 const insertUser = db.prepare('INSERT OR IGNORE INTO oc_users (name, sort_order) VALUES (?, ?)');

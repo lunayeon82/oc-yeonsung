@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연성대나무숲 — 표정 에셋 관리</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f4efe6">
+<link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png">
+<script src="/assets/pwa.js" defer></script>
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/modal.css">
+<style>
+  body {
+    margin: 0;
+    background: var(--page-gradient);
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    color: var(--text);
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 4rem;
+  }
+
+  .panel {
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .panel-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.2rem;
+  }
+  .panel-desc {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin: 0 0 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* ── 업로드 존 ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 1.8rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: rgba(255,255,255,0.35);
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--violet);
+    background: var(--violet-dim);
+  }
+  .drop-zone .big { font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .drop-zone .small { font-size: 0.72rem; color: var(--text-dim); line-height: 1.7; }
+  .drop-zone code {
+    background: var(--surface3);
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+  }
+
+  /* ── 스테이징 목록 ── */
+  .stage-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.9rem 0 0.6rem;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+  .badge.ok      { background: var(--mint-dim);   color: var(--mint); }
+  .badge.replace { background: var(--amber-dim);  color: var(--amber); }
+  .badge.unknown { background: var(--violet-dim); color: var(--violet); }
+  .badge.bad     { background: rgba(194,114,127,0.15); color: var(--rose); }
+
+  .stage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.45rem 0.55rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .stage-row.bad { border-color: var(--rose); }
+  .stage-row.unknown { border-color: var(--violet); }
+
+  .stage-row img {
+    width: 44px;
+    aspect-ratio: 701 / 1024;
+    object-fit: contain;
+    border-radius: 4px;
+    background: var(--surface3);
+  }
+
+  .stage-fields { min-width: 0; }
+  .stage-file {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0.25rem;
+  }
+  .stage-inputs { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .stage-inputs input, .stage-inputs select {
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.8);
+    font-size: 0.72rem;
+    font-family: var(--font-body);
+    color: var(--text);
+    min-width: 0;
+  }
+  .stage-inputs .f-char { width: 110px; }
+  .stage-inputs .f-emotion { width: 150px; }
+  .stage-inputs .f-variant { width: 46px; }
+
+  .stage-note {
+    font-size: 0.68rem;
+    margin-top: 0.25rem;
+    line-height: 1.5;
+  }
+  .stage-note .suggest {
+    background: none;
+    border: none;
+    color: var(--violet);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-family: var(--font-body);
+    padding: 0;
+  }
+
+  .row-del {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.3rem;
+  }
+  .row-del:hover { color: var(--rose); }
+
+  /* ── 버튼 ── */
+  .btn {
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover:not(:disabled) { background: var(--surface2); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.primary {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: #fff;
+  }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.05); }
+  .btn.danger { color: var(--rose); border-color: rgba(194,114,127,0.4); }
+
+  .actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.8rem; flex-wrap: wrap; }
+
+  .progress {
+    flex: 1;
+    min-width: 140px;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress.show { display: block; }
+  .progress .bar { height: 100%; width: 0; background: var(--violet); transition: width 0.2s; }
+  .progress-text { font-size: 0.72rem; color: var(--text-dim); }
+
+  /* ── 등록된 목록 ── */
+  .char-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.7rem; align-items: center; }
+  .char-tab {
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 0.74rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+  }
+  .char-tab.active { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .char-tab .count { opacity: 0.7; font-size: 0.68rem; margin-left: 0.2rem; }
+
+  .emote-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 0.5rem;
+  }
+  .emote-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.6);
+    padding: 0.3rem;
+    text-align: center;
+    position: relative;
+  }
+  .emote-card img {
+    width: 100%;
+    aspect-ratio: 701 / 1024;
+    object-fit: contain;
+    display: block;
+  }
+  .emote-card .name {
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .emote-card .card-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 0.2rem;
+  }
+  .emote-card .card-actions button {
+    background: none;
+    border: none;
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: var(--font-body);
+    padding: 0;
+  }
+  .emote-card .card-actions button:hover { color: var(--violet); }
+  .emote-card .card-actions .del:hover { color: var(--rose); }
+
+  /* ── 감정 목록 ── */
+  .emotion-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+  .emotion-chip {
+    font-size: 0.66rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 10px;
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .emotion-chip.partial { border-color: var(--amber); color: var(--amber); }
+
+  .empty { text-align: center; color: var(--text-muted); font-size: 0.78rem; padding: 1.5rem 0; }
+
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: var(--surface);
+    padding: 0.6rem 1.1rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 3000;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  @media (max-width: 560px) {
+    .stage-row { grid-template-columns: 36px 1fr auto; }
+    .stage-inputs .f-char, .stage-inputs .f-emotion { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="nav-link nav-corner">← 홈</a>
+
+<header class="page-hero">
+  <h1>표정 에셋 관리</h1>
+</header>
+
+<div class="container">
+
+  <!-- 업로드 -->
+  <div class="panel">
+    <h2 class="panel-title">이미지 올리기</h2>
+    <p class="panel-desc">
+      파일명이 <code>이름.감정.번호.webp</code>면 캐릭터·감정을 알아서 읽어와요 (예: <code>Do_A-rang.smile.1.webp</code>).
+      규칙과 달라도 아래에서 직접 고칠 수 있어요. 올리기 전에 자동으로 크기를 줄이니
+      원본을 그대로 넣으면 됩니다.
+    </p>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="big">이미지를 여기에 끌어다 놓거나 눌러서 고르세요</div>
+      <div class="small">
+        여러 장 한꺼번에 가능 · png/jpg/webp<br>
+        올릴 때 본문용(가로 640) + 목록용(가로 160)으로 다시 저장돼요
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+
+    <div id="stageArea" style="display:none;">
+      <div class="stage-summary" id="stageSummary"></div>
+      <div class="stage-list" id="stageList"></div>
+      <div class="actions">
+        <button class="btn primary" id="uploadBtn">올리기</button>
+        <button class="btn" id="clearBtn">비우기</button>
+        <div class="progress" id="progress"><div class="bar" id="progressBar"></div></div>
+        <span class="progress-text" id="progressText"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 등록된 감정 목록 -->
+  <div class="panel">
+    <h2 class="panel-title">쓰이고 있는 감정 이름 <span id="emotionCount" style="color:var(--text-muted);font-weight:400;"></span></h2>
+    <p class="panel-desc">
+      이 목록에 없는 이름으로 올리면 올리기 전에 알려줘요. 주황색은 일부 캐릭터에만 있는 감정이에요.
+    </p>
+    <div class="emotion-chips" id="emotionChips"></div>
+  </div>
+
+  <!-- 등록된 에셋 -->
+  <div class="panel">
+    <h2 class="panel-title">등록된 이미지</h2>
+    <p class="panel-desc">
+      이름을 잘못 올렸으면 <b>이름변경</b>으로 고칠 수 있어요 (파일도 같이 옮겨집니다).
+      같은 이름으로 다시 올리면 이미지가 교체돼요.
+    </p>
+    <div class="char-tabs" id="charTabs"></div>
+    <div class="emote-grid" id="emoteGrid"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+</div>
+
+<!-- 이름 변경 모달 (random-admin.html 등과 같은 modal.css 껍데기) -->
+<div class="modal-overlay" id="renameOverlay">
+  <div class="modal">
+    <button type="button" class="modal-exit" id="renameExit"><img src="assets/modal/exit.png" alt="닫기"></button>
+    <img class="modal-ribbon" src="assets/modal/ribbon.png" alt="">
+    <h3 id="renameTitle">이름 변경</h3>
+    <div class="modal-field">
+      <label class="modal-label" for="renameEmotion">감정 이름</label>
+      <input type="text" class="modal-input" id="renameEmotion" placeholder="예: smile">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label" for="renameVariant">변형 번호</label>
+      <input type="number" class="modal-input" id="renameVariant" min="1" value="1">
+    </div>
+    <div class="modal-actions stretch">
+      <button type="button" class="modal-cancel" id="renameCancel">취소</button>
+      <button type="button" class="modal-save" id="renameSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/api.js"></script>
+<script src="assets/confirm-modal.js"></script>
+<script>
+  // 본문용/목록용 크기 — server/scripts/upload-emotes.js와 같은 규격이어야 한다.
+  const MAIN_WIDTH = 640;
+  const MAIN_QUALITY = 0.82;
+  const THUMB_WIDTH = 160;
+  const THUMB_QUALITY = 0.75;
+
+  const NAME_RE = /^(.+?)\.(.+?)\.(\d+)\.(webp|png|jpe?g)$/i;
+  const SAFE_SEGMENT = /^[A-Za-z0-9_-]{1,64}$/;
+
+  let emotes = [];
+  let knownEmotions = [];   // 이미 쓰이고 있는 감정 이름
+  let knownChars = [];
+  let currentChar = null;
+  let staged = [];
+  let uploading = false;
+
+  // ── 유틸 ──
+  function escapeHtml(text) {
+    return String(text == null ? '' : text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  // 오타 잡아주기용 편집 거리 — "smiling"을 올렸을 때 "smile"을 제안하기 위한 것.
+  function editDistance(a, b) {
+    const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let diag = prev[0];
+      prev[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const tmp = prev[j];
+        prev[j] = Math.min(
+          prev[j] + 1,
+          prev[j - 1] + 1,
+          diag + (a[i - 1] === b[j - 1] ? 0 : 1)
+        );
+        diag = tmp;
+      }
+    }
+    return prev[b.length];
+  }
+
+  function closestEmotion(name) {
+    const lower = name.toLowerCase();
+    let best = null;
+    let bestScore = Infinity;
+    knownEmotions.forEach((e) => {
+      const d = editDistance(lower, e.toLowerCase());
+      if (d < bestScore) { bestScore = d; best = e; }
+    });
+    // 너무 동떨어진 이름까지 억지로 제안하지 않는다.
+    return best && bestScore <= Math.max(2, Math.floor(name.length / 3)) ? best : null;
+  }
+
+  // ── 이미지 변환 ──
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽지 못했어요')); };
+      img.src = url;
+    });
+  }
+
+  function resizeToWebp(source, maxWidth, quality) {
+    const srcW = source.naturalWidth || source.width;
+    const srcH = source.naturalHeight || source.height;
+    const scale = Math.min(1, maxWidth / srcW);
+    const w = Math.max(1, Math.round(srcW * scale));
+    const h = Math.max(1, Math.round(srcH * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(source, 0, 0, w, h);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('변환 실패')), 'image/webp', quality);
+    });
+  }
+
+  // ── 로드 ──
+  async function loadEmotes() {
+    try {
+      const res = await API.listEmotes();
+      emotes = res.items || [];
+      knownChars = [...new Set(emotes.map((e) => e.charName))];
+      knownEmotions = [...new Set(emotes.map((e) => e.emotion))].sort();
+      if (!currentChar || !knownChars.includes(currentChar)) currentChar = knownChars[0] || null;
+      renderEmotionChips();
+      renderCharTabs();
+      renderGrid();
+      if (staged.length) renderStage();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('emoteGrid').innerHTML = '<div class="empty">목록을 불러오지 못했어요</div>';
+    }
+  }
+
+  function renderEmotionChips() {
+    document.getElementById('emotionCount').textContent = `(${knownEmotions.length}종)`;
+    const wrap = document.getElementById('emotionChips');
+    if (!knownEmotions.length) { wrap.innerHTML = '<span class="empty">아직 없어요</span>'; return; }
+    wrap.innerHTML = knownEmotions.map((em) => {
+      const owners = new Set(emotes.filter((e) => e.emotion === em).map((e) => e.charName));
+      const partial = owners.size < knownChars.length;
+      const title = partial ? `${owners.size}/${knownChars.length}명만 가지고 있어요` : `${owners.size}명 전부`;
+      return `<span class="emotion-chip${partial ? ' partial' : ''}" title="${escapeHtml(title)}">${escapeHtml(em)}</span>`;
+    }).join('');
+  }
+
+  function renderCharTabs() {
+    const tabs = document.getElementById('charTabs');
+    if (!knownChars.length) { tabs.innerHTML = ''; return; }
+    tabs.innerHTML = knownChars.map((c) => {
+      const n = emotes.filter((e) => e.charName === c).length;
+      return `<button class="char-tab${c === currentChar ? ' active' : ''}" data-char="${escapeHtml(c)}">${escapeHtml(c.replace(/_/g, ' '))}<span class="count">${n}</span></button>`;
+    }).join('');
+    tabs.querySelectorAll('.char-tab').forEach((btn) => {
+      btn.addEventListener('click', () => { currentChar = btn.dataset.char; renderCharTabs(); renderGrid(); });
+    });
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('emoteGrid');
+    const list = emotes.filter((e) => e.charName === currentChar);
+    if (!list.length) { grid.innerHTML = '<div class="empty">등록된 이미지가 없어요</div>'; return; }
+
+    grid.innerHTML = list.map((e) => {
+      const label = e.emotion + (e.variant > 1 ? ` (${e.variant})` : '');
+      return `
+        <div class="emote-card" data-id="${e.id}">
+          <img src="${escapeHtml(e.thumbUrl || e.url)}" alt="${escapeHtml(label)}" loading="lazy">
+          <div class="name" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+          <div class="card-actions">
+            <button class="rename">이름변경</button>
+            <button class="del">삭제</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.emote-card').forEach((card) => {
+      const emote = emotes.find((e) => String(e.id) === card.dataset.id);
+      card.querySelector('.rename').addEventListener('click', () => renameEmote(emote));
+      card.querySelector('.del').addEventListener('click', () => deleteEmote(emote));
+    });
+  }
+
+  // ── 파일 받기 ──
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+  ['dragenter', 'dragover'].forEach((ev) => {
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach((ev) => {
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+  });
+  dropZone.addEventListener('drop', (e) => {
+    const files = [...(e.dataTransfer.files || [])].filter((f) => f.type.startsWith('image/'));
+    addFiles(files);
+  });
+
+  function parseName(fileName) {
+    const m = NAME_RE.exec(fileName);
+    if (!m) return { charName: '', emotion: '', variant: 1 };
+    return { charName: m[1], emotion: m[2], variant: Number(m[3]) };
+  }
+
+  function addFiles(files) {
+    if (!files.length) return;
+    files.forEach((file) => {
+      const parsed = parseName(file.name);
+      staged.push({
+        file,
+        fileName: file.name,
+        previewUrl: URL.createObjectURL(file),
+        charName: parsed.charName,
+        emotion: parsed.emotion,
+        variant: parsed.variant,
+        status: 'pending',
+      });
+    });
+    document.getElementById('stageArea').style.display = '';
+    renderStage();
+  }
+
+  // 각 행의 상태를 판정한다 — 무엇이 덮어써지고 무엇이 처음 보는 이름인지 올리기 전에 알려주기 위함.
+  function evaluate(item) {
+    if (!SAFE_SEGMENT.test(item.charName) || !SAFE_SEGMENT.test(item.emotion) || !(item.variant >= 1)) {
+      return { kind: 'bad', text: '이름을 채워주세요 (영문/숫자/_/- 만)' };
+    }
+    const dup = staged.filter((s) => s !== item && s.charName === item.charName
+      && s.emotion === item.emotion && s.variant === item.variant);
+    if (dup.length) return { kind: 'bad', text: '이 목록 안에 같은 이름이 또 있어요' };
+
+    const existing = emotes.find((e) => e.charName === item.charName
+      && e.emotion === item.emotion && e.variant === item.variant);
+    if (existing) return { kind: 'replace', text: '이미 있는 이미지를 교체해요' };
+
+    if (knownEmotions.length && !knownEmotions.includes(item.emotion)) {
+      const suggest = closestEmotion(item.emotion);
+      return { kind: 'unknown', text: '처음 보는 감정 이름이에요', suggest };
+    }
+    if (knownChars.length && !knownChars.includes(item.charName)) {
+      return { kind: 'unknown', text: '처음 보는 캐릭터예요' };
+    }
+    return { kind: 'ok', text: '새로 추가돼요' };
+  }
+
+  function renderStage() {
+    const list = document.getElementById('stageList');
+    const results = staged.map(evaluate);
+
+    const counts = { ok: 0, replace: 0, unknown: 0, bad: 0 };
+    results.forEach((r) => { counts[r.kind] += 1; });
+    const labels = { ok: '새로 추가', replace: '교체', unknown: '확인 필요', bad: '고쳐야 함' };
+    document.getElementById('stageSummary').innerHTML =
+      `<span style="font-size:0.78rem;">${staged.length}장</span>` +
+      Object.keys(counts).filter((k) => counts[k])
+        .map((k) => `<span class="badge ${k}">${labels[k]} ${counts[k]}</span>`).join('');
+
+    list.innerHTML = staged.map((item, i) => {
+      const r = results[i];
+      const suggestHtml = r.suggest
+        ? ` <button class="suggest" data-suggest="${i}">'${escapeHtml(r.suggest)}' 아니에요?</button>`
+        : '';
+      const charOptions = knownChars.map((c) =>
+        `<option value="${escapeHtml(c)}"${c === item.charName ? ' selected' : ''}>${escapeHtml(c)}</option>`).join('');
+      const isKnownChar = knownChars.includes(item.charName);
+      return `
+        <div class="stage-row ${r.kind}" data-i="${i}">
+          <img src="${escapeHtml(item.previewUrl)}" alt="">
+          <div class="stage-fields">
+            <div class="stage-file" title="${escapeHtml(item.fileName)}">${escapeHtml(item.fileName)}</div>
+            <div class="stage-inputs">
+              ${knownChars.length ? `
+                <select class="f-char-sel" data-i="${i}">
+                  ${charOptions}
+                  <option value="__custom__"${isKnownChar ? '' : ' selected'}>직접 입력…</option>
+                </select>` : ''}
+              <input class="f-char" data-i="${i}" placeholder="캐릭터" value="${escapeHtml(item.charName)}"
+                     ${knownChars.length && isKnownChar ? 'style="display:none;"' : ''}>
+              <input class="f-emotion" data-i="${i}" placeholder="감정" value="${escapeHtml(item.emotion)}">
+              <input class="f-variant" data-i="${i}" type="number" min="1" value="${item.variant || 1}">
+            </div>
+            <div class="stage-note"><span class="badge ${r.kind}">${labels[r.kind]}</span> ${escapeHtml(r.text)}${suggestHtml}</div>
+          </div>
+          <button class="row-del" data-i="${i}" title="목록에서 빼기">✕</button>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.f-char-sel').forEach((el) => {
+      el.addEventListener('change', () => {
+        const item = staged[Number(el.dataset.i)];
+        item.charName = el.value === '__custom__' ? '' : el.value;
+        renderStage();
+      });
+    });
+    const bind = (sel, field, cast) => {
+      list.querySelectorAll(sel).forEach((el) => {
+        el.addEventListener('input', () => {
+          staged[Number(el.dataset.i)][field] = cast ? cast(el.value) : el.value.trim();
+        });
+        el.addEventListener('blur', renderStage);
+      });
+    };
+    bind('.f-char', 'charName');
+    bind('.f-emotion', 'emotion');
+    bind('.f-variant', 'variant', (v) => Number(v) || 1);
+
+    list.querySelectorAll('.suggest').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.suggest);
+        staged[i].emotion = evaluate(staged[i]).suggest;
+        renderStage();
+      });
+    });
+    list.querySelectorAll('.row-del').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.i);
+        URL.revokeObjectURL(staged[i].previewUrl);
+        staged.splice(i, 1);
+        if (!staged.length) document.getElementById('stageArea').style.display = 'none';
+        renderStage();
+      });
+    });
+
+    const bad = counts.bad > 0;
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = bad || uploading || !staged.length;
+    btn.textContent = bad ? '고쳐야 할 항목이 있어요' : `${staged.length}장 올리기`;
+  }
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    staged.forEach((s) => URL.revokeObjectURL(s.previewUrl));
+    staged = [];
+    document.getElementById('stageArea').style.display = 'none';
+    renderStage();
+  });
+
+  // ── 업로드 ──
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+    if (uploading || !staged.length) return;
+
+    const unknowns = staged.filter((s) => evaluate(s).kind === 'unknown');
+    if (unknowns.length) {
+      const names = [...new Set(unknowns.map((s) => `${s.charName} ${s.emotion}`))].slice(0, 5).join(', ');
+      const ok = await customConfirm(
+        `목록에 없는 이름이 ${unknowns.length}개 있어요\n(${names}${unknowns.length > 5 ? ' 외' : ''})\n\n오타가 아니라면 그대로 올려도 괜찮아요. 계속할까요?`
+      );
+      if (!ok) return;
+    }
+
+    uploading = true;
+    const bar = document.getElementById('progressBar');
+    const text = document.getElementById('progressText');
+    document.getElementById('progress').classList.add('show');
+    renderStage();
+
+    let done = 0;
+    let failed = 0;
+    const total = staged.length;
+
+    for (const item of [...staged]) {
+      text.textContent = `${done + 1}/${total} — ${item.emotion}`;
+      try {
+        const img = await loadImage(item.file);
+        const [main, thumb] = await Promise.all([
+          resizeToWebp(img, MAIN_WIDTH, MAIN_QUALITY),
+          resizeToWebp(img, THUMB_WIDTH, THUMB_QUALITY),
+        ]);
+        await API.uploadEmote({
+          file: main, thumb,
+          charName: item.charName, emotion: item.emotion, variant: item.variant,
+        });
+        URL.revokeObjectURL(item.previewUrl);
+        staged.splice(staged.indexOf(item), 1);
+      } catch (e) {
+        console.error(item.fileName, e);
+        failed += 1;
+      }
+      done += 1;
+      bar.style.width = `${(done / total) * 100}%`;
+    }
+
+    uploading = false;
+    document.getElementById('progress').classList.remove('show');
+    bar.style.width = '0';
+    text.textContent = '';
+    if (!staged.length) document.getElementById('stageArea').style.display = 'none';
+
+    showToast(failed ? `${total - failed}장 완료, ${failed}장 실패` : `${total}장 올렸어요`);
+    await loadEmotes();
+  });
+
+  // ── 개별 관리 ──
+  const renameOverlay = document.getElementById('renameOverlay');
+  let renameTarget = null;
+
+  function closeRename() {
+    renameOverlay.classList.remove('open');
+    renameTarget = null;
+  }
+  document.getElementById('renameExit').addEventListener('click', closeRename);
+  document.getElementById('renameCancel').addEventListener('click', closeRename);
+  renameOverlay.addEventListener('click', (e) => { if (e.target === renameOverlay) closeRename(); });
+
+  function renameEmote(emote) {
+    renameTarget = emote;
+    document.getElementById('renameTitle').textContent = `${emote.charName.replace(/_/g, ' ')} 이름 변경`;
+    document.getElementById('renameEmotion').value = emote.emotion;
+    document.getElementById('renameVariant').value = emote.variant;
+    renameOverlay.classList.add('open');
+    setTimeout(() => document.getElementById('renameEmotion').focus(), 50);
+  }
+
+  document.getElementById('renameSave').addEventListener('click', async () => {
+    if (!renameTarget) return;
+    const emote = renameTarget;
+    const emotion = document.getElementById('renameEmotion').value.trim();
+    const variant = Number(document.getElementById('renameVariant').value) || 1;
+
+    if (!SAFE_SEGMENT.test(emotion)) { showToast('영문/숫자/_/- 만 쓸 수 있어요'); return; }
+    if (emotion === emote.emotion && variant === emote.variant) { closeRename(); return; }
+
+    const before = `${emote.emotion}${emote.variant > 1 ? '.' + emote.variant : ''}`;
+    closeRename();
+    try {
+      await API.renameEmote(emote.id, { emotion, variant });
+      showToast(`${before} → ${emotion}`);
+      await loadEmotes();
+    } catch (e) {
+      showToast(e.status === 409 ? '같은 이름이 이미 있어요' : '이름을 바꾸지 못했어요');
+      console.error(e);
+    }
+  });
+
+  async function deleteEmote(emote) {
+    const ok = await customConfirm(`${emote.charName}의 '${emote.emotion}' 이미지를 지울까요?\n글 본문에서 이 이름을 쓰고 있으면 이미지가 안 보이게 돼요.`);
+    if (!ok) return;
+    try {
+      await API.deleteEmote(emote.id);
+      showToast('지웠어요');
+      await loadEmotes();
+    } catch (e) {
+      showToast('지우지 못했어요');
+      console.error(e);
+    }
+  }
+
+  loadEmotes();
+</script>
+</body>
+</html>

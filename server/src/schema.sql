@@ -209,6 +209,7 @@ CREATE TABLE IF NOT EXISTS oc_emotes (
   image_path TEXT NOT NULL,
   thumb_path TEXT,
   created_at INTEGER NOT NULL,
+  updated_at INTEGER,
   UNIQUE (char_name, emotion, variant)
 );
 CREATE INDEX IF NOT EXISTS idx_oc_emotes_lookup ON oc_emotes(lookup_key);
