@@ -605,6 +605,13 @@
     margin: 20px auto 0;
     padding: 0 16px;
   }
+  /* 세 블록(검색·조합·목록)이 항상 같은 폭이어야 한다 — 한쪽만 넓히면 어긋나 보인다. */
+  @media (min-width: 640px) {
+    .list-owner-section, .search-area, .combo-section { max-width: 680px; }
+  }
+  @media (min-width: 900px) {
+    .list-owner-section, .search-area, .combo-section { max-width: 880px; }
+  }
   .list-owner-header {
     display: flex;
     align-items: center;
@@ -635,11 +642,19 @@
     letter-spacing: 0.8px;
     padding: 14px 2px 6px;
   }
+  /* 좁은 화면 3열을 기본으로, 폭이 넓어지면 4열 → 5열까지만 늘어난다(그 이상은 줄바꿈).
+     컨테이너 폭도 같이 넓어져야 실제로 열이 늘어나므로 아래 미디어쿼리에서 함께 조정한다. */
   .char-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 6px;
+  }
+  @media (min-width: 640px) {
+    .char-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  }
+  @media (min-width: 900px) {
+    .char-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
   }
   .char-row {
     display: flex;
@@ -662,8 +677,9 @@
   .char-row.no-id { opacity: 0.55; cursor: default; }
   .char-row.no-id:hover { transform: none; background: rgba(255,255,255,0.5); }
   .char-row-portrait {
-    width: 76px;
-    height: 76px;
+    width: 100%;
+    max-width: 150px;
+    aspect-ratio: 1 / 1;
     border-radius: 14px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -683,7 +699,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'ko-font', serif;
-    font-size: 26px;
+    font-size: clamp(26px, 6vw, 44px);
     font-weight: 700;
     color: #fff;
   }
@@ -756,7 +772,7 @@
   }
   .mgmt-edit-btn:hover { background: rgba(180,160,130,0.1); }
   .char-cell { display: flex; flex-direction: column; gap: 4px; }
-  .char-manage-bar { display: flex; gap: 4px; justify-content: center; }
+  .char-manage-bar { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
   .mgmt-add-row {
     display: flex;
     gap: 6px;
@@ -954,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backBtn.textContent = '← 홈';
     backBtn.onclick = () => { location.href = './'; };
     const editToggle = document.getElementById('editToggle');
-    editToggle.textContent = '관리';
+    editToggle.textContent = _listManage ? '완료' : '관리';
     editToggle.onclick = toggleListManage;
     editToggle.style.display = 'inline-flex';
     loadCharacterList();
@@ -1412,12 +1428,14 @@ async function deleteCharacter() {
 let _listData = null;
 let _listSort = 'id';
 let _listOwner = '';
-let _listManage = false;
+let _listManage = true;  // 목록 페이지는 보기보다 수정이 주 용도라 관리 모드로 시작한다
 
 async function loadCharacterList() {
   const app = document.getElementById('app');
   try {
-    _listData = await API.getCharacters();
+    // 관리 모드가 기본이라 조합 목록도 처음부터 필요하다. 캐릭터 트리와 함께 받아온다.
+    const [tree] = await Promise.all([API.getCharacters(), loadCombos()]);
+    _listData = tree;
     setSyncStatus(true);
     renderList();
   } catch (err) {
