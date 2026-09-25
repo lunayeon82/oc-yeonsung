@@ -31,12 +31,16 @@
 
   /* Main card */
   /* ── 조합 (이름 붙인 캐릭터 묶음) ── */
+  /* 폭·카드 모양은 .search-area와 동일하게 맞춘다(이 페이지의 다른 블록도 480px 가운데 정렬). */
   .combo-section {
-    background: var(--surface-glass);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.8rem 0.9rem;
-    margin-bottom: 1rem;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0 auto 1.5rem;
+    max-width: 480px;
+    box-shadow: 0 2px 12px rgba(90,74,107,0.06);
   }
   .combo-section-head {
     display: flex;
