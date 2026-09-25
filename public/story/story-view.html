@@ -420,15 +420,16 @@
 
   /* ── 감정 에셋 (본문의 <img="이름 감정"> 토큰이 바뀐 결과) ── */
   /* 원본이 701x1024 전신 일러스트라 폭 기준으로 크기를 잡고, 좁은 화면에선 화면 폭을 따라간다. */
+  /* 크기는 읽는 사람이 폰트 패널에서 고른다(--emote-size). 숨기기를 고르면 --emote-display: none. */
   .story-body .emote {
-    display: block;
+    display: var(--emote-display, block);
     margin: 1rem auto;
     text-align: center;
   }
   .story-body .emote img {
     display: block;
     margin: 0 auto;
-    width: clamp(180px, 60vw, 320px);
+    width: min(var(--emote-size, 320px), 100%);
     height: auto;
     border-radius: 10px;
   }
@@ -578,6 +579,16 @@
   .font-option.selected { background: rgba(184,169,201,0.2); }
   .font-option .check { font-size: 0.7rem; color: #b8a9c9; opacity: 0; }
   .font-option.selected .check { opacity: 1; }
+
+  .font-panel-sep {
+    border-top: 1px solid rgba(184,169,201,0.2);
+    margin: 0.35rem 0.2rem 0.1rem;
+  }
+  .font-panel-label {
+    font-size: 0.66rem;
+    color: #a99ab8;
+    padding: 0.35rem 0.75rem 0.15rem;
+  }
 
   /* ── 댓글 버튼 ── */
   .comment-toggle-btn {
@@ -840,6 +851,13 @@
         <div class="font-option" data-font="RIDIBatang" style="font-family:'RIDIBatang',serif">RIDI바탕 <span class="check">✓</span></div>
         <div class="font-option" data-font="ChosunCentennial" style="font-family:'ChosunCentennial',serif">조선센테니얼 <span class="check">✓</span></div>
         <div class="font-option" data-font="GowunDodum" style="font-family:'GowunDodum',sans-serif">고운돋움 <span class="check">✓</span></div>
+
+        <div class="font-panel-sep"></div>
+        <div class="font-panel-label">표정 이미지</div>
+        <div class="font-option emote-option" data-emote="200">작게 <span class="check">✓</span></div>
+        <div class="font-option emote-option" data-emote="320">보통 <span class="check">✓</span></div>
+        <div class="font-option emote-option" data-emote="460">크게 <span class="check">✓</span></div>
+        <div class="font-option emote-option" data-emote="hidden">안 보이게 <span class="check">✓</span></div>
       </div>
     </div>
     <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
@@ -1430,7 +1448,8 @@
 
   function applyStoryFont(name) {
     document.documentElement.style.setProperty('--story-font', FONT_MAP[name] || FONT_MAP['Noto Sans KR']);
-    document.querySelectorAll('.font-option').forEach(el => {
+    // 같은 패널의 표정 크기 항목도 .font-option 스타일을 쓰므로 [data-font]로 범위를 좁힌다.
+    document.querySelectorAll('.font-option[data-font]').forEach(el => {
       el.classList.toggle('selected', el.dataset.font === name);
     });
   }
@@ -1438,7 +1457,35 @@
   const savedFont = localStorage.getItem('storyFont') || 'Noto Sans KR';
   applyStoryFont(savedFont);
 
-  document.querySelectorAll('.font-option').forEach(el => {
+  // ── 표정 이미지 크기 (읽는 사람마다 따로 저장) ──
+  const EMOTE_SIZES = ['200', '320', '460', 'hidden'];
+
+  function applyEmoteSize(value) {
+    const root = document.documentElement.style;
+    if (value === 'hidden') {
+      root.setProperty('--emote-display', 'none');
+    } else {
+      root.removeProperty('--emote-display');
+      root.setProperty('--emote-size', `${value}px`);
+    }
+    document.querySelectorAll('.emote-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.emote === value);
+    });
+  }
+
+  const savedEmoteSize = localStorage.getItem('storyEmoteSize');
+  applyEmoteSize(EMOTE_SIZES.includes(savedEmoteSize) ? savedEmoteSize : '320');
+
+  document.querySelectorAll('.emote-option').forEach(el => {
+    el.addEventListener('click', (e) => {
+      // 폰트와 달리 패널을 닫지 않는다 — 뒤에 보이는 글에서 크기를 바로 비교할 수 있게.
+      e.stopPropagation();
+      localStorage.setItem('storyEmoteSize', el.dataset.emote);
+      applyEmoteSize(el.dataset.emote);
+    });
+  });
+
+  document.querySelectorAll('.font-option[data-font]').forEach(el => {
     el.addEventListener('click', () => {
       localStorage.setItem('storyFont', el.dataset.font);
       applyStoryFont(el.dataset.font);
