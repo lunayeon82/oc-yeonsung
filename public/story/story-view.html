@@ -432,6 +432,11 @@
     width: min(var(--emote-size, 320px), 100%);
     height: auto;
     border-radius: 10px;
+    /* 기본은 원본 비율(auto)이라 object-fit이 영향을 주지 않는다. 1:1을 고르면 --emote-aspect가
+       1/1이 되면서 위쪽 기준으로 잘린다 — 전신 일러스트라 위가 얼굴이다. */
+    aspect-ratio: var(--emote-aspect, auto);
+    object-fit: cover;
+    object-position: top center;
   }
 
   /* ── 챕터 네비게이션 ── */
@@ -526,9 +531,10 @@
   }
 
   /* ── 폰트 선택 ── */
-  .font-picker-wrap { position: relative; }
+  .font-picker-wrap, .img-picker-wrap { position: relative; }
 
-  .font-picker-btn {
+  .font-picker-btn,
+  .img-picker-btn {
     width: 34px;
     height: 34px;
     border: 1px solid rgba(184,169,201,0.3);
@@ -544,10 +550,11 @@
     transition: all 0.2s;
     font-family: 'ko-font', sans-serif;
   }
-  .font-picker-btn:hover { background: rgba(184,169,201,0.15); }
-  .font-picker-btn.active { background: #b8a9c9; color: white; border-color: #b8a9c9; }
+  .font-picker-btn:hover, .img-picker-btn:hover { background: rgba(184,169,201,0.15); }
+  .font-picker-btn.active, .img-picker-btn.active { background: #b8a9c9; color: white; border-color: #b8a9c9; }
 
-  .font-panel {
+  .font-panel,
+  .img-panel {
     position: absolute;
     top: calc(100% + 0.4rem);
     right: 0;
@@ -561,7 +568,7 @@
     display: none;
     z-index: 300;
   }
-  .font-panel.open { display: block; }
+  .font-panel.open, .img-panel.open { display: block; }
 
   .font-option {
     display: flex;
@@ -851,13 +858,22 @@
         <div class="font-option" data-font="RIDIBatang" style="font-family:'RIDIBatang',serif">RIDI바탕 <span class="check">✓</span></div>
         <div class="font-option" data-font="ChosunCentennial" style="font-family:'ChosunCentennial',serif">조선센테니얼 <span class="check">✓</span></div>
         <div class="font-option" data-font="GowunDodum" style="font-family:'GowunDodum',sans-serif">고운돋움 <span class="check">✓</span></div>
+      </div>
+    </div>
 
-        <div class="font-panel-sep"></div>
-        <div class="font-panel-label">표정 이미지</div>
+    <div class="img-picker-wrap">
+      <button class="img-picker-btn" id="imgPickerBtn" title="표정 이미지 설정">🖼</button>
+      <div class="img-panel" id="imgPanel">
+        <div class="font-panel-label">크기</div>
         <div class="font-option emote-option" data-emote="200">작게 <span class="check">✓</span></div>
         <div class="font-option emote-option" data-emote="320">보통 <span class="check">✓</span></div>
         <div class="font-option emote-option" data-emote="460">크게 <span class="check">✓</span></div>
         <div class="font-option emote-option" data-emote="hidden">안 보이게 <span class="check">✓</span></div>
+
+        <div class="font-panel-sep"></div>
+        <div class="font-panel-label">비율</div>
+        <div class="font-option ratio-option" data-ratio="original">원본 <span class="check">✓</span></div>
+        <div class="font-option ratio-option" data-ratio="square">1:1 (위쪽) <span class="check">✓</span></div>
       </div>
     </div>
     <button class="bookmark-btn" id="bookmarkBtn" title="저장" style="display:none;">🔖</button>
@@ -1485,6 +1501,43 @@
     });
   });
 
+  // ── 표정 이미지 비율 ──
+  // 원본은 세로로 길어서(701x1024) 대사 사이에 들어가면 자리를 많이 차지한다. 1:1은 위쪽
+  // 기준으로 잘라서 얼굴만 보여주는 용도.
+  const EMOTE_RATIOS = ['original', 'square'];
+
+  function applyEmoteRatio(value) {
+    const root = document.documentElement.style;
+    if (value === 'square') root.setProperty('--emote-aspect', '1 / 1');
+    else root.removeProperty('--emote-aspect');
+    document.querySelectorAll('.ratio-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.ratio === value);
+    });
+  }
+
+  const savedEmoteRatio = localStorage.getItem('storyEmoteRatio');
+  applyEmoteRatio(EMOTE_RATIOS.includes(savedEmoteRatio) ? savedEmoteRatio : 'original');
+
+  document.querySelectorAll('.ratio-option').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      localStorage.setItem('storyEmoteRatio', el.dataset.ratio);
+      applyEmoteRatio(el.dataset.ratio);
+    });
+  });
+
+  // ── 이미지 설정 패널 열고 닫기 ──
+  document.getElementById('imgPickerBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const panel = document.getElementById('imgPanel');
+    const btn = document.getElementById('imgPickerBtn');
+    // 폰트 패널과 동시에 열리지 않게 한쪽을 닫는다.
+    document.getElementById('fontPanel').classList.remove('open');
+    document.getElementById('fontPickerBtn').classList.remove('active');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+  });
+
   document.querySelectorAll('.font-option[data-font]').forEach(el => {
     el.addEventListener('click', () => {
       localStorage.setItem('storyFont', el.dataset.font);
@@ -1498,6 +1551,8 @@
     e.stopPropagation();
     const panel = document.getElementById('fontPanel');
     const btn = document.getElementById('fontPickerBtn');
+    document.getElementById('imgPanel').classList.remove('open');
+    document.getElementById('imgPickerBtn').classList.remove('active');
     const isOpen = panel.classList.toggle('open');
     btn.classList.toggle('active', isOpen);
   });
@@ -1505,6 +1560,8 @@
   document.addEventListener('click', () => {
     document.getElementById('fontPanel').classList.remove('open');
     document.getElementById('fontPickerBtn').classList.remove('active');
+    document.getElementById('imgPanel').classList.remove('open');
+    document.getElementById('imgPickerBtn').classList.remove('active');
   });
 
   // ── 초기화 ──
