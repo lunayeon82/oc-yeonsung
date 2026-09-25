@@ -86,6 +86,13 @@
       return request('POST', '/upload', { formData: fd });
     },
 
+    // 조합 (이름 붙인 캐릭터 묶음 — 글쓰기 일괄 태그 / 목록 필터용)
+    listCombos: () => request('GET', '/combos'),
+    createCombo: (body) => request('POST', '/combos', { json: body }),
+    updateCombo: (id, body) => request('PUT', `/combos/${id}`, { json: body }),
+    reorderCombos: (order) => request('PUT', '/combos', { json: { order } }),
+    deleteCombo: (id) => request('DELETE', `/combos/${id}`),
+
     // 감정 에셋 (연성 글 본문의 <img="이름 감정"> 토큰이 가리키는 이미지)
     listEmotes: (charName) => request('GET', '/emotes', { query: { charName } }),
     uploadEmote: ({ file, thumb, charName, emotion, variant }) => {

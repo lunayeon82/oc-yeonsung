@@ -192,6 +192,41 @@
     min-height: 1.5rem;
   }
 
+  /* ── 조합으로 한 번에 태그하기 ── */
+  .combo-quick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.45rem;
+  }
+  .combo-quick:empty { display: none; }
+  .combo-quick .combo-quick-label {
+    font-size: 0.65rem;
+    color: #a99ab8;
+    margin-right: 0.1rem;
+  }
+  .combo-chip {
+    padding: 0.22rem 0.6rem;
+    border: 1px dashed rgba(184,169,201,0.5);
+    border-radius: 14px;
+    font-size: 0.7rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+  }
+  .combo-chip:hover {
+    border-style: solid;
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.12);
+  }
+  .combo-chip.full {
+    border-style: solid;
+    background: rgba(184,169,201,0.22);
+    color: #5a4a6b;
+  }
+
   .selected-tag {
     display: inline-flex;
     align-items: center;
@@ -544,6 +579,7 @@
     <div class="selected-tags" id="selectedTags">
       <span style="font-size:0.72rem;color:#b8a9c9;">태그를 선택하세요</span>
     </div>
+    <div class="combo-quick" id="comboQuick"></div>
     <div class="tag-picker collapsed" id="tagPicker">
       <!-- API에서 캐릭터 로드 -->
     </div>
@@ -738,6 +774,7 @@
           tag.classList.add('selected');
         }
         renderSelectedTags();
+        renderComboQuick();
       });
     });
   }
@@ -761,6 +798,49 @@
         selectedCharacters = selectedCharacters.filter(n => n !== name);
         renderSelectedTags();
         renderTagPicker(); // sync picker state
+        renderComboQuick();
+      });
+    });
+  }
+
+  // ── 조합으로 한 번에 태그하기 ──
+  // 조합은 "이름 붙인 캐릭터 목록"일 뿐이라, 누르면 멤버를 캐릭터 태그에 채워넣기만 한다.
+  // 글에 조합 자체가 저장되지는 않으므로 채운 뒤 개별로 빼거나 더해도 된다.
+  let allCombos = [];
+
+  async function loadCombos() {
+    try {
+      allCombos = (await API.listCombos()).items || [];
+    } catch (e) {
+      console.error('조합 로드 실패:', e);
+      allCombos = [];
+    }
+    renderComboQuick();
+  }
+
+  function renderComboQuick() {
+    const wrap = document.getElementById('comboQuick');
+    const usable = allCombos.filter(c => c.members.length > 0);
+    if (!usable.length) { wrap.innerHTML = ''; return; }
+
+    wrap.innerHTML = '<span class="combo-quick-label">조합으로 넣기</span>' + usable.map(c => {
+      const done = c.members.every(n => selectedCharacters.includes(n));
+      return `<button type="button" class="combo-chip${done ? ' full' : ''}" data-combo="${c.id}"
+                      title="${escapeHtml(c.members.join(', '))}">${escapeHtml(c.name)}</button>`;
+    }).join('');
+
+    wrap.querySelectorAll('.combo-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const combo = allCombos.find(c => String(c.id) === btn.dataset.combo);
+        if (!combo) return;
+        // 이미 있는 캐릭터에는 영향 없이, 빠진 멤버만 더한다.
+        const added = combo.members.filter(n => !selectedCharacters.includes(n));
+        if (!added.length) { showToast(`${combo.name}은(는) 이미 다 태그돼 있어요`); return; }
+        selectedCharacters.push(...added);
+        renderSelectedTags();
+        renderTagPicker();
+        renderComboQuick();
+        showToast(`${combo.name} — ${added.join(', ')} 추가`);
       });
     });
   }
@@ -1216,6 +1296,7 @@
   // ── 초기화 ──
   loadCharacters();
   loadRolesAndAus();
+  loadCombos();
   loadExistingStory();
 </script>
 </body>

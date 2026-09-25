@@ -147,6 +147,41 @@
   }
 
   /* ── 캐릭터 AND/OR 모드 토글 ── */
+  /* ── 조합으로 캐릭터 한 번에 고르기 ── */
+  .combo-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+  .combo-filter:empty { display: none; }
+  .combo-filter .combo-filter-label {
+    font-size: 0.66rem;
+    color: #a99ab8;
+    margin-right: 0.1rem;
+  }
+  .combo-filter-chip {
+    padding: 0.2rem 0.6rem;
+    border: 1px dashed rgba(184,169,201,0.5);
+    border-radius: 14px;
+    font-size: 0.7rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+  }
+  .combo-filter-chip:hover {
+    border-style: solid;
+    border-color: #b8a9c9;
+  }
+  .combo-filter-chip.active {
+    border-style: solid;
+    background: #b8a9c9;
+    border-color: #b8a9c9;
+    color: #fff;
+  }
+
   .char-mode-toggle {
     display: flex;
     gap: 0.3rem;
@@ -536,6 +571,7 @@
         </div>
       </div>
       <div class="filter-section-body collapsed" id="charFilterBody">
+        <div class="combo-filter" id="comboFilter"></div>
         <div class="char-mode-toggle">
           <button class="mode-btn active" id="charModeOr">하나라도 포함</button>
           <button class="mode-btn" id="charModeAnd">전부 포함</button>
@@ -673,11 +709,13 @@
     charFilterMode = 'or';
     document.getElementById('charModeOr').classList.add('active');
     document.getElementById('charModeAnd').classList.remove('active');
+    renderComboFilter();
   });
   document.getElementById('charModeAnd').addEventListener('click', () => {
     charFilterMode = 'and';
     document.getElementById('charModeAnd').classList.add('active');
     document.getElementById('charModeOr').classList.remove('active');
+    renderComboFilter();
   });
 
   // ── 수위 포함/제외 모드 토글 ──
@@ -744,8 +782,67 @@
         const name = tag.dataset.name;
         if (selectedChars.has(name)) { selectedChars.delete(name); tag.classList.remove('active'); }
         else                          { selectedChars.add(name);    tag.classList.add('active'); }
+        renderComboFilter();
         updateAllCounts();
       });
+    });
+  }
+
+  // ── 조합 필터 ──
+  // 조합은 캐릭터 묶음 이름표일 뿐이라, 누르면 멤버를 캐릭터 선택에 채우고 "전부 포함"으로
+  // 바꾼다 — 즉 기존 캐릭터 필터를 그대로 쓰는 단축키다. 다시 누르면 멤버만 해제한다.
+  let allCombos = [];
+
+  async function loadCombos() {
+    try {
+      allCombos = ((await API.listCombos()).items || []).filter(c => c.members.length > 0);
+    } catch (e) {
+      console.error('조합 로드 실패:', e);
+      allCombos = [];
+    }
+    renderComboFilter();
+  }
+
+  function comboIsActive(combo) {
+    return charFilterMode === 'and'
+      && combo.members.every(n => selectedChars.has(n))
+      && selectedChars.size === combo.members.length;
+  }
+
+  function renderComboFilter() {
+    const wrap = document.getElementById('comboFilter');
+    if (!allCombos.length) { wrap.innerHTML = ''; return; }
+
+    wrap.innerHTML = '<span class="combo-filter-label">조합</span>' + allCombos.map(c =>
+      `<button type="button" class="combo-filter-chip${comboIsActive(c) ? ' active' : ''}"
+               data-combo="${c.id}" title="${c.members.join(', ')}">${c.name}</button>`
+    ).join('');
+
+    wrap.querySelectorAll('.combo-filter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const combo = allCombos.find(c => String(c.id) === btn.dataset.combo);
+        if (!combo) return;
+        if (comboIsActive(combo)) {
+          combo.members.forEach(n => selectedChars.delete(n));
+        } else {
+          selectedChars.clear();
+          combo.members.forEach(n => selectedChars.add(n));
+          charFilterMode = 'and';
+          document.getElementById('charModeAnd').classList.add('active');
+          document.getElementById('charModeOr').classList.remove('active');
+        }
+        renderCharFilter();
+        syncCharFilterSelection();
+        renderComboFilter();
+        updateAllCounts();
+      });
+    });
+  }
+
+  // renderCharFilter는 매번 다시 그리므로 선택 상태를 다시 입혀준다.
+  function syncCharFilterSelection() {
+    document.querySelectorAll('#charFilter .char-tag').forEach(tag => {
+      tag.classList.toggle('active', selectedChars.has(tag.dataset.name));
     });
   }
 
@@ -994,6 +1091,7 @@
   // ── 초기화 ──
   loadCharacters();
   loadRolesAndAus();
+  loadCombos();
   loadStories();
 </script>
 </body>

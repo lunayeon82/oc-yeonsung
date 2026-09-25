@@ -18,6 +18,7 @@ app.use('/api/comments', require('./routes/comments'));
 app.use('/api/users/:name/draw-box', require('./routes/drawBox'));
 app.use('/api/users/:name/read-later', require('./routes/readLater'));
 app.use('/api/users/:name/story-box', require('./routes/storyBox'));
+app.use('/api/combos', require('./routes/combos'));
 app.use('/api/emotes', require('./routes/emotes'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/feed', require('./routes/feed'));

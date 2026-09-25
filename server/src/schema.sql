@@ -214,3 +214,20 @@ CREATE TABLE IF NOT EXISTS oc_emotes (
 );
 CREATE INDEX IF NOT EXISTS idx_oc_emotes_lookup ON oc_emotes(lookup_key);
 CREATE INDEX IF NOT EXISTS idx_oc_emotes_char ON oc_emotes(char_name, emotion, variant);
+
+-- 캐릭터 묶음("조합"). 글에는 저장되지 않는다 — 글쓰기에서 멤버를 한 번에 태그하고,
+-- 목록에서 "멤버가 전부 나오는 글" 필터를 거는 용도의 이름표일 뿐이다.
+CREATE TABLE IF NOT EXISTS oc_combos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oc_combo_members (
+  combo_id INTEGER NOT NULL REFERENCES oc_combos(id) ON DELETE CASCADE,
+  character_name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (combo_id, character_name)
+);
+CREATE INDEX IF NOT EXISTS idx_oc_combo_members_combo ON oc_combo_members(combo_id);
