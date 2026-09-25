@@ -32,6 +32,7 @@
   /* Main card */
   /* ── 조합 (이름 붙인 캐릭터 묶음) ── */
   /* 폭·카드 모양은 .search-area와 동일하게 맞춘다(이 페이지의 다른 블록도 480px 가운데 정렬). */
+  .add-section,
   .combo-section {
     background: rgba(255,255,255,0.6);
     backdrop-filter: blur(8px);
@@ -42,6 +43,27 @@
     max-width: 480px;
     box-shadow: 0 2px 12px rgba(90,74,107,0.06);
   }
+  .add-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 0.45rem;
+  }
+  .add-section-sep {
+    border-top: 1px solid rgba(184,169,201,0.25);
+    margin: 0.9rem 0;
+  }
+  .add-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .add-row + .add-row { margin-top: 0.4rem; }
+  .add-row .mgmt-input { flex: 1; min-width: 120px; }
+  .add-row .mgmt-select { flex: 0 1 auto; }
+  #addCharOwner, #addCharGroup, #addGroupOwner { flex: 1; min-width: 100px; }
+
   .combo-section-head {
     display: flex;
     align-items: center;
@@ -607,10 +629,10 @@
   }
   /* 세 블록(검색·조합·목록)이 항상 같은 폭이어야 한다 — 한쪽만 넓히면 어긋나 보인다. */
   @media (min-width: 640px) {
-    .list-owner-section, .search-area, .combo-section { max-width: 680px; }
+    .list-owner-section, .search-area, .combo-section, .add-section { max-width: 680px; }
   }
   @media (min-width: 900px) {
-    .list-owner-section, .search-area, .combo-section { max-width: 880px; }
+    .list-owner-section, .search-area, .combo-section, .add-section { max-width: 880px; }
   }
   .list-owner-header {
     display: flex;
@@ -1521,28 +1543,9 @@ function renderList() {
           <button class="mgmt-del-btn" style="margin-left:auto" onclick="deleteGroupInList(${oi},${si})">그룹 삭제</button>
         </div>` : `<div class="list-group-header">${esc(sub.label)}</div>`;
 
-      const addCharRow = _listManage ? `
-        <div class="mgmt-add-row">
-          <input class="mgmt-input" id="newCharName_${oi}_${si}" placeholder="이름">
-          <select class="mgmt-select" id="newCharGender_${oi}_${si}">
-            <option value="0">♂ 남성</option>
-            <option value="1">♀ 여성</option>
-          </select>
-          <select class="mgmt-select" id="newCharCouple_${oi}_${si}">
-            <option value="0">솔로</option>
-            <option value="1">커플</option>
-          </select>
-          <button class="mgmt-add-btn" onclick="addCharacterInList(${oi},${si})">+ 추가</button>
-        </div>` : '';
-
-      ownerContent += `${groupHeader}<div class="char-grid">${cellsHtml}</div>${addCharRow}`;
+      // 추가 폼은 목록 맨 아래가 아니라 상단 패널(renderAddSection)에 모아뒀다.
+      ownerContent += `${groupHeader}<div class="char-grid">${cellsHtml}</div>`;
     });
-
-    const addGroupRow = _listManage ? `
-      <div class="mgmt-add-group-row">
-        <input class="mgmt-input" id="newGroupName_${oi}" placeholder="새 그룹 이름">
-        <button class="mgmt-add-btn" onclick="addGroupInList(${oi})">+ 그룹 추가</button>
-      </div>` : '';
 
     listHtml += `
       <div class="list-owner-section">
@@ -1551,12 +1554,99 @@ function renderList() {
           ${ownerGroup.code ? `<span class="list-owner-code">${esc(ownerGroup.code)}</span>` : ''}
         </div>
         ${ownerContent}
-        ${addGroupRow}
       </div>`;
   }
 
   document.getElementById('app').innerHTML =
-    filterBar + (_listManage ? renderComboSection() : '') + listHtml + '<div style="height:40px"></div>';
+    filterBar
+    + (_listManage ? renderAddSection() : '')
+    + (_listManage ? renderComboSection() : '')
+    + listHtml
+    + '<div style="height:40px"></div>';
+}
+
+// ============ 추가 패널 (캐릭터 / 그룹) ============
+// 예전에는 각 그룹의 캐릭터 목록 "아래"에 추가 폼이 붙어 있어서, 인원이 많으면 한참 스크롤해야
+// 했다. 상단에서 오너·그룹을 골라 추가하도록 모았다. 어느 오너/그룹을 고르고 있었는지는
+// 저장 후 재렌더링에도 유지된다(연달아 추가하기 편하게).
+let _addOwnerIdx = 0;
+let _addSubIdx = 0;
+
+function renderAddSection() {
+  const owners = _listData.owners || [];
+  if (!owners.length) return '';
+  if (_addOwnerIdx >= owners.length) _addOwnerIdx = 0;
+  const subs = owners[_addOwnerIdx].subgroups || [];
+  if (_addSubIdx >= subs.length) _addSubIdx = 0;
+
+  const ownerOptions = (selected) => owners
+    .map((o, i) => `<option value="${i}" ${i === selected ? 'selected' : ''}>${esc(o.name)}</option>`).join('');
+  const groupOptions = subs
+    .map((sg, i) => `<option value="${i}" ${i === _addSubIdx ? 'selected' : ''}>${esc(sg.label)}</option>`).join('');
+
+  return `
+    <div class="add-section">
+      <div class="add-section-title">캐릭터 추가</div>
+      <div class="add-row">
+        <select class="mgmt-select" id="addCharOwner" onchange="onAddOwnerChange(this.value)">${ownerOptions(_addOwnerIdx)}</select>
+        <select class="mgmt-select" id="addCharGroup" onchange="_addSubIdx = Number(this.value)">
+          ${groupOptions || '<option value="">그룹 없음</option>'}
+        </select>
+      </div>
+      <div class="add-row">
+        <input class="mgmt-input" id="addCharName" placeholder="캐릭터 이름"
+               onkeydown="if(event.key==='Enter')addCharacterFromPanel()">
+        <select class="mgmt-select" id="addCharGender">
+          <option value="0">♂ 남성</option>
+          <option value="1">♀ 여성</option>
+        </select>
+        <select class="mgmt-select" id="addCharCouple">
+          <option value="0">솔로</option>
+          <option value="1">커플</option>
+        </select>
+        <button class="mgmt-add-btn" onclick="addCharacterFromPanel()">+ 추가</button>
+      </div>
+
+      <div class="add-section-sep"></div>
+
+      <div class="add-section-title">그룹 추가</div>
+      <div class="add-row">
+        <select class="mgmt-select" id="addGroupOwner">${ownerOptions(_addOwnerIdx)}</select>
+        <input class="mgmt-input" id="addGroupName" placeholder="새 그룹 이름"
+               onkeydown="if(event.key==='Enter')addGroupFromPanel()">
+        <button class="mgmt-add-btn" onclick="addGroupFromPanel()">+ 추가</button>
+      </div>
+    </div>`;
+}
+
+function onAddOwnerChange(value) {
+  _addOwnerIdx = Number(value);
+  _addSubIdx = 0;
+  const subs = (_listData.owners[_addOwnerIdx] || {}).subgroups || [];
+  const sel = document.getElementById('addCharGroup');
+  sel.innerHTML = subs.length
+    ? subs.map((sg, i) => `<option value="${i}" ${i === 0 ? 'selected' : ''}>${esc(sg.label)}</option>`).join('')
+    : '<option value="">그룹 없음</option>';
+}
+
+function addCharacterFromPanel() {
+  const subs = (_listData.owners[_addOwnerIdx] || {}).subgroups || [];
+  if (!subs.length) { showToast('먼저 그룹을 만들어주세요'); return; }
+  addCharacterInList(_addOwnerIdx, _addSubIdx, {
+    name: document.getElementById('addCharName').value.trim(),
+    gender: parseInt(document.getElementById('addCharGender').value),
+    couple: parseInt(document.getElementById('addCharCouple').value),
+  });
+}
+
+function addGroupFromPanel() {
+  const oi = Number(document.getElementById('addGroupOwner').value);
+  const label = document.getElementById('addGroupName').value.trim();
+  if (!label) return;
+  // 방금 만든 그룹이 캐릭터 추가 쪽에서 바로 선택되게 한다.
+  _addOwnerIdx = oi;
+  _addSubIdx = (_listData.owners[oi].subgroups || []).length;
+  addGroupInList(oi, label);
 }
 
 // ============ 조합 (이름 붙인 캐릭터 묶음) ============
@@ -1751,12 +1841,9 @@ async function deleteCharacterInList(oi, si, ii) {
   saveListTree();
 }
 
-function addCharacterInList(oi, si) {
-  const nameInput = document.getElementById(`newCharName_${oi}_${si}`);
-  const name = nameInput.value.trim();
+// 값은 상단 추가 패널에서 받아 넘긴다(예전엔 그룹마다 있던 인라인 폼에서 직접 읽었음).
+function addCharacterInList(oi, si, { name, gender, couple }) {
   if (!name) return;
-  const gender = parseInt(document.getElementById(`newCharGender_${oi}_${si}`).value);
-  const couple = parseInt(document.getElementById(`newCharCouple_${oi}_${si}`).value);
   const ownerGroup = _listData.owners[oi];
   const sub = ownerGroup.subgroups[si];
   if (sub.characters.some(it => it.name === name)) { showToast('이미 존재하는 캐릭터예요'); return; }
@@ -1791,9 +1878,7 @@ async function deleteGroupInList(oi, si) {
   saveListTree();
 }
 
-function addGroupInList(oi) {
-  const input = document.getElementById(`newGroupName_${oi}`);
-  const label = input.value.trim();
+function addGroupInList(oi, label) {
   if (!label) return;
   const ownerGroup = _listData.owners[oi];
   if (ownerGroup.subgroups.some(s => s.label === label)) { showToast('이미 존재하는 그룹이에요'); return; }
