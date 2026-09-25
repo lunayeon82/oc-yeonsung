@@ -12,6 +12,10 @@
 <link rel="stylesheet" href="assets/theme.css">
 <link rel="stylesheet" href="assets/modal.css">
 <style>
+  /* random-admin.html 등 다른 페이지와 같은 기준 — 이게 없으면 .modal-input의 width:100%에
+     좌우 패딩/테두리가 더해져 모달에 가로 스크롤이 생긴다. */
+  *, *::before, *::after { box-sizing: border-box; }
+
   body {
     margin: 0;
     background: var(--page-gradient);
