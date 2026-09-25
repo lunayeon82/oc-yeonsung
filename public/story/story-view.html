@@ -418,6 +418,21 @@
     margin-bottom: 0.6rem;
   }
 
+  /* ── 감정 에셋 (본문의 <img="이름 감정"> 토큰이 바뀐 결과) ── */
+  /* 원본이 701x1024 전신 일러스트라 폭 기준으로 크기를 잡고, 좁은 화면에선 화면 폭을 따라간다. */
+  .story-body .emote {
+    display: block;
+    margin: 1rem auto;
+    text-align: center;
+  }
+  .story-body .emote img {
+    display: block;
+    margin: 0 auto;
+    width: clamp(180px, 60vw, 320px);
+    height: auto;
+    border-radius: 10px;
+  }
+
   /* ── 챕터 네비게이션 ── */
   .chapter-nav {
     display: flex;
@@ -869,6 +884,7 @@
 <script src="../assets/api.js"></script>
 <script src="../assets/confirm-modal.js"></script>
 <script src="../assets/storage-modal.js"></script>
+<script src="../assets/emotes.js"></script>
 <script>
   // ── URL 파라미터 ──
   const params = new URLSearchParams(location.search);
@@ -886,6 +902,7 @@
   let comments = [];
   let USER_NAMES = ['김굥', '하지', '예밍'];
   let charPortraitMap = new Map(); // 캐릭터 이름 -> { id, portraitUrl, gender }
+  let emoteMap = {}; // 정규화된 감정 에셋 키 -> { url, label }
 
   function buildCharPortraitMap(tree) {
     const map = new Map();
@@ -939,6 +956,16 @@
         title: c.title || '',
         body: c.body || ''
       }));
+
+      // 본문에 감정 에셋 토큰(<img="이름 감정">)이 하나라도 있으면 목록을 미리 받아둔다.
+      // 챕터를 그릴 때 동기적으로 치환하기 위한 것 — 안 그러면 토큰 원문이 잠깐 보였다 바뀐다.
+      if (chapters.some(c => Emotes.hasToken(c.body))) {
+        try {
+          emoteMap = await Emotes.loadMap();
+        } catch (err) {
+          console.error('감정 에셋을 불러오지 못했어요', err);
+        }
+      }
 
       // 설정 버튼 표시
       document.getElementById('settingsWrap').style.display = 'flex';
@@ -1109,7 +1136,7 @@
           <div class="chapter-title">${escapeHtml(ch.title)}</div>
           <div class="chapter-divider"></div>
         </div>` : ''}
-      <div class="story-body">${ch.body || '<p style="color:#b8a9c9;">내용이 없어요</p>'}</div>
+      <div class="story-body">${ch.body ? Emotes.replace(ch.body, emoteMap) : '<p style="color:#b8a9c9;">내용이 없어요</p>'}</div>
     `;
   }
 

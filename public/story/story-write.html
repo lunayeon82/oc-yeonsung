@@ -370,6 +370,97 @@
     font-style: italic;
   }
 
+  /* ── 감정 에셋 고르기 ── */
+  .emote-picker {
+    border: 1px solid rgba(184,169,201,0.2);
+    border-top: none;
+    background: rgba(255,255,255,0.45);
+    padding: 0.7rem 0.8rem;
+  }
+  .emote-picker.collapsed { display: none; }
+
+  .emote-picker-top {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+
+  .emote-char-tab {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 16px;
+    font-size: 0.72rem;
+    color: #7a6a8a;
+    background: rgba(255,255,255,0.6);
+    cursor: pointer;
+    font-family: 'ko-font', sans-serif;
+  }
+  .emote-char-tab.active {
+    background: #b8a9c9;
+    color: white;
+    border-color: #b8a9c9;
+  }
+
+  .emote-search {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid rgba(184,169,201,0.3);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.7);
+    font-size: 0.72rem;
+    color: #5a4a6b;
+    outline: none;
+    font-family: 'ko-font', sans-serif;
+  }
+
+  .emote-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .emote-item {
+    border: 1px solid rgba(184,169,201,0.25);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.7);
+    padding: 0.25rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .emote-item:hover {
+    border-color: #b8a9c9;
+    background: rgba(184,169,201,0.12);
+  }
+  .emote-item img {
+    width: 100%;
+    aspect-ratio: 701 / 1024;
+    object-fit: contain;
+    display: block;
+  }
+  .emote-item .label {
+    display: block;
+    font-size: 0.58rem;
+    color: #7a6a8a;
+    margin-top: 0.15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .emote-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #b8a9c9;
+    font-size: 0.72rem;
+    padding: 1rem 0;
+  }
+
   /* ── 하단 액션 (삭제) ── */
   .bottom-actions {
     margin-top: 2rem;
@@ -516,6 +607,14 @@
     <div class="toolbar-sep"></div>
     <button class="toolbar-btn" data-cmd="quote" title="인용">❝</button>
     <button class="toolbar-btn" data-cmd="hr" title="구분선">─</button>
+    <div class="toolbar-sep"></div>
+    <button class="toolbar-btn" data-cmd="emote" id="emoteToggleBtn" title="표정 넣기">🙂</button>
+  </div>
+  <div class="emote-picker collapsed" id="emotePicker">
+    <div class="emote-picker-top" id="emoteCharTabs"></div>
+    <div class="emote-grid" id="emoteGrid">
+      <div class="emote-empty">불러오는 중...</div>
+    </div>
   </div>
   <div class="editor-body" id="editorBody" contenteditable="true" data-placeholder="이야기를 시작하세요..."></div>
 
@@ -562,6 +661,15 @@
   }
 
   // ── 토스트 ──
+  function escapeHtml(text) {
+    return String(text == null ? '' : text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -872,9 +980,122 @@
         case 'h3': document.execCommand('formatBlock', false, '<h3>'); break;
         case 'quote': document.execCommand('formatBlock', false, '<blockquote>'); break;
         case 'hr': document.execCommand('insertHTML', false, '<hr>'); break;
+        case 'emote': toggleEmotePicker(); break;
       }
     });
   });
+
+  // ── 감정 에셋 고르기 ──
+  // 고른 표정은 본문에 <img="이름 감정"> 토큰(글자 그대로)으로 들어가고, 읽기 화면에서
+  // 실제 이미지로 바뀐다. 파일 업로드는 server/scripts/upload-emotes.js로 따로 한다.
+  const editorEl = document.getElementById('editorBody');
+  const emotePicker = document.getElementById('emotePicker');
+  let emoteItems = [];
+  let emoteChar = null;
+  let emoteQuery = '';
+  let emotesLoaded = false;
+  let savedRange = null;
+
+  // 목록에서 표정을 고르는 사이 본문 커서가 풀리므로, 마지막 위치를 기억했다 복원한다.
+  function rememberRange() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (editorEl.contains(range.commonAncestorContainer)) savedRange = range.cloneRange();
+  }
+  editorEl.addEventListener('keyup', rememberRange);
+  editorEl.addEventListener('mouseup', rememberRange);
+  editorEl.addEventListener('blur', rememberRange);
+
+  async function toggleEmotePicker() {
+    const opening = emotePicker.classList.contains('collapsed');
+    emotePicker.classList.toggle('collapsed', !opening);
+    document.getElementById('emoteToggleBtn').classList.toggle('active', opening);
+    if (opening && !emotesLoaded) await loadEmotes();
+  }
+
+  async function loadEmotes() {
+    try {
+      const res = await API.listEmotes();
+      emoteItems = res.items || [];
+      emotesLoaded = true;
+      if (emoteItems.length) emoteChar = emoteItems[0].charName;
+      renderEmoteTabs();
+      renderEmoteGrid();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('emoteGrid').innerHTML =
+        '<div class="emote-empty">표정 목록을 불러오지 못했어요</div>';
+    }
+  }
+
+  function renderEmoteTabs() {
+    const names = [...new Set(emoteItems.map(e => e.charName))];
+    const tabs = document.getElementById('emoteCharTabs');
+    tabs.innerHTML = names
+      .map(n => `<button class="emote-char-tab${n === emoteChar ? ' active' : ''}" data-char="${escapeHtml(n)}">${escapeHtml(n.replace(/_/g, ' '))}</button>`)
+      .join('') + '<input type="text" class="emote-search" id="emoteSearch" placeholder="감정 검색 (예: angry)">';
+
+    tabs.querySelectorAll('.emote-char-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        emoteChar = btn.dataset.char;
+        renderEmoteTabs();
+        renderEmoteGrid();
+      });
+    });
+    const search = document.getElementById('emoteSearch');
+    search.value = emoteQuery;
+    search.addEventListener('input', () => {
+      emoteQuery = search.value.trim().toLowerCase();
+      renderEmoteGrid();
+    });
+  }
+
+  function renderEmoteGrid() {
+    const grid = document.getElementById('emoteGrid');
+    const list = emoteItems.filter(e =>
+      e.charName === emoteChar && (!emoteQuery || e.emotion.toLowerCase().includes(emoteQuery))
+    );
+
+    if (!list.length) {
+      grid.innerHTML = `<div class="emote-empty">${emotesLoaded ? '해당하는 표정이 없어요' : '불러오는 중...'}</div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(e => {
+      const label = e.emotion.replace(/_/g, ' ') + (e.variant > 1 ? ` ${e.variant}` : '');
+      return `
+        <div class="emote-item" data-id="${e.id}" title="${escapeHtml(label)}">
+          <img src="${escapeHtml(e.thumbUrl || e.url)}" alt="${escapeHtml(label)}" loading="lazy">
+          <span class="label">${escapeHtml(label)}</span>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.emote-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const emote = emoteItems.find(e => String(e.id) === el.dataset.id);
+        if (emote) insertEmoteToken(emote);
+      });
+    });
+  }
+
+  function insertEmoteToken(emote) {
+    // 파일명의 언더바는 본문에서 띄어쓰기로 쓴다: Do_A-rang.acting_coy -> Do A-rang acting coy
+    const name = `${emote.charName.replace(/_/g, ' ')} ${emote.emotion.replace(/_/g, ' ')}`;
+    const token = `<img="${name}">`;
+
+    editorEl.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    // insertText로 넣어야 토큰이 실제 태그로 해석되지 않고 글자 그대로 저장된다.
+    document.execCommand('insertText', false, token);
+    rememberRange();
+    saveCurrentChapter();
+    showToast(`${name} 넣었어요`);
+  }
 
   // 툴바 active 상태
   document.getElementById('editorBody').addEventListener('keyup', updateToolbarState);

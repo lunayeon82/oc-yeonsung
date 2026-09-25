@@ -86,6 +86,19 @@
       return request('POST', '/upload', { formData: fd });
     },
 
+    // 감정 에셋 (연성 글 본문의 <img="이름 감정"> 토큰이 가리키는 이미지)
+    listEmotes: (charName) => request('GET', '/emotes', { query: { charName } }),
+    uploadEmote: ({ file, thumb, charName, emotion, variant }) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (thumb) fd.append('thumb', thumb);
+      fd.append('charName', charName);
+      fd.append('emotion', emotion);
+      fd.append('variant', String(variant || 1));
+      return request('POST', '/emotes', { formData: fd });
+    },
+    deleteEmote: (id) => request('DELETE', `/emotes/${id}`),
+
     // 댓글
     listComments: (parentType, parentPid) => request('GET', '/comments', { query: { parentType, parentPid } }),
     addComment: (body) => request('POST', '/comments', { json: body }),
